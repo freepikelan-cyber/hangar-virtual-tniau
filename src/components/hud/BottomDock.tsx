@@ -14,6 +14,7 @@ import {
   RotateCcw,
   ShieldAlert,
   Square,
+  Waves,
   Wind,
 } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
@@ -26,6 +27,7 @@ export function BottomDock() {
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
+  const oxygenMode = useHangarStore((s) => s.oxygenMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
@@ -42,10 +44,11 @@ export function BottomDock() {
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
   const isEquipment = isGSuit || isHelmet;
-  const anySimActive = flightMode !== 'parked' || safetyMode;
+  const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
 
   const stopAllSim = () => {
     if (safetyMode) toggle('safetyMode');
+    if (oxygenMode) toggle('oxygenMode');
     setFlightState('parked', null);
     setSimMenuOpen(false);
   };
@@ -148,6 +151,7 @@ export function BottomDock() {
             type="button"
             onClick={() => {
               if (safetyMode) toggle('safetyMode');
+              if (oxygenMode) toggle('oxygenMode');
               triggerTakeOff();
               setSimMenuOpen(false);
             }}
@@ -165,6 +169,7 @@ export function BottomDock() {
             type="button"
             onClick={() => {
               if (safetyMode) toggle('safetyMode');
+              if (oxygenMode) toggle('oxygenMode');
               triggerLanding();
               setSimMenuOpen(false);
             }}
@@ -182,6 +187,7 @@ export function BottomDock() {
             type="button"
             onClick={() => {
               if (safetyMode) toggle('safetyMode');
+              if (oxygenMode) toggle('oxygenMode');
               toggleEngineSim();
               setSimMenuOpen(false);
             }}
@@ -209,6 +215,22 @@ export function BottomDock() {
           >
             <ShieldAlert className="h-4 w-4" />
             Safety 3D
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              toggle('oxygenMode');
+              setSimMenuOpen(false);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+              oxygenMode
+                ? 'border-cyan-400 bg-cyan-400 text-[#0a1e3c]'
+                : 'border-cyan-400/45 bg-[#0e2a54] text-cyan-300 hover:bg-cyan-400/20'
+            }`}
+          >
+            <Waves className="h-4 w-4" />
+            Oksigen OBOGS
           </button>
 
           {anySimActive && (

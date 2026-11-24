@@ -79,6 +79,7 @@ interface HangarState {
   soundEnabled: boolean;
   aeroMode: boolean;
   safetyMode: boolean;
+  oxygenMode: boolean;
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
   flightMode: FlightMode;
@@ -101,7 +102,7 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'aeroMode' | 'safetyMode') => void;
+  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'aeroMode' | 'safetyMode' | 'oxygenMode') => void;
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
 
@@ -153,6 +154,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   soundEnabled: true,
   aeroMode: false,
   safetyMode: false,
+  oxygenMode: false,
   flapAngle: 15,
   trimAngle: 8,
   flightMode: 'parked',
@@ -185,6 +187,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       activeHotspot: null,
       quiz: emptyQuiz,
       safetyMode: false,
+      oxygenMode: false,
       flightMode: 'parked',
       flightLabel: null,
       leftOpen: mobile ? false : get().leftOpen,
@@ -222,8 +225,19 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     if (key === 'safetyMode') {
       set({
         safetyMode: next,
+        oxygenMode: next ? false : get().oxygenMode,
         flightMode: next ? 'parked' : get().flightMode,
-        flightLabel: next ? null : null,
+        flightLabel: null,
+        activeHotspot: next ? null : get().activeHotspot,
+      });
+      return;
+    }
+    if (key === 'oxygenMode') {
+      set({
+        oxygenMode: next,
+        safetyMode: next ? false : get().safetyMode,
+        flightMode: next ? 'parked' : get().flightMode,
+        flightLabel: null,
         activeHotspot: next ? null : get().activeHotspot,
       });
       return;

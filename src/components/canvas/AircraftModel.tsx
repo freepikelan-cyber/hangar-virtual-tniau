@@ -10,6 +10,7 @@ import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
+import { OxygenSystemLayer } from './OxygenSystemLayer';
 
 interface SavedMatProps {
   transparent: boolean;
@@ -539,6 +540,7 @@ export function AircraftModel() {
       />
       <AerodynamicsLayer />
       <SafetySystemLayer />
+      <OxygenSystemLayer />
       <HotspotMarkers hotspots={unit.hotspots} />
     </group>
   );
