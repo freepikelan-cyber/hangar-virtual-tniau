@@ -207,9 +207,12 @@ function buildRussianMissile(
 
 /** Roda pendarat Su-30MK2 detail (roda depan ganda + mudguard, roda utama besar). */
 function buildSu30Gear(
-  group: THREE.Group,
+  parent: THREE.Group,
   mats: { strut: THREE.Material; tire: THREE.Material; dark: THREE.Material; belly: THREE.Material; light: THREE.Material },
 ) {
+  const group = new THREE.Group();
+  group.name = 'landing-gear';
+  parent.add(group);
   const nz = 4.05;
   const nr = 0.24;
   const nStrut = mkMesh(new THREE.CylinderGeometry(0.055, 0.048, 1.1, 14), mats.strut);

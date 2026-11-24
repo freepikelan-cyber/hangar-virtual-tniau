@@ -244,15 +244,17 @@ export function buildDetailedC130J(): BuildResult {
   // Kaca kokpit wrap-around
   addDecal(g, fuseMesh, [0, 1.72, 5.45], [-0.52, 0, 0], [1.35, 0.65, 1.2], cockpitWindowTexture('transport'));
 
-  // Roda pendarat: nose twin + tandem main wheels di bawah sponson
+  // Roda pendarat: nose twin + tandem main wheels di bawah sponson (dalam grup landing-gear)
+  const gearGrp = new THREE.Group();
+  gearGrp.name = 'landing-gear';
   const nStrut = mkMesh(new THREE.CylinderGeometry(0.055, 0.048, 0.45, 12), strutMat);
   nStrut.position.set(0, 0.4, 4.75);
-  g.add(nStrut);
+  gearGrp.add(nStrut);
   for (const ox of [-0.11, 0.11]) {
     const t = mkMesh(new THREE.CylinderGeometry(0.19, 0.19, 0.11, 20), tireMat);
     t.rotation.z = Math.PI / 2;
     t.position.set(ox, 0.19, 4.75);
-    g.add(t);
+    gearGrp.add(t);
   }
   for (const s of [1, -1]) {
     for (const tz of [-0.08, -0.68]) {
@@ -262,9 +264,10 @@ export function buildDetailedC130J(): BuildResult {
       const h = mkMesh(new THREE.CylinderGeometry(0.13, 0.13, 0.195, 14), strutMat);
       h.rotation.z = Math.PI / 2;
       h.position.copy(t.position);
-      g.add(t, h);
+      gearGrp.add(t, h);
     }
   }
+  g.add(gearGrp);
 
   // Internal X-Ray (rangka kargo & 4 palet muatan)
   for (let z = -4.0; z <= 4.6; z += 0.85) {
@@ -541,21 +544,24 @@ export function buildDetailedKT1B(): BuildResult {
   );
   g.add(finMesh);
 
-  // Roda pendarat tiga titik
+  // Roda pendarat tiga titik (dalam grup landing-gear)
+  const gearGrp = new THREE.Group();
+  gearGrp.name = 'landing-gear';
   const nStrut = mkMesh(new THREE.CylinderGeometry(0.042, 0.036, 0.72, 12), strutMat);
   nStrut.position.set(0, 0.56, 4.75);
   const nt = mkMesh(new THREE.CylinderGeometry(0.2, 0.2, 0.12, 22), tireMat);
   nt.rotation.z = Math.PI / 2;
   nt.position.set(0, 0.2, 4.75);
-  g.add(nStrut, nt);
+  gearGrp.add(nStrut, nt);
   for (const s of [1, -1]) {
     const ms = mkMesh(new THREE.CylinderGeometry(0.046, 0.04, 0.78, 12), strutMat);
     ms.position.set(s * 1.55, 0.65, 0.65);
     const mt = mkMesh(new THREE.CylinderGeometry(0.26, 0.26, 0.18, 22), tireMat);
     mt.rotation.z = Math.PI / 2;
     mt.position.set(s * 1.55, 0.26, 0.65);
-    g.add(ms, mt);
+    gearGrp.add(ms, mt);
   }
+  g.add(gearGrp);
 
   // Internal X-Ray
   for (let z = -5.0; z <= 5.0; z += 0.9) {

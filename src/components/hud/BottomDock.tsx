@@ -1,26 +1,92 @@
-import { Flame, Grid3X3, Mail, MapPin, Phone, Rotate3d, RotateCcw, ScanEye } from 'lucide-react';
+import {
+  Flame,
+  Grid3X3,
+  Mail,
+  MapPin,
+  Phone,
+  PlaneLanding,
+  PlaneTakeoff,
+  Rotate3d,
+  RotateCcw,
+} from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
 
 export function BottomDock() {
-  const xray = useHangarStore((s) => s.xray);
   const wireframe = useHangarStore((s) => s.wireframe);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
-  const engineSim = useHangarStore((s) => s.engineSim);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const flightLabel = useHangarStore((s) => s.flightLabel);
 
   const toggle = useHangarStore((s) => s.toggle);
+  const triggerTakeOff = useHangarStore((s) => s.triggerTakeOff);
+  const triggerLanding = useHangarStore((s) => s.triggerLanding);
+  const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const buttons = [
-    { id: 'xray', label: 'X-Ray', short: 'X-Ray', icon: ScanEye, active: xray, onClick: () => toggle('xray') },
-    { id: 'wireframe', label: 'Wireframe', short: 'Wire', icon: Grid3X3, active: wireframe, onClick: () => toggle('wireframe') },
-    { id: 'pins', label: 'Pin Hotspot', short: 'Pin', icon: MapPin, active: showPins, onClick: () => toggle('showPins') },
-    { id: 'rotate', label: 'Putar 360°', short: '360°', icon: Rotate3d, active: autoRotate, onClick: () => toggle('autoRotate') },
-    { id: 'engine', label: 'Simulasi Mesin', short: 'Mesin', icon: Flame, active: engineSim, onClick: () => toggle('engineSim'), accent: 'amber' as const },
+    {
+      id: 'takeoff',
+      label: 'Take Off',
+      short: 'Take Off',
+      icon: PlaneTakeoff,
+      active: flightMode === 'takeoff',
+      onClick: triggerTakeOff,
+      accent: 'amber' as const,
+    },
+    {
+      id: 'landing',
+      label: 'Landing',
+      short: 'Landing',
+      icon: PlaneLanding,
+      active: flightMode === 'landing',
+      onClick: triggerLanding,
+      accent: 'emerald' as const,
+    },
+    {
+      id: 'engine',
+      label: 'Simulasi Mesin',
+      short: 'Mesin',
+      icon: Flame,
+      active: flightMode === 'engineSim',
+      onClick: toggleEngineSim,
+      accent: 'amber' as const,
+    },
+    {
+      id: 'wireframe',
+      label: 'Wireframe',
+      short: 'Wire',
+      icon: Grid3X3,
+      active: wireframe,
+      onClick: () => toggle('wireframe'),
+    },
+    {
+      id: 'pins',
+      label: 'Pin Hotspot',
+      short: 'Pin',
+      icon: MapPin,
+      active: showPins,
+      onClick: () => toggle('showPins'),
+    },
+    {
+      id: 'rotate',
+      label: 'Putar 360°',
+      short: '360°',
+      icon: Rotate3d,
+      active: autoRotate,
+      onClick: () => toggle('autoRotate'),
+    },
   ];
 
   return (
     <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
+      {/* Indikator Fase Penerbangan (Take Off / Landing / Simulasi Mesin) */}
+      {flightLabel && (
+        <div className="hud-panel pointer-events-none rounded-full border-[#ffb703]/60 px-3.5 py-1 font-display text-[11px] sm:text-xs font-bold tracking-[0.16em] text-[#ffb703] uppercase shadow-amber animate-slidein">
+          {flightLabel}
+        </div>
+      )}
+
       <nav
         aria-label="Kontrol Hangar 3D"
         className="hud-panel pointer-events-auto flex max-w-full items-center gap-1 sm:gap-2 overflow-x-auto rounded-2xl px-1.5 sm:px-3 py-1.5 sm:py-2"
@@ -30,7 +96,9 @@ export function BottomDock() {
           const activeClass =
             b.accent === 'amber'
               ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703] shadow-amber'
-              : 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-glow';
+              : b.accent === 'emerald'
+                ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.4)]'
+                : 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-glow';
           return (
             <button
               key={b.id}

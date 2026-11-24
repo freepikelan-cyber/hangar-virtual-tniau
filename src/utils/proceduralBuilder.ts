@@ -295,7 +295,13 @@ function disc(r: number, mat: THREE.Material, facing: 'front' | 'back' = 'front'
   return mk(g, mat, role);
 }
 
-function gear(group: THREE.Group, k: Kit, x: number, z: number, topY: number, wheelR: number, opts: { twin?: boolean; width?: number; tandem?: boolean } = {}) {
+function gear(parent: THREE.Group, k: Kit, x: number, z: number, topY: number, wheelR: number, opts: { twin?: boolean; width?: number; tandem?: boolean } = {}) {
+  let group = parent.getObjectByName('landing-gear') as THREE.Group | undefined;
+  if (!group) {
+    group = new THREE.Group();
+    group.name = 'landing-gear';
+    parent.add(group);
+  }
   const w = opts.width ?? wheelR * 0.6;
   const strutLen = Math.max(0.05, topY - wheelR);
   const strut = mk(new THREE.CylinderGeometry(0.045, 0.055, strutLen, 10), k.gear);

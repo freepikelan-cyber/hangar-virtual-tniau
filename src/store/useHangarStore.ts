@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
+export type FlightMode = 'parked' | 'takeoff' | 'landing' | 'engineSim';
 export type Vec3 = [number, number, number];
 
 export function isCompactViewport() {
@@ -57,11 +58,12 @@ interface HangarState {
   rightOpen: boolean;
   infoTab: InfoTab;
 
-  xray: boolean;
   wireframe: boolean;
   showPins: boolean;
   autoRotate: boolean;
-  engineSim: boolean;
+  flightMode: FlightMode;
+  flightNonce: number;
+  flightLabel: string | null;
 
   activeHotspot: number | null;
   camRequest: CamRequest | null;
@@ -73,7 +75,13 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'xray' | 'wireframe' | 'showPins' | 'autoRotate' | 'engineSim') => void;
+  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate') => void;
+
+  triggerTakeOff: () => void;
+  triggerLanding: () => void;
+  toggleEngineSim: () => void;
+  setFlightState: (mode: FlightMode, label: string | null) => void;
+  setFlightLabel: (label: string | null) => void;
 
   requestCamera: (pos: Vec3, target: Vec3) => void;
   resetCamera: () => void;
@@ -109,11 +117,12 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   rightOpen: initialDesktop,
   infoTab: 'spec',
 
-  xray: false,
   wireframe: false,
   showPins: true,
   autoRotate: false,
-  engineSim: false,
+  flightMode: 'parked',
+  flightNonce: 0,
+  flightLabel: null,
 
   activeHotspot: null,
   camRequest: null,
@@ -130,6 +139,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       selectedId: id,
       activeHotspot: null,
       quiz: emptyQuiz,
+      flightMode: 'parked',
+      flightLabel: null,
       leftOpen: mobile ? false : get().leftOpen,
       infoTab: get().infoTab === 'quiz' ? 'quiz' : get().infoTab,
       camRequest: { ...getDefaultCamera(), nonce: nonce++ },
@@ -152,6 +163,37 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const next = !get()[key];
     set({ [key]: next } as Partial<HangarState>);
     if (key === 'autoRotate' && next) set({ activeHotspot: null });
+  },
+
+  triggerTakeOff: () =>
+    set((s) => ({
+      flightMode: 'takeoff',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: 'TAKE OFF • AKSELERASI LANDASAN',
+      autoRotate: false,
+      activeHotspot: null,
+    })),
+  triggerLanding: () =>
+    set((s) => ({
+      flightMode: 'landing',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: 'LANDING • PENDEKATAN & RODA KELUAR',
+      autoRotate: false,
+      activeHotspot: null,
+    })),
+  toggleEngineSim: () =>
+    set((s) => {
+      const activating = s.flightMode !== 'engineSim';
+      return {
+        flightMode: activating ? 'engineSim' : 'parked',
+        flightNonce: s.flightNonce + 1,
+        flightLabel: activating ? 'SIMULASI MESIN • RODA MASUK OTOMATIS' : null,
+        activeHotspot: activating ? null : s.activeHotspot,
+      };
+    }),
+  setFlightState: (flightMode, flightLabel) => set({ flightMode, flightLabel }),
+  setFlightLabel: (flightLabel) => {
+    if (get().flightLabel !== flightLabel) set({ flightLabel });
   },
 
   requestCamera: (pos, target) => set({ camRequest: { pos, target, nonce: nonce++ } }),

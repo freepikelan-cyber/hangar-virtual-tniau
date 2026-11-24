@@ -118,10 +118,13 @@ function addPodTank(g: THREE.Group, pos: V3, len: number, rMax: number, mat: THR
 }
 
 function addTricycleGear(
-  g: THREE.Group,
+  parent: THREE.Group,
   cfg: { nz: number; nr: number; mz: number; mx: number; mr: number; topY: number; noseTwin?: boolean },
   mats: { strut: THREE.Material; tire: THREE.Material; light: THREE.Material },
 ) {
+  const g = new THREE.Group();
+  g.name = 'landing-gear';
+  parent.add(g);
   const nLen = Math.max(0.25, cfg.topY - cfg.nr);
   const nStrut = mkMesh(new THREE.CylinderGeometry(0.044, 0.038, nLen, 12), mats.strut);
   nStrut.position.set(0, cfg.nr + nLen / 2, cfg.nz);

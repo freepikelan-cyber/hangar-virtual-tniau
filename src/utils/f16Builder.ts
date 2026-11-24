@@ -466,9 +466,12 @@ function buildDropTank(group: THREE.Group, pos: V3, scale: number, bodyMat: THRE
 
 /** Roda pendarat F-16 detail (nose gear + main gear + pintu kompartemen). */
 function buildF16Gear(
-  group: THREE.Group,
+  parent: THREE.Group,
   mats: { strut: THREE.Material; tire: THREE.Material; dark: THREE.Material; skin: THREE.Material; light: THREE.Material },
 ) {
+  const group = new THREE.Group();
+  group.name = 'landing-gear';
+  parent.add(group);
   const noseZ = 2.55;
   const noseR = 0.22;
   const noseStrut = mk(new THREE.CylinderGeometry(0.048, 0.042, 0.72, 14), mats.strut);

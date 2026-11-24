@@ -199,9 +199,12 @@ function buildSupersonicTank(group: THREE.Group, pos: V3, mat: THREE.Material, f
 
 /** Roda pendarat Rafale (roda depan ganda tinggi + roda utama lebar). */
 function buildRafaleGear(
-  group: THREE.Group,
+  parent: THREE.Group,
   mats: { strut: THREE.Material; tire: THREE.Material; dark: THREE.Material; belly: THREE.Material; light: THREE.Material },
 ) {
+  const group = new THREE.Group();
+  group.name = 'landing-gear';
+  parent.add(group);
   const nz = 3.65;
   const nr = 0.22;
   const nStrut = mkMesh(new THREE.CylinderGeometry(0.048, 0.042, 0.96, 14), mats.strut);
