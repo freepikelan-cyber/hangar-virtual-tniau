@@ -77,6 +77,9 @@ interface HangarState {
   showPins: boolean;
   autoRotate: boolean;
   soundEnabled: boolean;
+  aeroMode: boolean;
+  flapAngle: 0 | 15 | 35;
+  trimAngle: -5 | 0 | 8;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -97,7 +100,9 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled') => void;
+  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'aeroMode') => void;
+  setFlapAngle: (deg: 0 | 15 | 35) => void;
+  setTrimAngle: (deg: -5 | 0 | 8) => void;
 
   triggerTakeOff: () => void;
   triggerLanding: () => void;
@@ -145,6 +150,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   showPins: false,
   autoRotate: false,
   soundEnabled: true,
+  aeroMode: false,
+  flapAngle: 15,
+  trimAngle: 8,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -199,6 +207,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set({ [key]: next } as Partial<HangarState>);
     if (key === 'autoRotate' && next) set({ activeHotspot: null });
   },
+  setFlapAngle: (flapAngle) => set({ flapAngle }),
+  setTrimAngle: (trimAngle) => set({ trimAngle }),
 
   triggerTakeOff: () => {
     aircraftAudio.unlock();

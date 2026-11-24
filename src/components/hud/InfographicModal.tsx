@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
+import { getSupportSystems } from '../../data/supportSystems';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { getAircraftTransparentSnapshot } from '../../utils/aircraftSnapshot';
 import { TniAuLogo3D } from './TniAuLogo3D';
@@ -177,6 +178,35 @@ export function InfographicModal() {
                     <p className="mt-1 text-xs leading-relaxed text-slate-300">{h.desc}</p>
                   </div>
                 </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sistem Pendukung Keselamatan & Kehidupan (Ejection Seat, Oksigen OBOGS, ECS, Hidrolik) */}
+          <div>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="flex items-center gap-2 font-display text-sm sm:text-base font-bold tracking-[0.16em] text-cyan-300 uppercase">
+                <Shield className="h-4 w-4" />
+                SISTEM PENDUKUNG KESELAMATAN & KEHIDUPAN PESAWAT
+              </h3>
+              <span className="text-[11px] text-slate-300">
+                Ejection Seat • Oksigen OBOGS • Tekanan Kabin (ECS) • Kontrol Terbang
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {getSupportSystems(unit.id, unit.category).map((sys, idx) => (
+                <div
+                  key={idx}
+                  className="rounded-xl border border-cyan-400/30 bg-[#082042]/85 p-3.5"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-1.5">
+                    <h4 className="font-display text-sm font-bold tracking-wide text-white">{sys.title}</h4>
+                    <span className="rounded border border-cyan-300/45 bg-cyan-400/15 px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider text-cyan-200 uppercase">
+                      {sys.tag}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-xs leading-relaxed text-slate-300">{sys.desc}</p>
+                </div>
               ))}
             </div>
           </div>

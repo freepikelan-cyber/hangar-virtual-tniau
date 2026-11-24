@@ -8,6 +8,7 @@ import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
 import { aircraftAudio } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
+import { AerodynamicsLayer } from './AerodynamicsLayer';
 
 interface SavedMatProps {
   transparent: boolean;
@@ -535,6 +536,7 @@ export function AircraftModel() {
         engineSim={isEngineVisualActive}
         rotorWash={procedural.rotorWash}
       />
+      <AerodynamicsLayer />
       <HotspotMarkers hotspots={unit.hotspots} />
     </group>
   );

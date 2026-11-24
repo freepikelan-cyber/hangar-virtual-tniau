@@ -10,6 +10,7 @@ import {
   PlaneTakeoff,
   Rotate3d,
   RotateCcw,
+  Wind,
 } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
 
@@ -19,6 +20,7 @@ export function BottomDock() {
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
+  const aeroMode = useHangarStore((s) => s.aeroMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
@@ -96,6 +98,18 @@ export function BottomDock() {
     accent?: 'amber' | 'emerald';
   }[] = [
       ...flightButtons,
+      ...(!isGSuit && !isHelmet
+        ? [
+            {
+              id: 'aero',
+              label: 'Aerodinamika',
+              short: 'Aero',
+              icon: Wind,
+              active: aeroMode,
+              onClick: () => toggle('aeroMode'),
+            },
+          ]
+        : []),
       {
         id: 'infographic',
         label: 'Spesifikasi',
