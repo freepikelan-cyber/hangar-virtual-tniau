@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import {
   Activity,
+  Check,
   ChevronUp,
   FileText,
   Flame,
   Grid3X3,
+  Lock,
   Mail,
   MapPin,
   Phone,
@@ -34,6 +36,7 @@ export function BottomDock() {
   const toggle = useHangarStore((s) => s.toggle);
   const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
   const triggerTakeOff = useHangarStore((s) => s.triggerTakeOff);
+  const triggerManeuver = useHangarStore((s) => s.triggerManeuver);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
@@ -45,6 +48,10 @@ export function BottomDock() {
   const isHelmet = selectedId === 'pilot-helmet';
   const isEquipment = isGSuit || isHelmet;
   const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
+
+  const canTakeOff = flightMode === 'parked';
+  const isAirborneReady = flightMode === 'airborne' || flightMode === 'maneuver';
+  const takeOffDone = flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'landing';
 
   const stopAllSim = () => {
     if (safetyMode) toggle('safetyMode');
@@ -144,105 +151,140 @@ export function BottomDock() {
         </div>
       )}
 
-      {/* Sub-Menu Ringkas "SIMULASI" (Take Off, Landing, Manuver Mesin, Safety 3D) */}
+      {/* Sub-Menu Ringkas "SIMULASI" Berurutan: 1. Take Off -> 2. Manuver -> 3. Landing */}
       {simMenuOpen && !isEquipment && (
-        <div className="hud-panel pointer-events-auto flex flex-wrap items-center justify-center gap-1.5 rounded-2xl border-[#ffb703]/50 bg-[#091c3a]/95 px-2.5 py-2 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
-          <button
-            type="button"
-            onClick={() => {
-              if (safetyMode) toggle('safetyMode');
-              if (oxygenMode) toggle('oxygenMode');
-              triggerTakeOff();
-              setSimMenuOpen(false);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-              flightMode === 'takeoff'
-                ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c]'
-                : 'border-[#ffb703]/45 bg-[#0e2a54] text-[#ffb703] hover:bg-[#ffb703]/20'
-            }`}
-          >
-            <PlaneTakeoff className="h-4 w-4" />
-            Take Off
-          </button>
+        <div className="hud-panel pointer-events-auto flex flex-col items-center gap-1.5 rounded-2xl border-[#ffb703]/50 bg-[#091c3a]/95 px-3 py-2 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
+          <div className="text-[10px] sm:text-[11px] font-medium tracking-wider text-slate-300">
+            {flightMode === 'parked' && 'Tahapan Terbang: 1. Take Off → 2. Manuver → 3. Landing'}
+            {flightMode === 'takeoff' && 'Pesawat sedang lepas landas di Runway... tunggu mengudara'}
+            {flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver atau 3. Landing'}
+            {flightMode === 'maneuver' && 'Manuver udara aktif! Klik 3. Landing untuk mendarat di Runway'}
+            {flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
+          </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              if (safetyMode) toggle('safetyMode');
-              if (oxygenMode) toggle('oxygenMode');
-              triggerLanding();
-              setSimMenuOpen(false);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-              flightMode === 'landing'
-                ? 'border-emerald-400 bg-emerald-400 text-[#0a1e3c]'
-                : 'border-emerald-400/45 bg-[#0e2a54] text-emerald-300 hover:bg-emerald-400/20'
-            }`}
-          >
-            <PlaneLanding className="h-4 w-4" />
-            Landing
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              if (safetyMode) toggle('safetyMode');
-              if (oxygenMode) toggle('oxygenMode');
-              toggleEngineSim();
-              setSimMenuOpen(false);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-              flightMode === 'engineSim'
-                ? 'border-[#4da6ff] bg-[#4da6ff] text-[#0a1e3c]'
-                : 'border-[#4da6ff]/45 bg-[#0e2a54] text-[#75bcff] hover:bg-[#4da6ff]/20'
-            }`}
-          >
-            <Flame className="h-4 w-4" />
-            Manuver Mesin
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              toggle('safetyMode');
-              setSimMenuOpen(false);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-              safetyMode
-                ? 'border-rose-400 bg-rose-400 text-[#0a1e3c]'
-                : 'border-rose-400/45 bg-[#0e2a54] text-rose-300 hover:bg-rose-400/20'
-            }`}
-          >
-            <ShieldAlert className="h-4 w-4" />
-            Safety 3D
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              toggle('oxygenMode');
-              setSimMenuOpen(false);
-            }}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-              oxygenMode
-                ? 'border-cyan-400 bg-cyan-400 text-[#0a1e3c]'
-                : 'border-cyan-400/45 bg-[#0e2a54] text-cyan-300 hover:bg-cyan-400/20'
-            }`}
-          >
-            <Waves className="h-4 w-4" />
-            Oksigen OBOGS
-          </button>
-
-          {anySimActive && (
+          <div className="flex flex-wrap items-center justify-center gap-1.5">
             <button
               type="button"
-              onClick={stopAllSim}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-500/60 bg-slate-800/90 px-3 py-2 font-display text-xs font-bold tracking-wider text-slate-200 uppercase hover:border-white hover:text-white cursor-pointer active:scale-95"
+              disabled={!canTakeOff}
+              title={canTakeOff ? 'Mulai lepas landas dari Runway' : 'Pesawat sudah lepas landas'}
+              onClick={() => {
+                if (!canTakeOff) return;
+                if (safetyMode) toggle('safetyMode');
+                if (oxygenMode) toggle('oxygenMode');
+                triggerTakeOff();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all ${
+                flightMode === 'takeoff'
+                  ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c] cursor-default'
+                  : takeOffDone
+                    ? 'border-emerald-400/40 bg-emerald-500/15 text-emerald-300/80 cursor-not-allowed'
+                    : 'border-[#ffb703]/70 bg-[#0e2a54] text-[#ffb703] hover:bg-[#ffb703]/20 cursor-pointer active:scale-95 shadow-amber'
+              }`}
             >
-              <Square className="h-3.5 w-3.5" />
-              Stop
+              {takeOffDone ? <Check className="h-3.5 w-3.5" /> : <PlaneTakeoff className="h-4 w-4" />}
+              1. Take Off
             </button>
-          )}
+
+            <button
+              type="button"
+              disabled={!isAirborneReady}
+              title={
+                isAirborneReady
+                  ? 'Jalankan manuver udara (Barrel Roll, High-G Break, Cobra Climb)'
+                  : 'Terkunci — lakukan 1. Take Off terlebih dahulu'
+              }
+              onClick={() => {
+                if (!isAirborneReady) return;
+                if (safetyMode) toggle('safetyMode');
+                if (oxygenMode) toggle('oxygenMode');
+                triggerManeuver();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all ${
+                flightMode === 'maneuver'
+                  ? 'border-[#4da6ff] bg-[#4da6ff] text-[#0a1e3c] cursor-pointer active:scale-95'
+                  : isAirborneReady
+                    ? 'border-[#4da6ff]/80 bg-[#0e2a54] text-[#75bcff] hover:bg-[#4da6ff]/20 cursor-pointer active:scale-95 shadow-glow'
+                    : 'border-slate-700/70 bg-slate-900/60 text-slate-500 opacity-60 cursor-not-allowed'
+              }`}
+            >
+              {isAirborneReady ? <Flame className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
+              2. Manuver
+            </button>
+
+            <button
+              type="button"
+              disabled={!isAirborneReady}
+              title={
+                isAirborneReady
+                  ? 'Turun & mendarat kembali ke Runway'
+                  : 'Terkunci — lakukan 1. Take Off terlebih dahulu'
+              }
+              onClick={() => {
+                if (!isAirborneReady) return;
+                if (safetyMode) toggle('safetyMode');
+                if (oxygenMode) toggle('oxygenMode');
+                triggerLanding();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all ${
+                flightMode === 'landing'
+                  ? 'border-emerald-400 bg-emerald-400 text-[#0a1e3c] cursor-default'
+                  : isAirborneReady
+                    ? 'border-emerald-400/75 bg-[#0e2a54] text-emerald-300 hover:bg-emerald-400/20 cursor-pointer active:scale-95'
+                    : 'border-slate-700/70 bg-slate-900/60 text-slate-500 opacity-60 cursor-not-allowed'
+              }`}
+            >
+              {isAirborneReady ? <PlaneLanding className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
+              3. Landing
+            </button>
+
+            <div className="mx-0.5 h-6 w-px bg-[#4da6ff]/25 hidden sm:block" />
+
+            <button
+              type="button"
+              onClick={() => {
+                toggle('safetyMode');
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                safetyMode
+                  ? 'border-rose-400 bg-rose-400 text-[#0a1e3c]'
+                  : 'border-rose-400/45 bg-[#0e2a54] text-rose-300 hover:bg-rose-400/20'
+              }`}
+            >
+              <ShieldAlert className="h-4 w-4" />
+              Safety 3D
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                toggle('oxygenMode');
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                oxygenMode
+                  ? 'border-cyan-400 bg-cyan-400 text-[#0a1e3c]'
+                  : 'border-cyan-400/45 bg-[#0e2a54] text-cyan-300 hover:bg-cyan-400/20'
+              }`}
+            >
+              <Waves className="h-4 w-4" />
+              Oksigen OBOGS
+            </button>
+
+            {anySimActive && (
+              <button
+                type="button"
+                onClick={stopAllSim}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-500/60 bg-slate-800/90 px-3 py-2 font-display text-xs font-bold tracking-wider text-slate-200 uppercase hover:border-white hover:text-white cursor-pointer active:scale-95"
+              >
+                <Square className="h-3.5 w-3.5" />
+                Stop
+              </button>
+            )}
+          </div>
         </div>
       )}
 

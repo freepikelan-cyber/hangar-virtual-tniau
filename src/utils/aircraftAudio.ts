@@ -260,22 +260,27 @@ class AircraftAudioEngine {
       } else {
         throttle = 0.05;
       }
-    } else if (flightMode === 'engineSim') {
-      const cycle = phaseTime % 16;
-      if (cycle < 4) {
-        throttle = 0.82 + Math.sin((cycle / 4) * Math.PI) * 0.14;
+    } else if (flightMode === 'airborne') {
+      throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
+      speedMod = 0.02;
+    } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
+      const cycle = phaseTime % 20;
+      if (cycle < 5) {
+        // Barrel / Aileron Roll -> high energy!
+        throttle = 0.9 + Math.sin((cycle / 5) * Math.PI) * 0.1;
+        speedMod = 0.14;
+      } else if (cycle < 10) {
+        // High-G Combat Break -> afterburner sustain
+        throttle = 0.88 + Math.sin(((cycle - 5) / 5) * Math.PI) * 0.12;
         speedMod = 0.08;
-      } else if (cycle < 8) {
-        throttle = 0.82 + Math.sin(((cycle - 4) / 4) * Math.PI) * 0.14;
-        speedMod = -0.05;
-      } else if (cycle < 12) {
-        // Menanjak -> tenaga penuh!
-        throttle = 0.92 + Math.sin(((cycle - 8) / 4) * Math.PI) * 0.08;
-        speedMod = 0.18;
+      } else if (cycle < 15) {
+        // Cobra / High-AoA Climb -> full afterburner roar!
+        throttle = 0.94 + Math.sin(((cycle - 10) / 5) * Math.PI) * 0.06;
+        speedMod = 0.22;
       } else {
-        // Menukik -> pitch turun sedikit & hembusan udara kuat
-        throttle = 0.72 + Math.sin(((cycle - 12) / 4) * Math.PI) * 0.12;
-        speedMod = -0.12;
+        // Tactical Dive & Pull-Up
+        throttle = 0.78 + Math.sin(((cycle - 15) / 5) * Math.PI) * 0.18;
+        speedMod = -0.1;
       }
     }
 

@@ -4,7 +4,7 @@ import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
-export type FlightMode = 'parked' | 'takeoff' | 'landing' | 'engineSim';
+export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim';
 export type Vec3 = [number, number, number];
 
 export function isCompactViewport() {
@@ -107,6 +107,7 @@ interface HangarState {
   setTrimAngle: (deg: -5 | 0 | 8) => void;
 
   triggerTakeOff: () => void;
+  triggerManeuver: () => void;
   triggerLanding: () => void;
   toggleEngineSim: () => void;
   setFlightState: (mode: FlightMode, label: string | null) => void;
@@ -249,26 +250,46 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   setTrimAngle: (trimAngle) => set({ trimAngle }),
 
   triggerTakeOff: () => {
+    const s = get();
+    if (s.flightMode !== 'parked') return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
-    set((s) => ({
+    set({
       flightMode: 'takeoff',
       flightNonce: s.flightNonce + 1,
-      flightLabel: 'TAKE OFF • ANCANG-ANCANG & FULL POWER',
+      flightLabel: 'TAHAP 1 • TAKE OFF DI RUNWAY & FULL POWER',
       autoRotate: false,
       activeHotspot: null,
-    }));
+    });
   },
-  triggerLanding: () => {
+  triggerManeuver: () => {
+    const s = get();
+    if (s.flightMode !== 'airborne' && s.flightMode !== 'maneuver') return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
-    set((s) => ({
-      flightMode: 'landing',
+    const activating = s.flightMode !== 'maneuver';
+    set({
+      flightMode: activating ? 'maneuver' : 'airborne',
       flightNonce: s.flightNonce + 1,
-      flightLabel: 'LANDING • FINAL APPROACH & RODA KELUAR',
+      flightLabel: activating
+        ? 'TAHAP 2 • MANUVER UDARA AKTIF'
+        : 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING',
       autoRotate: false,
       activeHotspot: null,
-    }));
+    });
+  },
+  triggerLanding: () => {
+    const s = get();
+    if (s.flightMode !== 'airborne' && s.flightMode !== 'maneuver') return;
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
+    set({
+      flightMode: 'landing',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: 'TAHAP 3 • LANDING • FINAL APPROACH KE RUNWAY',
+      autoRotate: false,
+      activeHotspot: null,
+    });
   },
   toggleEngineSim: () => {
     aircraftAudio.unlock();

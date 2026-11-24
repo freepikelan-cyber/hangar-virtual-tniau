@@ -188,6 +188,8 @@ export function AircraftModel() {
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
+    flightMode === 'airborne' ||
+    flightMode === 'maneuver' ||
     (flightMode === 'landing' && phaseTime.current < 5.4);
 
   useFrame((state, delta) => {
@@ -198,72 +200,69 @@ export function AircraftModel() {
     const pt = phaseTime.current;
     const isHeli = unit.category === 'Helikopter';
     const isHeavy = unit.category === 'Angkut & VIP';
+    const isFighter = unit.category === 'Tempur';
+    const isTrainer = unit.category === 'Latih' || unit.id === 'supertucano';
 
     let targetX = 0;
     let targetY = 0;
     let targetZ = 0;
     let targetPitch = 0;
     let targetRoll = 0;
+    let directRoll: number | null = null;
     let targetYawOffset = 0;
     let targetGear = 0; // 0 = keluar, 1 = masuk
     let gearSpeed = 2.8;
 
     if (flightMode === 'takeoff') {
       if (isHeli) {
-        // TAKE OFF HELIKOPTER: Spool-up -> Hover vertikal -> Condong depan & climb -> Roda masuk
+        // TAKE OFF HELIKOPTER: Spool-up -> Hover vertikal -> Condong depan & climb -> Roda masuk -> Airborne
         if (pt < 1.8) {
           targetY = 0;
           targetPitch = 0;
           targetGear = 0;
-          setFlightLabel('TAKE OFF • ROTOR SPOOL-UP FULL POWER');
+          setFlightLabel('TAHAP 1 • TAKE OFF • ROTOR SPOOL-UP FULL POWER');
         } else if (pt < 3.8) {
           const p = easeInOut((pt - 1.8) / 2.0);
           targetY = THREE.MathUtils.lerp(0, 1.8, p);
           targetPitch = -0.03 * Math.sin(p * Math.PI);
           targetGear = 0;
-          setFlightLabel('TAKE OFF • ANGKAT VERTIKAL (HOVER)');
+          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL (HOVER)');
         } else if (pt < 6.0) {
           const p = easeInOut((pt - 3.8) / 2.2);
           targetY = THREE.MathUtils.lerp(1.8, 3.0, p);
           targetZ = THREE.MathUtils.lerp(0, 0.6, Math.sin(p * Math.PI));
           targetPitch = 0.09 * Math.sin(p * Math.PI);
           targetGear = p > 0.2 ? 1 : 0;
-          setFlightLabel('TAKE OFF • MENANJAK & RODA MASUK');
+          setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK & RODA MASUK');
         } else {
-          targetY = 2.9 + Math.sin(t * 2.0) * 0.14;
-          targetPitch = 0.04 + Math.sin(t * 1.3) * 0.015;
-          targetRoll = Math.cos(t * 1.5) * 0.03;
+          targetY = 2.95;
           targetGear = 1;
-          setFlightLabel('TERBANG JELAJAH • RODA TERTUTUP');
+          setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
-        // TAKE OFF PESAWAT SAYAP TETAP (5 FASE NYATA)
+        // TAKE OFF PESAWAT SAYAP TETAP DI RUNWAY (5 FASE NYATA -> AIRBORNE)
         if (pt < 1.5) {
-          // Fase 1: Ancang-ancang di pangkal landasan (rem ditahan, mesin full power, getaran ringan)
           targetZ = -5.4;
           targetY = 0;
           targetPitch = Math.sin(t * 36) * 0.004;
           targetGear = 0;
-          setFlightLabel('TAKE OFF • ANCANG-ANCANG & FULL POWER');
+          setFlightLabel('TAHAP 1 • TAKE OFF • TITIK START RUNWAY 09 & FULL POWER');
         } else if (pt < 3.8) {
-          // Fase 2: Akselerasi melaju kencang sepanjang landasan (percepatan kuadratik!)
           const p = (pt - 1.5) / 2.3;
           targetZ = THREE.MathUtils.lerp(-5.4, 2.0, p * p);
           targetY = 0;
           targetPitch = -0.02 * p;
           targetGear = 0;
-          setFlightLabel('TAKE OFF • AKSELERASI DI LANDASAN');
+          setFlightLabel('TAHAP 1 • TAKE OFF • AKSELERASI DI ASPAL RUNWAY');
         } else if (pt < 5.2) {
-          // Fase 3: Rotation (hidung mendongak Vr) & Liftoff dari landasan!
           const p = (pt - 3.8) / 1.4;
           const ease = easeInOut(p);
           targetZ = THREE.MathUtils.lerp(2.0, 4.4, ease);
           targetY = THREE.MathUtils.lerp(0, 1.55, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
-          setFlightLabel('TAKE OFF • ROTATION & LIFTOFF');
+          setFlightLabel('TAHAP 1 • TAKE OFF • ROTATION & LIFTOFF');
         } else if (pt < 7.4) {
-          // Fase 4: Initial Climb tinggi + Roda pendarat otomatis terlipat masuk ke dalam badan!
           const p = easeInOut((pt - 5.2) / 2.2);
           targetZ = THREE.MathUtils.lerp(4.4, 0, p);
           targetY = THREE.MathUtils.lerp(1.55, 3.05, p);
@@ -271,15 +270,183 @@ export function AircraftModel() {
           targetRoll = Math.sin(p * Math.PI) * -0.08;
           targetGear = 1;
           gearSpeed = 2.0;
-          setFlightLabel('TAKE OFF • MENANJAK & RODA MASUK');
+          setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK & RODA MASUK');
         } else {
-          // Fase 5: Terbang jelajah stabil, roda tertutup penuh
           targetZ = 0;
-          targetY = 2.95 + Math.sin(t * 2.0) * 0.14;
-          targetPitch = -0.03 + Math.sin(t * 1.3) * 0.015;
-          targetRoll = Math.cos(t * 1.5) * 0.035;
+          targetY = 2.95;
           targetGear = 1;
-          setFlightLabel('TERBANG JELAJAH • RODA TERTUTUP');
+          setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+        }
+      }
+    } else if (flightMode === 'airborne') {
+      // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
+      targetX = Math.sin(t * 0.55) * 0.35;
+      targetY = 2.95 + Math.sin(t * 1.8) * 0.14;
+      targetZ = 0;
+      targetPitch = (isHeli ? 0.04 : -0.025) + Math.sin(t * 1.2) * 0.015;
+      targetRoll = Math.cos(t * 1.1) * 0.04;
+      targetGear = 1;
+      setFlightLabel('TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+    } else if (flightMode === 'maneuver') {
+      const baseH = Math.max(2.6, procedural.hoverHeight + 1.15);
+      targetGear = 1;
+
+      if (isFighter) {
+        // MANUVER KHUSUS PESAWAT TEMPUR (Siklus 20 detik: Barrel Roll 360° -> High-G Break -> Cobra Climb -> Dive & Pull-Up)
+        const cycle = pt % 20;
+        if (cycle < 5) {
+          // 1. 360° BARREL ROLL
+          const p = easeInOut(cycle / 5);
+          directRoll = -p * Math.PI * 2;
+          targetX = Math.sin(p * Math.PI * 2) * 1.15;
+          targetY = baseH + (1 - Math.cos(p * Math.PI * 2)) * 0.75;
+          targetZ = Math.sin(p * Math.PI) * 0.5;
+          targetPitch = -0.08 * Math.sin(p * Math.PI);
+          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • 360° BARREL ROLL');
+        } else if (cycle < 10) {
+          // 2. HIGH-G COMBAT BREAK (Kanan 68° lalu Kiri 68°)
+          const local = cycle - 5;
+          if (local < 2.5) {
+            const s = Math.sin((local / 2.5) * Math.PI);
+            targetX = 2.6 * s;
+            targetY = baseH + 0.45 * s;
+            targetRoll = -1.18 * s;
+            targetPitch = -0.14 * s;
+            targetYawOffset = -0.28 * s;
+            setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-G COMBAT BREAK KANAN');
+          } else {
+            const s = Math.sin(((local - 2.5) / 2.5) * Math.PI);
+            targetX = -2.6 * s;
+            targetY = baseH + 0.45 * s;
+            targetRoll = 1.18 * s;
+            targetPitch = -0.14 * s;
+            targetYawOffset = 0.28 * s;
+            setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-G COMBAT BREAK KIRI');
+          }
+        } else if (cycle < 15) {
+          // 3. PUGACHEV'S COBRA / HIGH-AoA CLIMB (Hidung mendongak ekstrem ~62° lalu recovery)
+          const p = (cycle - 10) / 5;
+          const cobra = Math.sin(p * Math.PI);
+          const sharp = Math.pow(cobra, 0.72);
+          targetX = 0;
+          targetY = baseH + 1.85 * cobra;
+          targetZ = -1.1 * Math.sin(p * Math.PI) + 0.8 * Math.max(0, p - 0.55);
+          targetPitch = -1.08 * sharp;
+          targetRoll = Math.sin(t * 2.5) * 0.04;
+          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-AoA COBRA CLIMB');
+        } else {
+          // 4. TACTICAL DIVE & AFTERBURNER PULL-UP
+          const p = (cycle - 15) / 5;
+          if (p < 0.48) {
+            const s = easeInOut(p / 0.48);
+            targetY = THREE.MathUtils.lerp(baseH, baseH - 1.35, s);
+            targetZ = THREE.MathUtils.lerp(0, 1.4, s);
+            targetPitch = 0.46 * Math.sin(s * Math.PI);
+            targetRoll = 0.16 * Math.sin(s * Math.PI);
+          } else {
+            const s = easeInOut((p - 0.48) / 0.52);
+            targetY = THREE.MathUtils.lerp(baseH - 1.35, baseH + 1.1, Math.sin(s * Math.PI * 0.85));
+            targetZ = THREE.MathUtils.lerp(1.4, 0, s);
+            targetPitch = -0.48 * Math.sin(s * Math.PI);
+            targetRoll = -0.12 * Math.sin(s * Math.PI);
+          }
+          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • TACTICAL DIVE & AFTERBURNER PULL-UP');
+        }
+      } else if (isTrainer) {
+        // MANUVER AEROBATIK PESAWAT LATIH / COIN (KT-1B & Super Tucano)
+        const cycle = pt % 16;
+        if (cycle < 4.5) {
+          const p = easeInOut(cycle / 4.5);
+          directRoll = -p * Math.PI * 2;
+          targetX = Math.sin(p * Math.PI * 2) * 0.75;
+          targetY = baseH + 0.45 * Math.sin(p * Math.PI);
+          targetPitch = -0.06 * Math.sin(p * Math.PI);
+          setFlightLabel('TAHAP 2 • MANUVER AEROBATIK • 360° AILERON ROLL');
+        } else if (cycle < 8.5) {
+          const s = Math.sin(((cycle - 4.5) / 4) * Math.PI);
+          targetX = 2.1 * s;
+          targetY = baseH + 0.9 * s;
+          targetRoll = -0.78 * s;
+          targetPitch = -0.22 * s;
+          targetYawOffset = -0.22 * s;
+          setFlightLabel('TAHAP 2 • MANUVER AEROBATIK • CHANDELLE CLIMB');
+        } else if (cycle < 12.5) {
+          const s = Math.sin(((cycle - 8.5) / 4) * Math.PI);
+          targetX = -2.1 * s;
+          targetY = baseH + 0.35 * s;
+          targetRoll = 0.78 * s;
+          targetPitch = -0.08 * s;
+          targetYawOffset = 0.22 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BREAK TURN KIRI');
+        } else {
+          const s = Math.sin(((cycle - 12.5) / 3.5) * Math.PI);
+          targetY = baseH - 0.85 * s;
+          targetPitch = 0.28 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • DIVE & RECOVERY');
+        }
+      } else if (isHeli) {
+        // MANUVER TAKTIS HELIKOPTER (Caracal & Colibri)
+        const cycle = pt % 16;
+        if (cycle < 4) {
+          const s = Math.sin((cycle / 4) * Math.PI);
+          targetX = 1.9 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = -0.34 * s;
+          targetPitch = 0.1 * s;
+          targetYawOffset = -0.2 * s;
+          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • BANKING KANAN');
+        } else if (cycle < 8) {
+          const s = Math.sin(((cycle - 4) / 4) * Math.PI);
+          targetX = -1.9 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = 0.34 * s;
+          targetPitch = 0.1 * s;
+          targetYawOffset = 0.2 * s;
+          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • BANKING KIRI');
+        } else if (cycle < 12) {
+          const s = Math.sin(((cycle - 8) / 4) * Math.PI);
+          targetY = baseH - 0.45 * s;
+          targetZ = 1.15 * s;
+          targetPitch = 0.24 * s; // hidung menunduk tajam melaju cepat
+          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • HIGH-SPEED FORWARD DASH');
+        } else {
+          const s = Math.sin(((cycle - 12) / 4) * Math.PI);
+          targetY = baseH + 0.95 * s;
+          targetZ = -0.75 * s;
+          targetPitch = -0.24 * s; // rapid combat flare
+          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • RAPID COMBAT FLARE');
+        }
+      } else {
+        // MANUVER TAKTIS PESAWAT ANGKUT & VIP (C-130J & B737)
+        const cycle = pt % 16;
+        if (cycle < 4) {
+          const s = Math.sin((cycle / 4) * Math.PI);
+          targetX = 1.8 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = -0.3 * s;
+          targetPitch = -0.05 * s;
+          targetYawOffset = -0.16 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BANKING KANAN');
+        } else if (cycle < 8) {
+          const s = Math.sin(((cycle - 4) / 4) * Math.PI);
+          targetX = -1.8 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = 0.3 * s;
+          targetPitch = -0.05 * s;
+          targetYawOffset = 0.16 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BANKING KIRI');
+        } else if (cycle < 12) {
+          const s = Math.sin(((cycle - 8) / 4) * Math.PI);
+          targetY = baseH + 1.25 * s;
+          targetZ = 0.6 * s;
+          targetPitch = -0.2 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • TACTICAL CLIMB');
+        } else {
+          const s = Math.sin(((cycle - 12) / 4) * Math.PI);
+          targetY = Math.max(1.5, baseH - 0.85 * s);
+          targetZ = -0.5 * s;
+          targetPitch = 0.14 * s;
+          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • TACTICAL DESCENT');
         }
       }
     } else if (flightMode === 'landing') {
@@ -452,7 +619,14 @@ export function AircraftModel() {
     rootRef.current.position.y = currentY.current;
     rootRef.current.position.z = currentZ.current;
     rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 4.5));
-    rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 4.2));
+    if (directRoll !== null) {
+      rootRef.current.rotation.z = directRoll;
+    } else {
+      // Normalisasi sudut roll ke [-PI, PI] agar selesai Barrel Roll 360° tidak memutar balik
+      if (rootRef.current.rotation.z < -Math.PI) rootRef.current.rotation.z += Math.PI * 2;
+      if (rootRef.current.rotation.z > Math.PI) rootRef.current.rotation.z -= Math.PI * 2;
+      rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 4.5));
+    }
 
     if (autoRotate) {
       rootRef.current.rotation.y += dt * 0.42;

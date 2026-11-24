@@ -16,7 +16,7 @@ function RadarPlatform() {
   const floorTex = useMemo(() => radarFloorTexture(), []);
   const sweepTex = useMemo(() => sweepTexture(), []);
 
-  const isAirborneSim = flightMode === 'engineSim' && selectedId !== 'gsuit' && selectedId !== 'pilot-helmet';
+  const isOutdoorSim = flightMode !== 'parked' && selectedId !== 'gsuit' && selectedId !== 'pilot-helmet';
 
   useEffect(() => {
     return () => {
@@ -30,9 +30,9 @@ function RadarPlatform() {
       sweepRef.current.rotation.z -= delta * 0.45;
     }
     if (groupRef.current) {
-      const targetY = isAirborneSim ? -18 : -0.02;
-      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, Math.min(1, delta * 2.5));
-      groupRef.current.visible = groupRef.current.position.y > -16;
+      // Saat simulasi terbang aktif (Take Off / Airborne / Manuver / Landing), sembunyikan platform hanggar
+      // agar aspal Runway 3D + pemandangan kota & laut tampil bersih tanpa tumpang tindih!
+      groupRef.current.visible = !isOutdoorSim;
     }
   });
 
@@ -164,14 +164,22 @@ function CameraRig() {
 
 export function HangarScene() {
   const clearHotspot = useHangarStore((s) => s.clearHotspot);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const selectedId = useHangarStore((s) => s.selectedId);
   const initialCam = useMemo(() => getDefaultCamera(), []);
+  const showGroundShadow =
+    selectedId === 'gsuit' ||
+    selectedId === 'pilot-helmet' ||
+    flightMode === 'parked' ||
+    flightMode === 'takeoff' ||
+    flightMode === 'landing';
 
   return (
     <div className="absolute inset-0 bg-[#0a1e3c] touch-none">
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 160 }}
+        camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
         onPointerMissed={() => clearHotspot()}
       >
@@ -181,15 +189,17 @@ export function HangarScene() {
         <StudioLighting />
         <SkyCloudsEnvironment />
         <RadarPlatform />
-        <ContactShadows
-          position={[0, 0.01, 0]}
-          opacity={0.62}
-          scale={22}
-          blur={1.8}
-          far={8}
-          resolution={512}
-          color="#041024"
-        />
+        {showGroundShadow && (
+          <ContactShadows
+            position={[0, 0.02, 0]}
+            opacity={0.58}
+            scale={22}
+            blur={1.8}
+            far={8}
+            resolution={512}
+            color="#041024"
+          />
+        )}
         <AircraftModel />
         <CameraRig />
       </Canvas>
