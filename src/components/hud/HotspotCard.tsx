@@ -32,9 +32,24 @@ export function HotspotCard() {
               {item.id}
             </span>
             <div className="min-w-0">
-              <p className="font-display text-[10px] font-bold tracking-[0.18em] text-[#ffb703] uppercase">
-                INSPEKSI KOMPONEN • {unit.name}
-              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <p className="font-display text-[10px] font-bold tracking-[0.16em] text-[#ffb703] uppercase">
+                  {unit.name}
+                </p>
+                {item.partType && (
+                  <span
+                    className={`rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase ${
+                      item.partType === 'Jeroan'
+                        ? 'border border-cyan-300/60 bg-cyan-400/15 text-cyan-200'
+                        : item.partType === 'Senjata'
+                          ? 'border border-rose-400/60 bg-rose-500/15 text-rose-200'
+                          : 'border border-[#4da6ff]/50 bg-[#4da6ff]/15 text-[#75bcff]'
+                    }`}
+                  >
+                    {item.partType === 'Jeroan' ? 'Jeroan Internal • Bedah Aktif' : item.partType}
+                  </span>
+                )}
+              </div>
               <h3 className="font-display text-base font-bold tracking-wide text-white truncate">
                 {item.name}
               </h3>

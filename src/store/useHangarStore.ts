@@ -59,6 +59,7 @@ interface HangarState {
   infoTab: InfoTab;
 
   wireframe: boolean;
+  cutaway: boolean;
   showPins: boolean;
   autoRotate: boolean;
   flightMode: FlightMode;
@@ -75,7 +76,7 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate') => void;
+  toggle: (key: 'wireframe' | 'cutaway' | 'showPins' | 'autoRotate') => void;
 
   triggerTakeOff: () => void;
   triggerLanding: () => void;
@@ -118,6 +119,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   infoTab: 'spec',
 
   wireframe: false,
+  cutaway: false,
   showPins: true,
   autoRotate: false,
   flightMode: 'parked',
@@ -222,9 +224,10 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const unit = getUnit(get().selectedId);
     const mobile = isCompactViewport();
     set({
-      quiz: { ...emptyQuiz, status: 'active', order: shuffle(unit.hotspots.map((h) => h.id)) },
+      quiz: { ...emptyQuiz, status: 'active', order: shuffle(unit.hotspots.map((h) => h.id)).slice(0, 5) },
       infoTab: 'quiz',
       showPins: true,
+      cutaway: false,
       autoRotate: false,
       activeHotspot: null,
       leftOpen: mobile ? false : get().leftOpen,

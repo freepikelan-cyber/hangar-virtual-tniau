@@ -1,4 +1,5 @@
 import {
+  Cpu,
   Flame,
   Grid3X3,
   Mail,
@@ -13,6 +14,7 @@ import { useHangarStore } from '../../store/useHangarStore';
 
 export function BottomDock() {
   const wireframe = useHangarStore((s) => s.wireframe);
+  const cutaway = useHangarStore((s) => s.cutaway);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
@@ -51,6 +53,14 @@ export function BottomDock() {
       active: flightMode === 'engineSim',
       onClick: toggleEngineSim,
       accent: 'amber' as const,
+    },
+    {
+      id: 'cutaway',
+      label: 'Bedah Jeroan',
+      short: 'Jeroan',
+      icon: Cpu,
+      active: cutaway,
+      onClick: () => toggle('cutaway'),
     },
     {
       id: 'wireframe',

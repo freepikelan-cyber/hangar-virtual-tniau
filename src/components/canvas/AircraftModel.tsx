@@ -6,24 +6,71 @@ import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 
-function applyWireframeMode(root: THREE.Object3D, wireframe: boolean) {
+interface SavedMatProps {
+  transparent: boolean;
+  opacity: number;
+  depthWrite: boolean;
+  emissiveIntensity: number;
+}
+
+const savedMaterials = new WeakMap<THREE.Material, SavedMatProps>();
+
+function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boolean) {
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
     const role = (mesh.userData.role as string | undefined) ?? 'skin';
     if (role === 'blur') return;
-    if (role === 'internal') {
-      mesh.visible = false;
-      return;
-    }
+
     const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
     for (const mat of mats) {
       if (!mat) continue;
-      const std = mat as THREE.MeshStandardMaterial;
-      if ('wireframe' in std) {
-        std.wireframe = wireframe;
-        mat.needsUpdate = true;
+      if (!savedMaterials.has(mat)) {
+        const std = mat as THREE.MeshStandardMaterial;
+        savedMaterials.set(mat, {
+          transparent: mat.transparent,
+          opacity: mat.opacity,
+          depthWrite: mat.depthWrite,
+          emissiveIntensity: 'emissiveIntensity' in std ? std.emissiveIntensity : 0,
+        });
       }
+      const orig = savedMaterials.get(mat)!;
+      const std = mat as THREE.MeshStandardMaterial;
+
+      if (role === 'internal') {
+        mesh.visible = cutaway;
+        mat.transparent = false;
+        mat.opacity = 1;
+        mat.depthWrite = true;
+        if ('wireframe' in std) std.wireframe = wireframe;
+        if ('emissive' in std) {
+          std.emissive = new THREE.Color(cutaway ? '#3898ff' : '#000000');
+          std.emissiveIntensity = cutaway ? 0.5 : orig.emissiveIntensity;
+        }
+      } else if (role === 'cockpit') {
+        mesh.visible = true;
+        if ('wireframe' in std) std.wireframe = wireframe;
+      } else if (role === 'decal') {
+        mesh.visible = !cutaway;
+        if ('wireframe' in std) std.wireframe = wireframe;
+      } else if (role === 'glass') {
+        mat.transparent = true;
+        mat.opacity = cutaway ? 0.16 : orig.opacity;
+        mat.depthWrite = false;
+        if ('wireframe' in std) std.wireframe = wireframe;
+      } else {
+        if (cutaway) {
+          mat.transparent = true;
+          mat.opacity = 0.2;
+          mat.depthWrite = false;
+        } else {
+          mat.transparent = orig.transparent;
+          mat.opacity = orig.opacity;
+          mat.depthWrite = orig.depthWrite;
+        }
+        if ('wireframe' in std) std.wireframe = wireframe;
+      }
+      mat.needsUpdate = true;
     }
   });
 }
@@ -31,6 +78,8 @@ function applyWireframeMode(root: THREE.Object3D, wireframe: boolean) {
 export function AircraftModel() {
   const unit = useSelectedUnit();
   const wireframe = useHangarStore((s) => s.wireframe);
+  const cutaway = useHangarStore((s) => s.cutaway);
+  const activeHotspot = useHangarStore((s) => s.activeHotspot);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
@@ -77,9 +126,13 @@ export function AircraftModel() {
     }
   }, [flightMode, flightNonce]);
 
+  // Auto-cutaway pintar: jika user klik pin bertipe "Jeroan", kulit pesawat otomatis terbuka transparan!
+  const activeItem = activeHotspot !== null ? unit.hotspots.find((h) => h.id === activeHotspot) : null;
+  const showCutaway = cutaway || activeItem?.partType === 'Jeroan';
+
   useEffect(() => {
-    applyWireframeMode(procedural.group, wireframe);
-  }, [procedural.group, wireframe]);
+    applyVisualModes(procedural.group, showCutaway, wireframe);
+  }, [procedural.group, showCutaway, wireframe]);
 
   const isEngineVisualActive =
     flightMode === 'engineSim' ||

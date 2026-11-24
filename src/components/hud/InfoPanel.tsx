@@ -162,7 +162,20 @@ export function InfoPanel() {
                           >
                             {h.id}
                           </span>
-                          <span className="text-xs font-medium leading-tight">{h.name}</span>
+                          <span className="flex-1 text-xs font-medium leading-tight">{h.name}</span>
+                          {h.partType && (
+                            <span
+                              className={`shrink-0 rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase ${
+                                h.partType === 'Jeroan'
+                                  ? 'bg-cyan-400/15 text-cyan-200 border border-cyan-300/40'
+                                  : h.partType === 'Senjata'
+                                    ? 'bg-rose-500/15 text-rose-200 border border-rose-400/40'
+                                    : 'bg-[#4da6ff]/15 text-[#75bcff] border border-[#4da6ff]/30'
+                              }`}
+                            >
+                              {h.partType}
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -224,7 +237,7 @@ export function InfoPanel() {
                       amati komponennya, lalu ketuk nomor pin yang tepat langsung pada badan pesawat.
                     </p>
                     <div className="rounded-lg border border-slate-700/70 bg-[#091c3a]/70 p-2.5 text-xs text-slate-300">
-                      Total Soal: <strong className="text-[#ffb703]">{unit.hotspots.length} Komponen</strong>
+                      Total Soal: <strong className="text-[#ffb703]">5 Soal Acak</strong> (dari {unit.hotspots.length} komponen)
                     </div>
                     <button
                       type="button"

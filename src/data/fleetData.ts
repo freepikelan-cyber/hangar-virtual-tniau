@@ -1,11 +1,13 @@
 export type AircraftCategory = 'Tempur' | 'Angkut & VIP' | 'Latih' | 'Helikopter';
+export type HotspotPartType = 'Jeroan' | 'Eksterior' | 'Senjata' | 'Aerodinamika';
 
 export interface HotspotItem {
   id: number;
   name: string;
+  partType?: HotspotPartType;
   pos: [number, number, number]; // Koordinat pin di ruang 3D
   camOffset: [number, number, number]; // Posisi kamera relatif terhadap pin saat diklik
-  desc: string; // Penjelasan edukatif komponen
+  desc: string; // Penjelasan edukatif komponen & fungsinya
 }
 
 export interface AircraftUnit {
@@ -17,7 +19,7 @@ export interface AircraftUnit {
   category: AircraftCategory;
   squadron: string;
   role: string;
-  glbPath?: string; // Opsional: path ke /models/*.glb
+  glbPath?: string;
   specs: {
     maxSpeed: string;
     range: string;
@@ -43,37 +45,6 @@ export const CATEGORY_LABEL: Record<AircraftCategory, string> = {
 
 export const FLEET: AircraftUnit[] = [
   {
-    id: 'su30mk2',
-    name: 'Sukhoi Su-30MK2',
-    code: 'Flanker-C',
-    origin: 'Rusia',
-    tailNumber: 'TS-3005',
-    category: 'Tempur',
-    squadron: 'Skadron Udara 11 (Lanud Sultan Hasanuddin, Makassar)',
-    role: 'Pesawat tempur multiperan dua kursi kelas berat dengan jangkauan sangat jauh. Mampu melaksanakan misi superioritas udara, serangan darat, hingga serangan anti-kapal permukaan di wilayah maritim Nusantara yang luas.',
-    glbPath: '/models/su30_mk2.glb',
-    specs: {
-      maxSpeed: 'Mach 2.0 (±2.120 km/jam)',
-      range: '±3.000 km',
-      ceiling: '17.300 m',
-      armament: 'Kanon GSh-30-1 30 mm • 12 hardpoint (8 ton)',
-    },
-    history: {
-      operational:
-        'Su-30MK2 memperkuat Skadron Udara 11 "Thunder" di Lanud Sultan Hasanuddin, Makassar, bersama Su-27SKM. Kedatangannya sejak 2008–2013 menjadikan TNI AU memiliki kekuatan pemukul udara strategis yang mampu menjangkau seluruh wilayah Indonesia dari Indonesia bagian tengah.',
-      tactical:
-        'Desain aerodinamis Flanker memberikan kelincahan luar biasa di kecepatan rendah, didukung radar N001VEP dengan jangkauan deteksi jauh, kapasitas bahan bakar internal besar, serta kemampuan membawa rudal anti-kapal Kh-31A dan Kh-59MK untuk mengamankan Alur Laut Kepulauan Indonesia (ALKI).',
-      missions: ['Superioritas udara & patroli jarak jauh', 'Serangan anti-kapal di ALKI', 'Penindakan pelanggaran wilayah udara', 'Pengawalan pesawat VVIP'],
-    },
-    hotspots: [
-      { id: 1, name: 'Radar N001VEP', pos: [0, 1.56, 6.45], camOffset: [3.2, 1.2, 3.4], desc: 'Radar Doppler pulsa koheren yang tersimpan di dalam radome hidung. Mampu melacak hingga 15 sasaran sekaligus dan menyerang 2 sasaran secara bersamaan pada jarak puluhan kilometer.' },
-      { id: 2, name: 'Kokpit Tandem 2 Kursi & IRST', pos: [0, 2.75, 3.65], camOffset: [2.8, 1.8, 2.6], desc: 'Kokpit tandem untuk pilot (depan) dan perwira sistem senjata (belakang) dengan kursi lontar K-36D-3.5 zero-zero serta sensor elektro-optik IRST OLS-30 di depan kaca kokpit.' },
-      { id: 3, name: 'Sirip Canard', pos: [1.55, 1.94, 2.55], camOffset: [3.2, 1.5, 2.6], desc: 'Sayap kecil di depan sayap utama yang meningkatkan kemampuan manuver dan stabilitas pada sudut serang tinggi, ciri khas varian Su-30 multiperan.' },
-      { id: 4, name: 'Mesin Kembar AL-31F', pos: [0.94, 1.28, -6.55], camOffset: [3.2, 1.1, -3.6], desc: 'Dua mesin turbofan Saturn AL-31F dengan panel titanium ekspos dan afterburner, masing-masing menghasilkan daya dorong ±12.500 kgf. Konfigurasi mesin terpisah meningkatkan keselamatan bila satu mesin rusak.' },
-      { id: 5, name: 'Sayap & Rudal Kh-31A / R-77', pos: [3.72, 1.58, -2.2], camOffset: [3.4, 2.8, 2.2], desc: 'Sayap terpadu (blended wing body) berprofil airfoil dengan 12 titik cantelan senjata untuk rudal udara-ke-udara R-73/R-77/R-27 serta rudal anti-kapal supersonik Kh-31A.' },
-    ],
-  },
-  {
     id: 'f16id',
     name: 'F-16 Fighting Falcon',
     code: 'C/D Block 52ID',
@@ -82,7 +53,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Tempur',
     squadron: 'Skadron Udara 3, 14 & 16 (Lanud Iswahjudi & Roesmin Nurjadin)',
     role: 'Pesawat tempur multiperan bermesin tunggal yang lincah dan andal. Menjadi tulang punggung pertahanan udara nasional dengan kemampuan intersepsi, patroli udara tempur, dan serangan presisi ke sasaran darat.',
-    glbPath: '/models/f16_ts1601.glb',
     specs: {
       maxSpeed: 'Mach 2.0 (±2.120 km/jam)',
       range: '±4.220 km (ferry)',
@@ -97,11 +67,51 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Patroli udara tempur (CAP)', 'Intersepsi pesawat asing', 'Serangan udara langsung (CAS)', 'Latihan bersama internasional (Cope West, Pitch Black)'],
     },
     hotspots: [
-      { id: 1, name: 'Radar AN/APG-68', pos: [0, 1.52, 6.45], camOffset: [3.0, 1.0, 3.2], desc: 'Radar Doppler pulsa multimode di dalam radome hidung. Mendeteksi pesawat lawan dari jarak jauh, mendukung mode udara-ke-udara maupun pemetaan permukaan darat & laut.' },
-      { id: 2, name: 'Kokpit & Kanopi Bubble', pos: [0, 2.48, 3.55], camOffset: [2.6, 1.7, 2.4], desc: 'Kanopi gelembung satu potong berlapis emas tipis (anti-radar) dengan HUD lebar dan kursi lontar ACES II yang direbahkan 30° untuk membantu pilot menahan gaya gravitasi hingga 9G.' },
-      { id: 3, name: 'Saluran Udara (Air Intake)', pos: [0, 0.86, 3.1], camOffset: [2.4, -0.1, 3.0], desc: 'Saluran masuk udara di bawah badan (ventral intake) lengkap dengan splitter plate yang menyuplai udara stabil ke mesin bahkan pada sudut serang tinggi. Bentuknya menjadi ciri ikonik F-16.' },
-      { id: 4, name: 'Mesin F100 & Afterburner', pos: [0, 1.52, -7.1], camOffset: [2.6, 1.2, -3.5], desc: 'Mesin turbofan Pratt & Whitney F100-PW-220E dengan 15 kelopak nozzle (turkey feathers) dan afterburner berdaya dorong ±10.800 kgf untuk lonjakan kecepatan supersonik.' },
-      { id: 5, name: 'Sayap, Tangki 370-Gal & Rudal', pos: [4.66, 1.44, -1.85], camOffset: [3.0, 2.4, 2.4], desc: 'Sayap berprofil airfoil dengan rel peluncur AIM-9 Sidewinder di ujung sayap, rudal jarak menengah AIM-120 AMRAAM, dan tangki bahan bakar eksternal 370 galon di bawah sayap.' },
+      { id: 1, name: 'Radar AN/APG-68(V)9', partType: 'Jeroan', pos: [0, 1.48, 6.1], camOffset: [3.0, 0.9, 3.2], desc: 'Antena piringan radar Doppler pulsa multimode di balik radome hidung. Mendeteksi pesawat lawan jarak jauh serta memetakan target darat & laut.' },
+      { id: 2, name: 'Kokpit, HUD & Kursi ACES II', partType: 'Jeroan', pos: [0, 2.38, 3.45], camOffset: [2.6, 1.7, 2.4], desc: 'Kanopi gelembung anti-radar berlapis emas tipis dengan HUD lebar, layar MFD, dan kursi lontar ACES II yang direbahkan 30° untuk menahan gaya hingga 9G.' },
+      { id: 3, name: 'Kanon M61A1 Vulcan 20 mm', partType: 'Senjata', pos: [-0.78, 1.58, 2.35], camOffset: [-2.8, 1.1, 2.4], desc: 'Senapan mesin putar 6 laras kaliber 20 mm di pangkal LERX kiri dengan kecepatan tembak 6.000 peluru/menit untuk pertempuran jarak dekat (dogfight).' },
+      { id: 4, name: 'Ventral Air Intake & Splitter Plate', partType: 'Aerodinamika', pos: [0, 0.86, 3.1], camOffset: [2.5, -0.1, 3.0], desc: 'Mulut saluran udara di bawah perut dengan splitter plate pemisah lapisan batas udara agar pasokan oksigen ke mesin tetap stabil saat manuver ekstrem.' },
+      { id: 5, name: 'Tangki Bahan Bakar Internal', partType: 'Jeroan', pos: [0, 1.66, 0.15], camOffset: [3.2, 1.6, 1.8], desc: 'Tangki bahan bakar internal terintegrasi di badan tengah dan sayap (kapasitas ±3.175 kg JP-8) dengan sistem penyeimbang pusat gravitasi otomatis.' },
+      { id: 6, name: 'Inti Mesin Turbofan F100-PW-220E', partType: 'Jeroan', pos: [0, 1.5, -3.9], camOffset: [3.4, 1.2, -1.2], desc: 'Jantung penggerak F-16 terdiri dari kipas kompresor multi-tahap, ruang bakar bertekanan tinggi, dan turbin yang memutar poros utama dengan tenaga besar.' },
+      { id: 7, name: 'Nozzle Afterburner (15 Kelopak)', partType: 'Eksterior', pos: [0, 1.5, -7.15], camOffset: [2.6, 1.2, -3.5], desc: 'Nozzle variabel dengan 15 kelopak logam (turkey feathers) yang membuka-tutup otomatis saat afterburner menyala untuk dorongan supersonik Mach 2.0.' },
+      { id: 8, name: 'Sayap, Tangki 370-Gal & Rudal AIM-9/120', partType: 'Senjata', pos: [3.18, 1.38, -1.65], camOffset: [3.2, 2.4, 2.4], desc: 'Sayap berprofil airfoil NACA 64A204 membawa tangki eksternal 370 galon, rudal BVR AIM-120 AMRAAM, serta AIM-9 Sidewinder di rel ujung sayap.' },
+      { id: 9, name: 'Ekor Tegak & Parabrake Housing', partType: 'Aerodinamika', pos: [0, 3.45, -5.65], camOffset: [3.2, 1.2, -1.8], desc: 'Vertical stabilizer pengatur arah (yaw) dilengkapi rumah parasut rem (parabrake housing) di pangkalnya untuk memperpendek jarak pengereman di landasan.' },
+      { id: 10, name: 'Roda Pendarat Retractable', partType: 'Eksterior', pos: [1.12, 0.45, -1.25], camOffset: [2.8, 0.3, 2.2], desc: 'Sistem roda pendarat tiga titik hidraulik yang otomatis terlipat masuk ke dalam perut pesawat setelah lepas landas untuk mengurangi hambatan udara.' },
+    ],
+  },
+  {
+    id: 'su30mk2',
+    name: 'Sukhoi Su-30MK2',
+    code: 'Flanker-C',
+    origin: 'Rusia',
+    tailNumber: 'TS-3005',
+    category: 'Tempur',
+    squadron: 'Skadron Udara 11 (Lanud Sultan Hasanuddin, Makassar)',
+    role: 'Pesawat tempur multiperan dua kursi kelas berat dengan jangkauan sangat jauh. Mampu melaksanakan misi superioritas udara, serangan darat, hingga serangan anti-kapal permukaan di wilayah maritim Nusantara yang luas.',
+    specs: {
+      maxSpeed: 'Mach 2.0 (±2.120 km/jam)',
+      range: '±3.000 km',
+      ceiling: '17.300 m',
+      armament: 'Kanon GSh-30-1 30 mm • 12 hardpoint (8 ton)',
+    },
+    history: {
+      operational:
+        'Su-30MK2 memperkuat Skadron Udara 11 "Thunder" di Lanud Sultan Hasanuddin, Makassar, bersama Su-27SKM. Kedatangannya sejak 2008–2013 menjadikan TNI AU memiliki kekuatan pemukul udara strategis yang mampu menjangkau seluruh wilayah Indonesia dari Indonesia bagian tengah.',
+      tactical:
+        'Desain aerodinamis Flanker memberikan kelincahan luar biasa di kecepatan rendah, didukung radar N001VEP dengan jangkauan deteksi jauh, kapasitas bahan bakar internal besar, serta kemampuan membawa rudal anti-kapal Kh-31A dan Kh-59MK untuk mengamankan Alur Laut Kepulauan Indonesia (ALKI).',
+      missions: ['Superioritas udara & patroli jarak jauh', 'Serangan anti-kapal di ALKI', 'Penindakan pelanggaran wilayah udara', 'Pengawalan pesawat VVIP'],
+    },
+    hotspots: [
+      { id: 1, name: 'Antena Radar N001VEP', partType: 'Jeroan', pos: [0, 1.5, 6.0], camOffset: [3.2, 1.1, 3.4], desc: 'Radar Doppler pulsa berdiameter besar di balik radome putih-abu. Melacak hingga 15 target udara sekaligus dan memandu serangan anti-kapal.' },
+      { id: 2, name: 'Sensor Elektro-Optik IRST (OLS-30)', partType: 'Eksterior', pos: [0.14, 2.1, 5.0], camOffset: [2.4, 1.2, 2.6], desc: 'Bola kaca sensor inframerah & laser rangefinder di depan kokpit yang mendeteksi panas mesin pesawat lawan secara pasif tanpa memancarkan radar.' },
+      { id: 3, name: 'Kokpit Tandem & Kursi K-36D-3.5', partType: 'Jeroan', pos: [0, 2.55, 3.35], camOffset: [2.8, 1.7, 2.6], desc: 'Kokpit dua kursi (Pilot depan & WSO belakang) dilengkapi kursi lontar terbaik di dunia K-36D-3.5 zero-zero yang aman pada kecepatan tinggi maupun nol.' },
+      { id: 4, name: 'Sirip Canard & LERX Lebar', partType: 'Aerodinamika', pos: [1.55, 1.82, 2.45], camOffset: [3.2, 1.5, 2.6], desc: 'Sirip canard dan ekstensi pangkal sayap (LERX) yang menghasilkan pusaran daya angkat tinggi untuk kelincahan ekstrem seperti manuver Cobra.' },
+      { id: 5, name: 'Intake Kotak Miring 28° (Raked)', partType: 'Aerodinamika', pos: [0.88, 1.25, 2.85], camOffset: [2.8, 0.3, 3.0], desc: 'Dua saluran masuk udara miring dengan ramp pengatur gelombang kejut supersonik serta kisi pelindung FOD agar kerikil landasan tidak masuk mesin.' },
+      { id: 6, name: 'Tangki Bahan Bakar Internal Jumbo', partType: 'Jeroan', pos: [0, 1.86, -0.8], camOffset: [3.4, 1.8, 1.6], desc: 'Kapasitas bahan bakar internal sangat besar (±9.400 kg) di badan tengah & sayap sehingga mampu patroli 3.000 km tanpa perlu tangki eksternal.' },
+      { id: 7, name: 'Inti Mesin Kembar Saturn AL-31F', partType: 'Jeroan', pos: [0.88, 1.32, -3.2], camOffset: [3.4, 1.2, -1.2], desc: 'Dua mesin turbofan terpisah di nacelle kiri dan kanan agar jika satu mesin terkena tembakan, mesin lainnya tetap mampu membawa pesawat pulang.' },
+      { id: 8, name: 'Panel Titanium & Nozzle Afterburner', partType: 'Eksterior', pos: [0.88, 1.32, -6.5], camOffset: [3.2, 1.1, -3.5], desc: 'Selubung logam titanium tahan panas ekstrem tanpa cat dengan dua nozzle afterburner berdaya dorong total ±25.000 kgf dan tail stinger di tengahnya.' },
+      { id: 9, name: 'Rudal Anti-Kapal Kh-31A & R-77/R-73', partType: 'Senjata', pos: [2.48, 1.15, -1.32], camOffset: [3.2, 1.6, 2.6], desc: '12 titik cantelan senjata termasuk rudal anti-kapal supersonik Kh-31A (4 intake ramjet), rudal BVR R-77/R-27 di terowongan tengah, dan R-73 ujung sayap.' },
+      { id: 10, name: 'Ekor Kembar & Roda Depan Mudguard', partType: 'Eksterior', pos: [1.32, 3.25, -5.45], camOffset: [3.4, 1.4, -2.0], desc: 'Dua sirip ekor tegak di atas tail boom untuk kestabilan sudut serang tinggi, serta roda depan ganda berpelindung lumpur (mudguard) khas landasan keras.' },
     ],
   },
   {
@@ -113,7 +123,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Tempur',
     squadron: 'Program Modernisasi Alutsista TNI AU',
     role: 'Pesawat tempur omnirole generasi 4.5 bersayap delta dengan canard. Mampu melaksanakan misi superioritas udara, serangan darat dalam, pengintaian, dan anti-kapal dalam satu sorti penerbangan.',
-    glbPath: '/models/rafale_tniau.glb',
     specs: {
       maxSpeed: 'Mach 1.8 (±1.912 km/jam)',
       range: '±3.700 km (ferry)',
@@ -128,11 +137,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Misi omnirole (udara & darat sekaligus)', 'Serangan presisi jarak jauh (SCALP)', 'Pengintaian taktis', 'Penangkalan strategis kawasan'],
     },
     hotspots: [
-      { id: 1, name: 'Radar AESA RBE2 & Probe BBM', pos: [0.18, 1.72, 5.95], camOffset: [3.0, 1.1, 3.2], desc: 'Radar Active Electronically Scanned Array buatan Thales yang melacak banyak sasaran udara dan darat bersamaan, dilengkapi probe pengisian bahan bakar di udara tetap di sisi kanan hidung.' },
-      { id: 2, name: 'Kokpit Tandem & HUD', pos: [0, 2.52, 3.3], camOffset: [2.6, 1.8, 2.4], desc: 'Kokpit tandem Rafale B dengan layar sentuh, Head-Up Display lebar, serta kendali suara. Dua kursi lontar Martin-Baker Mk16 menjamin keselamatan kedua awak.' },
-      { id: 3, name: 'Canard Terpadu (Close-Coupled)', pos: [1.65, 1.84, 2.15], camOffset: [3.0, 1.5, 2.6], desc: 'Canard yang terpasang dekat (close-coupled) dengan sayap delta, menciptakan pusaran udara yang meningkatkan daya angkat dan kelincahan tanpa kehilangan kecepatan.' },
-      { id: 4, name: 'Mesin Kembar Safran M88-2', pos: [0.41, 1.44, -6.9], camOffset: [2.8, 1.2, -3.6], desc: 'Dua mesin turbofan Safran M88-2 yang terpasang rapat, ringkas, dan efisien (±7.500 kgf per mesin dengan afterburner), memungkinkan supercruise ringan.' },
-      { id: 5, name: 'Sayap Delta & SPECTRA', pos: [3.55, 1.46, -3.6], camOffset: [3.2, 2.8, 2.2], desc: 'Sayap delta besar dengan 14 titik cantelan untuk rudal Meteor/MICA dan tangki supersonik. Sistem perlindungan diri SPECTRA terintegrasi di pucuk dan pangkal ekor untuk mengecoh ancaman radar & rudal.' },
+      { id: 1, name: 'Radar AESA RBE2', partType: 'Jeroan', pos: [0, 1.48, 5.95], camOffset: [3.0, 1.0, 3.2], desc: 'Radar Active Electronically Scanned Array buatan Thales di balik hidung yang memindai ratusan sasaran udara, darat, dan laut secara elektronik super cepat.' },
+      { id: 2, name: 'Probe Pengisian BBM & Sensor OSF', partType: 'Eksterior', pos: [0.35, 2.12, 5.35], camOffset: [2.6, 1.1, 2.6], desc: 'Probe pengisian bahan bakar di udara model tetap (fixed) di sisi kanan hidung serta sensor optronik OSF (kamera TV & inframerah jarak jauh).' },
+      { id: 3, name: 'Kokpit Tandem & Kursi Mk16', partType: 'Jeroan', pos: [0, 2.45, 3.25], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit kaca Rafale B dengan fusi sensor, layar sentuh, kendali suara, HUD lebar, dan dua kursi lontar Martin-Baker Mk16.' },
+      { id: 4, name: 'Close-Coupled Canards', partType: 'Aerodinamika', pos: [1.65, 1.84, 2.15], camOffset: [3.0, 1.5, 2.6], desc: 'Sayap depan aktif yang terpasang rapat dengan sayap delta untuk menciptakan pusaran udara tambahan, meningkatkan daya angkat dan kelincahan manuver.' },
+      { id: 5, name: 'Saluran Udara Samping (S-Duct)', partType: 'Aerodinamika', pos: [0.68, 1.24, 2.4], camOffset: [2.6, 0.4, 2.8], desc: 'Intake melengkung berbentuk S di kedua sisi perut yang menyembunyikan bilah kompresor mesin dari pantulan radar lawan (mengurangi RCS/siluman).' },
+      { id: 6, name: 'Tangki Bahan Bakar Internal & Centerline', partType: 'Jeroan', pos: [0, 1.65, -0.4], camOffset: [3.2, 1.6, 1.8], desc: 'Tangki internal komposit ±4.700 kg dipadukan tangki supersonik 1.250 liter di bawah perut untuk jangkauan misi omnirole jarak jauh.' },
+      { id: 7, name: 'Inti Mesin Kembar Safran M88-2', partType: 'Jeroan', pos: [0.41, 1.44, -3.8], camOffset: [3.2, 1.2, -1.2], desc: 'Dua mesin turbofan modular Safran M88-2 yang terpasang sangat rapat, efisien, dan mampu diganti di lapangan hanya dalam waktu kurang dari 1 jam.' },
+      { id: 8, name: 'Nozzle M88-2 & Afterburner', partType: 'Eksterior', pos: [0.41, 1.44, -6.85], camOffset: [2.8, 1.2, -3.5], desc: 'Dua nozzle bergerigi (serrated) yang dirancang mengurangi jejak inframerah sekaligus menghasilkan dorongan total ±15.000 kgf.' },
+      { id: 9, name: 'Sayap Delta & Rudal BVR Meteor', partType: 'Senjata', pos: [2.55, 1.28, -3.1], camOffset: [3.2, 2.4, 2.2], desc: 'Sayap delta murni tanpa ekor horizontal dengan 14 hardpoint untuk rudal jarak sangat jauh Meteor, MICA, rudal jelajah SCALP, dan bom AASM Hammer.' },
+      { id: 10, name: 'Ekor Tegak & Sistem EW SPECTRA', partType: 'Aerodinamika', pos: [0, 4.15, -6.0], camOffset: [3.2, 1.4, -2.0], desc: 'Sirip ekor abu gelap dengan pod perang elektronik SPECTRA di pucuk dan pangkalnya yang mendeteksi, mengacak, dan mengecoh radar serta rudal musuh.' },
     ],
   },
   {
@@ -158,11 +172,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Superioritas udara & pencegatan jarak jauh', 'Patroli udara tempur (CAP)', 'Pengawalan udara strategis', 'Penindakan pelanggaran wilayah udara'],
     },
     hotspots: [
-      { id: 1, name: 'Radar N001VE & Radome', pos: [0, 1.54, 6.45], camOffset: [3.2, 1.2, 3.4], desc: 'Radar Doppler pulsa jarak jauh di dalam radome putih-abu yang mendeteksi pesawat tempur lawan hingga lebih dari 100 km.' },
-      { id: 2, name: 'Kokpit Kursi Tunggal & IRST', pos: [0, 2.62, 3.7], camOffset: [2.8, 1.7, 2.6], desc: 'Kokpit satu awak dengan kanopi gelembung luas, kursi lontar K-36DM, dan sensor pelacak inframerah pasif IRST tepat di depan kaca kokpit.' },
-      { id: 3, name: 'Saluran Udara Raked 28°', pos: [0.88, 1.24, 2.75], camOffset: [2.8, 0.4, 3.0], desc: 'Dua saluran masuk udara miring di bawah LERX dengan ramp pengatur aliran supersonik untuk menyuplai dua mesin AL-31F.' },
-      { id: 4, name: 'Mesin Kembar AL-31F', pos: [0.88, 1.3, -6.55], camOffset: [3.2, 1.1, -3.5], desc: 'Dua mesin turbofan Saturn AL-31F dengan panel titanium ekspos yang menghasilkan rasio dorong-berat luar biasa tinggi.' },
-      { id: 5, name: 'Sayap & Ekor Kembar', pos: [3.1, 1.55, -2.0], camOffset: [3.4, 2.8, 2.2], desc: 'Sayap terpadu (blended wing-body) tanpa canard dengan 10 hardpoint untuk rudal R-73, R-27, dan R-77 serta ekor tegak kembar di atas tail boom.' },
+      { id: 1, name: 'Radar N001VE & Radome', partType: 'Jeroan', pos: [0, 1.5, 6.1], camOffset: [3.2, 1.1, 3.4], desc: 'Radar Doppler pulsa jarak jauh di balik radome putih-abu yang mendeteksi pesawat tempur lawan hingga lebih dari 100 km.' },
+      { id: 2, name: 'Sensor Inframerah IRST Tengah', partType: 'Eksterior', pos: [0, 2.06, 4.92], camOffset: [2.4, 1.2, 2.6], desc: 'Sensor pelacak panas pasif OLS-27 tepat di tengah depan kaca kokpit (ciri pembeda Su-27 dengan Su-30) untuk menyergap lawan secara senyap.' },
+      { id: 3, name: 'Kokpit Kursi Tunggal & K-36DM', partType: 'Jeroan', pos: [0, 2.58, 3.65], camOffset: [2.8, 1.7, 2.6], desc: 'Kokpit satu awak dengan kanopi gelembung luas, HUD, helm bidik target (HMS), serta kursi lontar K-36DM zero-zero.' },
+      { id: 4, name: 'LERX (Tanpa Canard)', partType: 'Aerodinamika', pos: [1.32, 1.62, 1.6], camOffset: [3.0, 1.5, 2.4], desc: 'Ekstensi pangkal sayap lebar mulus tanpa canard yang menjaga aliran udara tetap menempel di sayap pada sudut serang sangat tinggi.' },
+      { id: 5, name: 'Intake Miring 28° (Raked)', partType: 'Aerodinamika', pos: [0.88, 1.22, 2.8], camOffset: [2.8, 0.3, 3.0], desc: 'Saluran masuk udara supersonik dengan ramp variabel dan kisi anti-FOD untuk menyuplai udara ke mesin kembar hingga Mach 2.35.' },
+      { id: 6, name: 'Tangki Bahan Bakar Internal', partType: 'Jeroan', pos: [0, 1.75, -0.8], camOffset: [3.4, 1.8, 1.6], desc: 'Kapasitas bahan bakar internal masif (±9.400 kg) membuat Su-27 mampu terbang sejauh 3.530 km tanpa membutuhkan tangki tambahan.' },
+      { id: 7, name: 'Inti Mesin Kembar AL-31F', partType: 'Jeroan', pos: [0.88, 1.3, -3.2], camOffset: [3.4, 1.2, -1.2], desc: 'Dua mesin turbofan Saturn AL-31F berdaya dorong tinggi yang memungkinkan Su-27 menanjak hampir vertikal segera setelah lepas landas.' },
+      { id: 8, name: 'Panel Titanium & Tail Stinger', partType: 'Eksterior', pos: [0.88, 1.3, -6.55], camOffset: [3.2, 1.1, -3.5], desc: 'Selubung logam titanium ekspos tahan panas dan tail stinger tengah tempat parasut rem serta radar peringatan ancaman belakang.' },
+      { id: 9, name: 'Sayap & Rudal R-73 / R-27', partType: 'Senjata', pos: [3.0, 1.48, -1.85], camOffset: [3.4, 2.4, 2.2], desc: '10 titik cantelan senjata untuk rudal dogfight R-73 berpandu helm di ujung sayap serta rudal jarak menengah R-27/R-77 di bawah sayap.' },
+      { id: 10, name: 'Ekor Tegak Kembar & Roda Pendarat', partType: 'Aerodinamika', pos: [1.3, 3.2, -5.45], camOffset: [3.4, 1.4, -2.0], desc: 'Dua sirip ekor tegak kokoh di atas tail boom plus sirip ventral bawah untuk stabilitas supersonik dan manuver ekstrim.' },
     ],
   },
   {
@@ -188,11 +207,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Pertahanan udara & patroli perbatasan', 'Serangan udara langsung (CAS)', 'Serangan maritim ringan', 'Latihan tempur taktis'],
     },
     hotspots: [
-      { id: 1, name: 'Radar AN/APG-66H', pos: [0, 1.4, 5.55], camOffset: [2.8, 1.0, 3.0], desc: 'Radar multimode AN/APG-66H khusus varian Hawk 200 di hidung pesawat untuk deteksi sasaran udara, darat, dan permukaan laut.' },
-      { id: 2, name: 'Kokpit Kursi Tunggal & HUD', pos: [0, 2.38, 2.95], camOffset: [2.6, 1.6, 2.4], desc: 'Kokpit satu awak dengan Head-Up Display, layar multifungsi digital, dan kursi lontar Martin-Baker Mk.10L.' },
-      { id: 3, name: 'Air Intake Samping Kembar', pos: [0.64, 1.48, 1.8], camOffset: [2.6, 0.6, 2.6], desc: 'Dua saluran masuk udara setengah lingkaran di kedua sisi badan di belakang kokpit yang menyuplai mesin turbofan Rolls-Royce Adour.' },
-      { id: 4, name: 'Mesin Rolls-Royce Adour Mk.871', pos: [0, 1.46, -6.35], camOffset: [2.6, 1.1, -3.4], desc: 'Mesin turbofan tunggal Rolls-Royce Turbomeca Adour yang irit bahan bakar, andal, dan mudah dirawat untuk operasi di pangkalan aju.' },
-      { id: 5, name: 'Sayap, Tangki & AIM-9 Sidewinder', pos: [4.65, 1.32, -1.05], camOffset: [2.8, 2.4, 2.2], desc: 'Sayap rendah sapu belakang dengan rel rudal AIM-9 Sidewinder di ujung sayap, tangki eksternal bawah sayap, dan pod kanon ADEN 30 mm.' },
+      { id: 1, name: 'Radar AN/APG-66H', partType: 'Jeroan', pos: [0, 1.42, 5.45], camOffset: [2.8, 1.0, 3.0], desc: 'Radar multimode AN/APG-66H (turunan radar F-16) di dalam hidung Hawk 209 untuk mendeteksi target udara, darat, dan kapal di laut.' },
+      { id: 2, name: 'Kokpit Kursi Tunggal & HUD', partType: 'Jeroan', pos: [0, 2.35, 2.85], camOffset: [2.6, 1.6, 2.4], desc: 'Kokpit satu awak dengan Head-Up Display, kontrol HOTAS, layar multifungsi, dan kursi lontar Martin-Baker Mk.10L zero-zero.' },
+      { id: 3, name: 'Air Intake Samping Kembar', partType: 'Aerodinamika', pos: [0.64, 1.48, 1.8], camOffset: [2.6, 0.6, 2.6], desc: 'Dua saluran masuk udara setengah lingkaran di sisi kanan-kiri badan belakang kokpit yang mengalirkan udara mulus ke mesin tunggal.' },
+      { id: 4, name: 'Rangka Badan & Tangki Internal', partType: 'Jeroan', pos: [0, 1.52, -0.5], camOffset: [3.0, 1.5, 1.8], desc: 'Struktur rangka aluminium alloy yang tangguh dengan tangki bahan bakar internal di badan tengah dan sayap untuk patroli perbatasan.' },
+      { id: 5, name: 'Pod Kanon ADEN 30 mm', partType: 'Senjata', pos: [0, 0.88, -0.25], camOffset: [2.6, 0.1, 2.4], desc: 'Pod kanon revolver ADEN kaliber 30 mm yang dipasang di bawah perut pesawat untuk misi serangan udara langsung (CAS) dan dogfight.' },
+      { id: 6, name: 'Inti Mesin Rolls-Royce Adour Mk.871', partType: 'Jeroan', pos: [0, 1.46, -3.6], camOffset: [3.2, 1.2, -1.0], desc: 'Mesin turbofan tanpa afterburner yang sangat irit bahan bakar, awet, dan andal dioperasikan dari pangkalan udara aju.' },
+      { id: 7, name: 'Nozzle Gas Buang Belakang', partType: 'Eksterior', pos: [0, 1.46, -6.4], camOffset: [2.6, 1.1, -3.3], desc: 'Saluran buang jet belakang dengan jejak panas rendah untuk mengurangi risiko kunci rudal pencari panas musuh.' },
+      { id: 8, name: 'Sayap, Tangki Eksternal & AIM-9', partType: 'Senjata', pos: [2.45, 1.2, -0.65], camOffset: [2.8, 2.2, 2.4], desc: 'Sayap sapu belakang dengan tangki bahan bakar eksternal bawah sayap, bom/roket, serta rel rudal AIM-9 Sidewinder di ujung sayap.' },
+      { id: 9, name: 'Ekor Tegak & Stabilator Anhedral', partType: 'Aerodinamika', pos: [0, 3.3, -5.3], camOffset: [3.0, 1.2, -1.8], desc: 'Sirip ekor tegak dengan stabilator miring ke bawah (anhedral) khas keluarga BAE Hawk untuk respons kendali pitch yang presisi.' },
+      { id: 10, name: 'Roda Pendarat Retractable', partType: 'Eksterior', pos: [1.55, 0.45, -0.65], camOffset: [2.6, 0.3, 2.2], desc: 'Roda pendarat lebar yang kokoh untuk mendarat di berbagai pangkalan udara dan otomatis masuk ke dalam sayap saat terbang.' },
     ],
   },
   {
@@ -218,11 +242,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Dukungan udara jarak dekat (CAS)', 'Pengintaian & patroli perbatasan', 'Operasi counter-insurgency (COIN)', 'Pencegatan pesawat berkecepatan rendah'],
     },
     hotspots: [
-      { id: 1, name: 'Baling-baling 5 Bilah & Shark-Mouth', pos: [0, 1.52, 6.48], camOffset: [2.8, 0.9, 3.0], desc: 'Baling-baling Hartzell 5 bilah dengan spinner merah dan lukisan mulut hiu (shark-mouth) ikonik Skadron Udara 21.' },
-      { id: 2, name: 'Mesin Turboprop PT6A-68C', pos: [0.48, 1.52, 4.95], camOffset: [2.6, 1.0, 2.6], desc: 'Mesin turboprop Pratt & Whitney Canada PT6A-68C bertenaga 1.600 shp yang kuat untuk lepas landas dari landasan pendek.' },
-      { id: 3, name: 'Kokpit Tandem Berlapis Baja', pos: [0, 2.52, 2.25], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit 2 kursi tandem berpelindung Kevlar dengan avionik modern, HUD, NVG-compatible, dan kursi lontar Martin-Baker.' },
-      { id: 4, name: 'Sayap Lurus, SMB 12,7 mm & Pod Roket', pos: [2.4, 1.15, 1.05], camOffset: [2.8, 2.2, 2.4], desc: 'Dua senapan mesin berat FN Herstal M3P 12,7 mm terpasang di dalam sayap, ditambah 5 cantelan untuk pod roket, bom, dan tangki bahan bakar.' },
-      { id: 5, name: 'Turret Sensor FLIR', pos: [0, 0.9, -0.45], camOffset: [2.6, 0.2, 2.6], desc: 'Kamera elektro-optik & inframerah FLIR di bawah perut untuk pengintaian siang/malam dan penandaan sasaran presisi.' },
+      { id: 1, name: 'Baling-baling 5 Bilah & Spinner Merah', partType: 'Aerodinamika', pos: [0, 1.52, 6.48], camOffset: [2.8, 0.9, 3.0], desc: 'Baling-baling Hartzell 5 bilah berkecepatan konstan dengan spinner merah menyala yang mengubah daya 1.600 shp menjadi gaya dorong besar.' },
+      { id: 2, name: 'Inti Mesin Turboprop PT6A-68C', partType: 'Jeroan', pos: [0, 1.52, 4.9], camOffset: [2.8, 1.0, 2.6], desc: 'Mesin turbin gas Pratt & Whitney PT6A-68C di balik lukisan mulut hiu (shark-mouth) dengan 2 knalpot samping, tangguh di landasan pendek.' },
+      { id: 3, name: 'Kokpit Tandem Berlapis Baja Kevlar', partType: 'Jeroan', pos: [0, 2.48, 2.25], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit 2 kursi tandem berpelindung baja anti-peluru Kevlar, HUD, kompatibel kacamata malam (NVG), dan kursi lontar Martin-Baker.' },
+      { id: 4, name: 'Senapan Mesin 12,7 mm Internal Sayap', partType: 'Senjata', pos: [1.65, 1.2, 1.35], camOffset: [2.8, 1.6, 2.4], desc: 'Dua senapan mesin berat FN Herstal M3P kaliber 12,7 mm tertanam langsung di dalam sayap kiri dan kanan dengan 200 butir amunisi tiap laras.' },
+      { id: 5, name: 'Pod Roket & Cantelan Bom Sayap', partType: 'Senjata', pos: [2.35, 0.85, 1.05], camOffset: [2.8, 1.4, 2.4], desc: '5 titik cantelan senjata berkapasitas 1,55 ton untuk membawa pod roket 70 mm, bom pintar berpemandu laser, hingga rudal udara-ke-udara.' },
+      { id: 6, name: 'Tangki Bahan Bakar Centerline', partType: 'Eksterior', pos: [0, 0.72, 1.35], camOffset: [2.6, 0.2, 2.6], desc: 'Tangki bahan bakar eksternal di bawah perut yang memperpanjang waktu patroli (loiter time) hingga lebih dari 6 jam di atas sasaran.' },
+      { id: 7, name: 'Turret Sensor Kamera FLIR', partType: 'Eksterior', pos: [0, 0.9, -0.45], camOffset: [2.6, 0.2, 2.6], desc: 'Kamera elektro-optik & inframerah FLIR berputar 360° untuk pengintaian siang/malam serta penandaan sasaran laser (laser designator).' },
+      { id: 8, name: 'Rangka Fuselage & Sistem Avionik', partType: 'Jeroan', pos: [0, 1.58, -1.85], camOffset: [3.0, 1.2, 1.6], desc: 'Struktur rangka aluminium diperkuat untuk menahan manuver +7G/-3,5G serta ruang komputer misi & komunikasi taktis terenkripsi.' },
+      { id: 9, name: 'Ekor Tegak & Kemudi Arah (Rudder)', partType: 'Aerodinamika', pos: [0, 3.2, -5.6], camOffset: [2.8, 1.2, -1.8], desc: 'Sirip ekor tegak dengan dorsal fillet panjang yang menjaga kestabilan pesawat saat menembak atau meluncur tajam ke sasaran darat.' },
+      { id: 10, name: 'Roda Pendarat Landasan Darurat', partType: 'Eksterior', pos: [1.65, 0.45, 0.85], camOffset: [2.6, 0.3, 2.2], desc: 'Roda pendarat kuat dengan suspensi empuk untuk mendarat di landasan tanah/rumput pendek dan otomatis terlipat saat terbang.' },
     ],
   },
   {
@@ -234,7 +263,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Angkut & VIP',
     squadron: 'Skadron Udara 31 Wing I (Lanud Halim Perdanakusuma, Jakarta)',
     role: 'Pesawat angkut taktis berbadan panjang berlivery abu-abu taktis modern (5 unit: A-1339, A-1340, A-1342, A-1343, A-1344). Dimensi panjang 34,69 m, rentang sayap 39,7 m, tinggi 11,9 m, mampu terbang 11 jam nonstop.',
-    glbPath: '/models/c130j_hercules.glb',
     specs: {
       maxSpeed: '660 km/jam (di 6.706 m)',
       range: '11 jam nonstop (±5.250 km)',
@@ -254,11 +282,16 @@ export const FLEET: AircraftUnit[] = [
       ],
     },
     hotspots: [
-      { id: 1, name: 'Kokpit Digital (Glass Cockpit)', pos: [0, 1.92, 5.25], camOffset: [2.6, 1.4, 2.8], desc: 'Kokpit dua awak dengan sistem aviasi & navigasi canggih, 4 layar multifungsi, dan dua Head-Up Display.' },
-      { id: 2, name: 'Mesin AE2100D3 & Baling-baling 6 Bilah', pos: [4.15, 1.96, 2.45], camOffset: [2.8, 1.4, 3.2], desc: 'Empat mesin turboprop Rolls-Royce AE2100D3 hemat bahan bakar dengan baling-baling komposit 6 bilah scimitar untuk daya jelajah 11 jam nonstop.' },
-      { id: 3, name: 'Sayap Tinggi 39,7 m & Tangki Eksternal', pos: [5.6, 2.28, 0.55], camOffset: [2.8, 3.0, 2.8], desc: 'Bentang sayap tinggi 39,7 m yang menjaga baling-baling aman dari kerikil saat mendarat di runway pendek/darurat, dilengkapi tangki eksternal bawah sayap.' },
-      { id: 4, name: 'Ruang Kargo Badan Panjang 34,69 m', pos: [0.82, 1.38, 0.2], camOffset: [3.4, 1.2, 1.8], desc: 'Varian C-130J-30 berpanjang 34,69 m mampu membawa 8 palet kargo, 128 pasukan, kendaraan tempur, atau 97 tandu evakuasi medis.' },
-      { id: 5, name: 'Ramp & Pintu Kargo Belakang', pos: [0, 1.28, -4.35], camOffset: [2.8, 0.6, -3.4], desc: 'Ramp hidraulik di ekor yang dapat dibuka saat terbang untuk penerjunan pasukan/logistik (airdrop) maupun jalur masuk kendaraan tempur.' },
+      { id: 1, name: 'Radome Radar Cuaca & Navigasi', partType: 'Jeroan', pos: [0, 1.25, 6.0], camOffset: [2.8, 0.8, 2.8], desc: 'Radar cuaca digital berdaya tembus awan tebal di hidung pesawat untuk navigasi segala cuaca melintasi kepulauan Nusantara.' },
+      { id: 2, name: 'Kokpit Digital (Glass Cockpit)', partType: 'Jeroan', pos: [0, 1.92, 5.25], camOffset: [2.6, 1.4, 2.8], desc: 'Kokpit modern 2 awak (pilot & kopilot) dengan 4 layar multifungsi, dua HUD, dan otomatisasi penuh menggantikan juru mesin.' },
+      { id: 3, name: 'Baling-baling 6 Bilah Scimitar', partType: 'Aerodinamika', pos: [4.15, 1.96, 2.55], camOffset: [2.8, 1.2, 3.0], desc: 'Baling-baling komposit Dowty R391 6 bilah melengkung (scimitar) yang lebih senyap, cepat menanjak, dan hemat bahan bakar.' },
+      { id: 4, name: 'Inti 4 Mesin Rolls-Royce AE2100D3', partType: 'Jeroan', pos: [2.05, 1.96, 1.1], camOffset: [2.8, 1.4, 2.6], desc: 'Empat mesin turboprop AE2100D3 berdaya 4.637 shp per mesin dengan kendali digital FADEC untuk daya jelajah 11 jam nonstop.' },
+      { id: 5, name: 'Tangki Eksternal Bawah Sayap', partType: 'Eksterior', pos: [3.1, 1.62, 0.72], camOffset: [2.8, 1.0, 2.6], desc: 'Dua tangki bahan bakar eksternal di antara mesin dalam dan luar untuk memperluas jangkauan misi lintas samudera dan bantuan kemanusiaan.' },
+      { id: 6, name: 'Sayap Tinggi (High Wing 39,7 m)', partType: 'Aerodinamika', pos: [5.6, 2.28, 0.55], camOffset: [2.8, 3.0, 2.8], desc: 'Sayap dipasang di atas badan agar mesin tinggi dari tanah—aman dari kerikil di landasan darurat—dan memberi ruang kargo lega di bawahnya.' },
+      { id: 7, name: 'Ruang Kargo & Palet Logistik 34,69 m', partType: 'Jeroan', pos: [0, 1.38, 0.6], camOffset: [3.6, 1.4, 2.0], desc: 'Kabin kargo super panjang yang memuat 8 palet logistik (19 ton), 128 pasukan, kendaraan tempur, atau 97 tandu evakuasi medis.' },
+      { id: 8, name: 'Ramp & Pintu Kargo Belakang', partType: 'Eksterior', pos: [0, 1.28, -4.35], camOffset: [2.8, 0.6, -3.4], desc: 'Pintu ramp hidraulik di ekor yang dapat dibuka di udara untuk penerjunan pasukan & airdrop logistik, atau jalur masuk kendaraan di darat.' },
+      { id: 9, name: 'Ekor Tegak Tinggi (11,9 m)', partType: 'Aerodinamika', pos: [0, 3.7, -5.5], camOffset: [3.4, 1.4, -2.0], desc: 'Sirip ekor raksasa setinggi 11,9 m yang menjaga stabilitas arah saat terbang dengan muatan berat maupun saat pintu kargo dibuka.' },
+      { id: 10, name: 'Sponson & Roda Utama Tandem', partType: 'Eksterior', pos: [0.82, 0.45, -0.35], camOffset: [2.8, 0.3, 2.4], desc: 'Sponson samping tempat menyimpan roda utama tandem bertekanan rendah yang dirancang khusus untuk mendarat di landasan pendek/tanah.' },
     ],
   },
   {
@@ -270,7 +303,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Angkut & VIP',
     squadron: 'Skadron Udara 17 (Lanud Halim Perdanakusuma, Jakarta)',
     role: 'Pesawat angkut penumpang VIP/VVIP bermesin jet kembar untuk mendukung mobilitas Presiden, Wakil Presiden, pejabat tinggi negara, serta tamu negara.',
-    glbPath: '/models/boeing_737_vip.glb',
     specs: {
       maxSpeed: 'Mach 0.82 (±912 km/jam)',
       range: '±4.000 km',
@@ -285,11 +317,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['Angkutan VVIP Presiden & Wapres', 'Penerbangan delegasi kenegaraan', 'Evakuasi WNI', 'Dukungan misi kemanusiaan'],
     },
     hotspots: [
-      { id: 1, name: 'Kokpit Dua Awak', pos: [0, 2.05, 6.2], camOffset: [2.6, 1.2, 2.8], desc: 'Kokpit untuk pilot dan kopilot dengan instrumen navigasi modern, autopilot, dan sistem pendaratan instrumen (ILS) untuk operasi segala cuaca.' },
-      { id: 2, name: 'Mesin Turbofan CFM56-3', pos: [1.95, 0.78, 2.1], camOffset: [2.6, 0.6, 3.0], desc: 'Dua mesin turbofan CFM56-3 berdaya dorong ±10.000 kgf. Bentuk nacelle bagian bawah yang pipih (hamster pouch) memberi jarak aman dari permukaan landasan.' },
-      { id: 3, name: 'Kabin VVIP', pos: [0.75, 1.75, 1.5], camOffset: [3.2, 1.0, 1.8], desc: 'Kabin utama yang ditata khusus dengan ruang kerja, ruang rapat, dan kursi eksekutif untuk Presiden dan rombongan kenegaraan.' },
-      { id: 4, name: 'Sayap Sapu & Flap', pos: [4.2, 1.25, -1.6], camOffset: [2.6, 2.8, 2.0], desc: 'Sayap sapu-belakang (swept wing) dengan slat dan flap tiga celah yang memperbesar daya angkat saat lepas landas dan mendarat di landasan pendek.' },
-      { id: 5, name: 'Ekor Tegak & Bendera', pos: [0, 3.35, -5.9], camOffset: [3.0, 1.0, -2.0], desc: 'Sirip tegak (vertical stabilizer) yang menjaga kestabilan arah pesawat dan menampilkan bendera Merah Putih sebagai identitas pesawat kenegaraan.' },
+      { id: 1, name: 'Radome & Radar Cuaca', partType: 'Jeroan', pos: [0, 1.55, 6.7], camOffset: [2.6, 0.8, 2.8], desc: 'Hidung aerodinamis berisi antena radar cuaca Doppler dan sensor ILS untuk pendaratan presisi dalam kondisi hujan lebat atau kabut.' },
+      { id: 2, name: 'Kokpit Dua Awak (Pilot & Kopilot)', partType: 'Jeroan', pos: [0, 2.05, 6.0], camOffset: [2.6, 1.2, 2.8], desc: 'Kokpit dengan sistem navigasi modern, autopilot penuh, dan komunikasi satelit aman untuk penerbangan kenegaraan.' },
+      { id: 3, name: 'Ruang Rapat & Kabin VVIP Depan', partType: 'Jeroan', pos: [0, 1.75, 2.6], camOffset: [3.2, 1.2, 2.0], desc: 'Kabin kenegaraan berisi ruang kerja, meja rapat Presiden/pejabat tinggi, serta ruang istirahat berperedam suara tinggi.' },
+      { id: 4, name: 'Kabin Penumpang Eksekutif', partType: 'Jeroan', pos: [0, 1.7, -1.2], camOffset: [3.2, 1.2, 1.8], desc: 'Deretan kursi kelas eksekutif luas untuk rombongan menteri, staf kepresidenan, paspampres, dan delegasi negara.' },
+      { id: 5, name: 'Inti Mesin Turbofan CFM56-3', partType: 'Jeroan', pos: [1.95, 0.78, 0.8], camOffset: [2.8, 0.6, 2.6], desc: 'Dua mesin turbofan bypass tinggi CFM56-3 berdaya dorong ±10.000 kgf dengan bentuk nacelle bawah pipih (hamster pouch) khas 737 Classic.' },
+      { id: 6, name: 'Kipas Depan (Fan) Mesin', partType: 'Aerodinamika', pos: [1.95, 0.78, 2.05], camOffset: [2.4, 0.5, 2.8], desc: 'Kipas utama berdiameter besar yang menghisap udara dingin untuk menghasilkan mayoritas gaya dorong dengan tingkat kebisingan rendah.' },
+      { id: 7, name: 'Sayap Sapu & Flap Tiga Celah', partType: 'Aerodinamika', pos: [4.2, 1.25, -1.6], camOffset: [2.6, 2.8, 2.0], desc: 'Sayap sapu belakang (swept wing) dengan slat dan flap tiga celah yang memberi daya angkat tinggi agar aman di landasan pendek.' },
+      { id: 8, name: 'Ekor Tegak & Bendera Negara', partType: 'Aerodinamika', pos: [0, 3.35, -5.9], camOffset: [3.0, 1.0, -2.0], desc: 'Vertical stabilizer pengatur arah dengan bendera Merah-Putih dan nomor registrasi A-7304 sebagai identitas pesawat kenegaraan.' },
+      { id: 9, name: 'Stabilizer Horizontal & APU Ekor', partType: 'Eksterior', pos: [1.6, 1.85, -6.1], camOffset: [2.8, 1.2, -2.2], desc: 'Sayap ekor horizontal pengatur ketinggian (pitch) dan unit pembangkit listrik cadangan (APU) di ujung kerucut ekor.' },
+      { id: 10, name: 'Roda Pendarat Ganda Retractable', partType: 'Eksterior', pos: [1.0, 0.45, -0.55], camOffset: [2.8, 0.3, 2.4], desc: 'Roda pendarat utama ganda dengan rem cakram anti-selip yang terlipat rapi ke dalam perut pesawat segera setelah lepas landas.' },
     ],
   },
   {
@@ -301,7 +338,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Latih',
     squadron: 'Skadron Udara 15 (Lanud Iswahjudi, Madiun)',
     role: 'Pesawat latih tempur supersonik (Lead-In Fighter Trainer) berlivery biru-kuning Elang Emas. Dimensi panjang 13,14 m, rentang sayap 9,45 m, tinggi 4,81 m, berat lepas landas 10,7 ton, untuk 2 awak tandem.',
-    glbPath: '/models/t50i_golden_eagle.glb',
     specs: {
       maxSpeed: 'Mach 1.5 (±1.640 km/jam)',
       range: '1.400 km (dengan tangki tambahan)',
@@ -321,11 +357,16 @@ export const FLEET: AircraftUnit[] = [
       ],
     },
     hotspots: [
-      { id: 1, name: 'Radome Abu Terang & Avionik', pos: [0, 1.44, 5.95], camOffset: [2.8, 1.0, 3.0], desc: 'Radome hidung abu-abu terang dengan pitot tube dan avionik tempur modern untuk melatih calon penerbang F-16 dan Sukhoi.' },
-      { id: 2, name: 'Kokpit Tandem • Zero-Zero & OBOGS', pos: [0, 2.38, 2.95], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit 2 orang tandem dilengkapi kursi lontar Zero-Zero Ejection Seats serta On-Board Oxygen Generating System (OBOGS) untuk suplai oksigen otomatis.' },
-      { id: 3, name: 'Air Intake Samping & LERX', pos: [0.64, 1.24, 2.05], camOffset: [2.8, 0.5, 2.8], desc: 'Dua saluran udara samping di bawah LERX berpola kuning-biru Elang Emas yang menyalurkan aliran udara stabil ke mesin tunggal.' },
-      { id: 4, name: 'Mesin GE F404-102 (FADEC)', pos: [0, 1.48, -6.75], camOffset: [2.6, 1.2, -3.4], desc: 'Mesin turbofan General Electric F404-102 (Samsung Techwin) dengan afterburner dan kendali digital FADEC (Full Authority Digital Engine Control) hingga Mach 1.5.' },
-      { id: 5, name: 'Sayap, Tangki Putih & Rel AIM-9', pos: [2.05, 1.1, -1.05], camOffset: [2.8, 2.2, 2.4], desc: 'Rentang sayap 9,45 m dengan sepasang tangki bahan bakar eksternal putih (daya jelajah 1.400 km) dan rel peluncur rudal AIM-9 di ujung sayap.' },
+      { id: 1, name: 'Radome Abu Terang & Avionik', partType: 'Jeroan', pos: [0, 1.44, 5.95], camOffset: [2.8, 1.0, 3.0], desc: 'Radome hidung abu-abu terang dengan pitot tube dan sistem avionik tempur digital untuk melatih calon penerbang F-16 dan Sukhoi.' },
+      { id: 2, name: 'Kokpit Tandem • Zero-Zero & OBOGS', partType: 'Jeroan', pos: [0, 2.38, 2.95], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit 2 orang tandem dengan kursi lontar Zero-Zero Ejection Seats serta On-Board Oxygen Generating System (OBOGS) penghasil oksigen otomatis.' },
+      { id: 3, name: 'Air Intake Samping & LERX', partType: 'Aerodinamika', pos: [0.64, 1.24, 2.05], camOffset: [2.8, 0.5, 2.8], desc: 'Dua saluran udara samping di bawah LERX berpola kuning-biru Elang Emas yang menjaga pasokan udara stabil saat manuver tinggi.' },
+      { id: 4, name: 'Rangka Badan & Tangki Internal', partType: 'Jeroan', pos: [0, 1.56, 0.1], camOffset: [3.0, 1.5, 1.8], desc: 'Struktur rangka badan ringan dan tangki bahan bakar internal dengan berat lepas landas maksimum 10,7 ton.' },
+      { id: 5, name: 'Inti Mesin GE F404-102 (FADEC)', partType: 'Jeroan', pos: [0, 1.48, -3.9], camOffset: [3.2, 1.2, -1.0], desc: 'Mesin turbofan General Electric F404-102 (Samsung Techwin) dikendalikan komputer digital FADEC untuk performa responsif hingga Mach 1.5.' },
+      { id: 6, name: 'Nozzle Afterburner (14 Kelopak)', partType: 'Eksterior', pos: [0, 1.48, -6.75], camOffset: [2.6, 1.2, -3.4], desc: 'Nozzle afterburner berdaya dorong ±8.000 kgf yang mengakselerasi T-50i menembus kecepatan suara.' },
+      { id: 7, name: 'Tangki Eksternal Putih Bawah Sayap', partType: 'Eksterior', pos: [2.05, 0.9, -1.05], camOffset: [2.8, 1.4, 2.4], desc: 'Sepasang tangki bahan bakar tambahan putih yang memperluas daya jelajah T-50i hingga 1.400 km dalam operasi lintas pulau.' },
+      { id: 8, name: 'Sayap (9,45 m) & Rel AIM-9', partType: 'Senjata', pos: [4.38, 1.35, -1.55], camOffset: [3.0, 2.2, 2.4], desc: 'Rentang sayap 9,45 m dengan rel peluncur rudal AIM-9 Sidewinder di ujung sayap dan 7 cantelan persenjataan.' },
+      { id: 9, name: 'Ekor Tegak Kuning-Biru (4,81 m)', partType: 'Aerodinamika', pos: [0, 3.35, -5.45], camOffset: [3.0, 1.2, -1.8], desc: 'Sirip ekor tegak setinggi 4,81 m bercorak emas Elang Emas Skadron Udara 15 dengan nomor registrasi TT-5005.' },
+      { id: 10, name: 'Roda Pendarat & Pintu Bay Kuning', partType: 'Eksterior', pos: [1.05, 0.45, -1.1], camOffset: [2.6, 0.3, 2.2], desc: 'Roda pendarat tiga titik hidraulik dengan pintu kompartemen kuning yang otomatis menutup rapat setelah lepas landas.' },
     ],
   },
   {
@@ -337,7 +378,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Latih',
     squadron: 'Skadik 102 & Jupiter Aerobatic Team (Lanud Adisutjipto, Yogyakarta)',
     role: 'Pesawat latih dasar modern bermesin turboprop PT6A-62 sekaligus tunggangan kebanggaan tim aerobatik TNI AU "The Jupiters" (Jupiter Aerobatic Team) berlivery Merah-Putih dengan spinner putih.',
-    glbPath: '/models/kt1b_woongbi.glb',
     specs: {
       maxSpeed: '574 km/jam',
       range: '1.333 km',
@@ -357,11 +397,16 @@ export const FLEET: AircraftUnit[] = [
       ],
     },
     hotspots: [
-      { id: 1, name: 'Baling-baling 4 Bilah & Spinner Putih', pos: [0, 1.48, 6.55], camOffset: [2.6, 0.8, 3.0], desc: 'Baling-baling Hartzell 4 bilah berkecepatan konstan dengan spinner putih bersih ciri khas Jupiter Aerobatic Team.' },
-      { id: 2, name: 'Mesin Turboprop PT6A-62', pos: [0.5, 1.5, 4.95], camOffset: [2.6, 1.0, 2.6], desc: 'Mesin turboprop performa tinggi Pratt & Whitney Canada PT6A-62 (950 shp) dengan kecepatan maksimum 574 km/jam.' },
-      { id: 3, name: 'Kokpit Tandem & Kanopi Bubble', pos: [0, 2.48, 2.3], camOffset: [2.6, 1.7, 2.4], desc: 'Kanopi gelembung lebar dengan dua kursi lontar tandem untuk siswa/pilot depan dan instruktur/wingman di belakang hingga ketinggian 38.000 kaki.' },
-      { id: 4, name: 'Sayap Lurus Merah & Roundel', pos: [4.35, 1.38, 0.55], camOffset: [2.8, 2.6, 2.4], desc: 'Sayap rendah lurus berlivery merah yang stabil untuk manuver aerobatik presisi dan terbang formasi rapat, jangkauan 1.333 km.' },
-      { id: 5, name: 'Ekor Merah-Putih & Asap Aerobatik', pos: [0, 1.45, -6.15], camOffset: [2.8, 1.4, -3.2], desc: 'Ekor merah ber-strip putih dengan generator asap aerobatik untuk melukis formasi di langit saat pertunjukan udara.' },
+      { id: 1, name: 'Baling-baling 4 Bilah & Spinner Putih', partType: 'Aerodinamika', pos: [0, 1.48, 6.55], camOffset: [2.6, 0.8, 3.0], desc: 'Baling-baling Hartzell 4 bilah berkecepatan konstan dengan spinner putih bersih ciri khas Jupiter Aerobatic Team.' },
+      { id: 2, name: 'Inti Mesin Turboprop PT6A-62', partType: 'Jeroan', pos: [0, 1.5, 4.85], camOffset: [2.8, 1.0, 2.6], desc: 'Mesin turboprop Pratt & Whitney Canada PT6A-62 (950 shp) berkinerja tinggi dengan kecepatan maksimum 574 km/jam.' },
+      { id: 3, name: 'Knalpot Ganda Mesin Turbin', partType: 'Eksterior', pos: [0.46, 1.54, 4.95], camOffset: [2.4, 0.8, 2.4], desc: 'Dua saluran gas buang samping kiri-kanan di depan kokpit yang menyalurkan gas panas sisa pembakaran turbin.' },
+      { id: 4, name: 'Kokpit Tandem & Kursi Lontar', partType: 'Jeroan', pos: [0, 2.48, 2.3], camOffset: [2.6, 1.7, 2.4], desc: 'Kanopi gelembung lebar dengan dua kursi lontar tandem untuk siswa/pilot depan dan instruktur/wingman di belakang hingga 38.000 kaki.' },
+      { id: 5, name: 'Rangka Fuselage & Tangki Internal', partType: 'Jeroan', pos: [0, 1.54, -0.8], camOffset: [3.0, 1.4, 1.8], desc: 'Struktur rangka badan ringan dan tangki bahan bakar berdaya jelajah 1.333 km yang kuat menahan manuver aerobatik +7G/-3,5G.' },
+      { id: 6, name: 'Sayap Lurus Merah & Aileron', partType: 'Aerodinamika', pos: [4.35, 1.38, 0.55], camOffset: [2.8, 2.6, 2.4], desc: 'Sayap rendah lurus dengan dihedral dan aileron responsif untuk manuver roll cepat, loop, serta terbang formasi rapat.' },
+      { id: 7, name: 'Livery "THE JUPITERS" & Roundel', partType: 'Eksterior', pos: [0.52, 1.38, 3.1], camOffset: [2.8, 0.8, 2.2], desc: 'Identitas Merah-Putih kebanggaan bangsa Indonesia yang telah mengharumkan nama TNI AU di berbagai airshow 5 negara Asia Tenggara.' },
+      { id: 8, name: 'Ekor Tegak Merah-Putih (Rudder)', partType: 'Aerodinamika', pos: [0, 3.05, -5.5], camOffset: [2.8, 1.2, -1.8], desc: 'Sirip ekor merah ber-strip putih lengkap dengan bendera Merah-Putih untuk mengendalikan arah yaw saat manuver stall turn.' },
+      { id: 9, name: 'Generator Asap Aerobatik Ekor', partType: 'Eksterior', pos: [0, 1.45, -6.25], camOffset: [2.8, 1.2, -3.2], desc: 'Sistem penyemprot oli asap di ekor untuk melukis jejak asap putih dramatis di langit saat pertunjukan Jupiter Aerobatic Team.' },
+      { id: 10, name: 'Roda Pendarat Retractable', partType: 'Eksterior', pos: [1.55, 0.42, 0.65], camOffset: [2.6, 0.3, 2.2], desc: 'Roda pendarat tiga titik hidraulik yang terlipat masuk ke dalam sayap segera setelah lepas landas.' },
     ],
   },
   {
@@ -373,7 +418,6 @@ export const FLEET: AircraftUnit[] = [
     category: 'Helikopter',
     squadron: 'Skadron Udara 6 & 8 (Lanud Atang Sendjaja, Bogor)',
     role: 'Helikopter angkut menengah bermesin ganda untuk misi SAR tempur (CSAR), angkut pasukan, evakuasi medis, dan dukungan logistik. Dirakit sebagian oleh PT Dirgantara Indonesia.',
-    glbPath: '/models/h225m_caracal.glb',
     specs: {
       maxSpeed: '±324 km/jam',
       range: '±857 km',
@@ -388,11 +432,16 @@ export const FLEET: AircraftUnit[] = [
       missions: ['SAR tempur (CSAR)', 'Angkut pasukan & logistik', 'Evakuasi medis & bencana', 'Dukungan operasi khusus'],
     },
     hotspots: [
-      { id: 1, name: 'Rotor Utama 5 Bilah', pos: [0, 3.35, 0.4], camOffset: [3.6, 2.6, 3.0], desc: 'Rotor utama berbilah lima berbahan komposit dengan sistem anti-getar yang menghasilkan daya angkat dan kendali arah terbang helikopter.' },
-      { id: 2, name: 'Mesin Ganda Makila 2A1', pos: [0.55, 2.65, -0.9], camOffset: [2.8, 1.8, 2.2], desc: 'Dua mesin turboshaft Safran Makila 2A1 (±2.400 shp) dengan kendali digital FADEC. Bila satu mesin mati, helikopter tetap dapat terbang aman.' },
-      { id: 3, name: 'Kokpit & Kamera FLIR', pos: [0, 2.1, 4.4], camOffset: [2.6, 1.0, 2.8], desc: 'Kokpit kaca dengan layar digital, autopilot 4 sumbu, dan kamera inframerah FLIR untuk misi malam hari maupun pencarian korban.' },
-      { id: 4, name: 'Kabin Pasukan & Pintu Geser', pos: [1.1, 1.6, 0.6], camOffset: [3.2, 0.8, 2.0], desc: 'Kabin luas dengan pintu geser di kedua sisi, mampu membawa 28 prajurit bersenjata lengkap atau 11 tandu untuk evakuasi medis.' },
-      { id: 5, name: 'Rotor Ekor (Anti-Torsi)', pos: [0.45, 2.75, -7.25], camOffset: [3.0, 1.2, -1.6], desc: 'Rotor ekor 4 bilah yang melawan gaya puntir (torsi) rotor utama sehingga badan helikopter tidak ikut berputar, sekaligus mengendalikan arah haluan.' },
+      { id: 1, name: 'Rotor Utama 5 Bilah Komposit', partType: 'Aerodinamika', pos: [0, 3.35, 0.4], camOffset: [3.6, 2.4, 3.0], desc: 'Lima bilah rotor utama berbahan komposit dengan sistem peredam getaran dan anti-es yang menghasilkan daya angkat vertikal & manuver.' },
+      { id: 2, name: 'Transmisi Utama (Main Gearbox)', partType: 'Jeroan', pos: [0, 2.58, 0.4], camOffset: [2.8, 1.6, 2.4], desc: 'Kotak roda gigi transmisi berat yang meneruskan tenaga dari dua mesin turboshaft ke poros rotor utama dan poros rotor ekor.' },
+      { id: 3, name: 'Mesin Ganda Safran Makila 2A1', partType: 'Jeroan', pos: [0.55, 2.65, -0.9], camOffset: [2.8, 1.8, 2.2], desc: 'Dua mesin turboshaft Safran Makila 2A1 (±2.400 shp) berkendali digital FADEC; bila satu mesin mati, helikopter tetap terbang aman.' },
+      { id: 4, name: 'Kokpit Digital & Autopilot 4 Sumbu', partType: 'Jeroan', pos: [0, 2.05, 4.15], camOffset: [2.6, 1.1, 2.8], desc: 'Kokpit kaca digital dengan autopilot 4 sumbu yang mampu menjaga posisi melayang (auto-hover) otomatis di atas laut saat misi SAR.' },
+      { id: 5, name: 'Kamera FLIR & Probe BBM Udara', partType: 'Eksterior', pos: [0.55, 0.92, 4.95], camOffset: [2.6, 0.5, 2.8], desc: 'Kamera inframerah FLIR di bawah hidung untuk mencari korban di malam hari serta probe pengisian bahan bakar di udara jarak jauh.' },
+      { id: 6, name: 'Kabin Pasukan & Kursi Evakuasi', partType: 'Jeroan', pos: [0, 1.45, 0.6], camOffset: [3.4, 1.0, 2.0], desc: 'Kabin luas berpintu geser kiri-kanan untuk 28 prajurit bersenjata lengkap atau 11 tandu pasien evakuasi medis udara.' },
+      { id: 7, name: 'Sponson & Roda Pendarat Retractable', partType: 'Eksterior', pos: [1.1, 0.65, -0.6], camOffset: [2.8, 0.4, 2.4], desc: 'Sponson samping tempat menyimpan tangki bahan bakar serta roda pendarat utama yang masuk ke dalam sponson saat terbang jelajah.' },
+      { id: 8, name: 'Tail Boom & Poros Penggerak Ekor', partType: 'Jeroan', pos: [0, 1.95, -4.4], camOffset: [3.2, 1.2, -1.4], desc: 'Batang ekor panjang yang di dalamnya terdapat poros transmisi berputar cepat untuk menggerakkan rotor ekor.' },
+      { id: 9, name: 'Stabilizer Horizontal Ekor', partType: 'Aerodinamika', pos: [0.75, 1.9, -6.0], camOffset: [2.8, 1.2, -2.0], desc: 'Sayap kecil di batang ekor yang menjaga keseimbangan anggukan (pitch) helikopter saat terbang melaju kencang.' },
+      { id: 10, name: 'Rotor Ekor 4 Bilah (Anti-Torsi)', partType: 'Aerodinamika', pos: [0.35, 2.85, -7.25], camOffset: [3.0, 1.2, -1.6], desc: 'Rotor ekor 4 bilah yang melawan gaya puntir (torsi) rotor utama agar badan helikopter tidak ikut berputar serta mengatur arah haluan.' },
     ],
   },
 ];
