@@ -151,57 +151,140 @@ class AircraftAudioEngine {
     this.gearChimePlayed = false;
   }
 
-  /** Efek suara singkat ban menyentuh landasan (touchdown chirp + thump). */
+  /** Helper membuat buffer white noise pendek untuk sintesis akustik realistis (non-arcade). */
+  private createNoiseSource(durationSec: number): AudioBufferSourceNode | null {
+    if (!this.ctx) return null;
+    const len = Math.max(1, Math.floor(this.ctx.sampleRate * durationSec));
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      ch[i] = Math.random() * 2 - 1;
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    return src;
+  }
+
+  /**
+   * Efek akustik realistis saat roda menyentuh aspal runway (filtered noise — bukan beep/oscillator game):
+   * 1. Hentakan suspensi oleo-strut & ban berat (sub-bass lowpass noise)
+   * 2. Gesekan singkat karet ban di aspal (narrow bandpass noise, khusus sayap tetap)
+   * 3. Getaran halus roda menggelinding di aspal (lowpass rollout rumble)
+   */
   private playTouchdownSfx(isHeli: boolean) {
     if (!this.ctx || !this.masterGain) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
 
-    // Thump hentakan suspensi
-    const thump = ctx.createOscillator();
-    const thumpGain = ctx.createGain();
-    thump.type = 'sine';
-    thump.frequency.setValueAtTime(95, now);
-    thump.frequency.exponentialRampToValueAtTime(32, now + 0.22);
-    thumpGain.gain.setValueAtTime(0.32, now);
-    thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
-    thump.connect(thumpGain);
-    thumpGain.connect(ctx.destination);
-    thump.start(now);
-    thump.stop(now + 0.26);
+    // 1. Hentakan suspensi & ban berat (lowpass noise 115 Hz -> 48 Hz)
+    const impactSrc = this.createNoiseSource(0.35);
+    if (impactSrc) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(120, now);
+      lp.frequency.exponentialRampToValueAtTime(48, now + 0.28);
+      lp.Q.value = 0.8;
 
-    // Decit ban pesawat sayap tetap menyentuh aspal
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.42, now + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+      impactSrc.connect(lp);
+      lp.connect(g);
+      g.connect(ctx.destination);
+      impactSrc.start(now);
+      impactSrc.stop(now + 0.34);
+    }
+
+    // 2. Gesekan karet ban di aspal (bandpass filtered noise realistis — bukan suara game!)
     if (!isHeli) {
-      const chirp = ctx.createOscillator();
-      const chirpGain = ctx.createGain();
-      chirp.type = 'triangle';
-      chirp.frequency.setValueAtTime(1650, now);
-      chirp.frequency.exponentialRampToValueAtTime(720, now + 0.18);
-      chirpGain.gain.setValueAtTime(0.09, now);
-      chirpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.19);
-      chirp.connect(chirpGain);
-      chirpGain.connect(ctx.destination);
-      chirp.start(now);
-      chirp.stop(now + 0.2);
+      const screechSrc = this.createNoiseSource(0.22);
+      if (screechSrc) {
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(2250, now);
+        bp.frequency.exponentialRampToValueAtTime(1750, now + 0.16);
+        bp.Q.value = 7.5;
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(0.085, now + 0.018);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 0.17);
+
+        screechSrc.connect(bp);
+        bp.connect(g);
+        g.connect(ctx.destination);
+        screechSrc.start(now);
+        screechSrc.stop(now + 0.2);
+      }
+
+      // 3. Getaran ban menggelinding di aspal saat pengereman awal
+      const rollSrc = this.createNoiseSource(1.6);
+      if (rollSrc) {
+        const lp = ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(145, now);
+        lp.frequency.linearRampToValueAtTime(80, now + 1.5);
+
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.001, now);
+        g.gain.linearRampToValueAtTime(0.14, now + 0.08);
+        g.gain.exponentialRampToValueAtTime(0.001, now + 1.55);
+
+        rollSrc.connect(lp);
+        lp.connect(g);
+        g.connect(ctx.destination);
+        rollSrc.start(now);
+        rollSrc.stop(now + 1.58);
+      }
     }
   }
 
-  /** Efek suara mekanik hidrolik saat roda pendarat mulai terlipat masuk / keluar. */
+  /** Efek suara hidrolik realistis saat roda pendarat terlipat/turun (desis fluida + kunci mekanik lembut). */
   private playGearServoSfx() {
     if (!this.ctx) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const g = ctx.createGain();
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(240, now);
-    osc.frequency.linearRampToValueAtTime(360, now + 0.45);
-    g.gain.setValueAtTime(0.035, now);
-    g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-    osc.connect(g);
-    g.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.52);
+
+    // Desis tekanan hidrolik halus
+    const hissSrc = this.createNoiseSource(0.5);
+    if (hissSrc) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(920, now);
+      bp.Q.value = 2.2;
+
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.032, now + 0.06);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+      hissSrc.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      hissSrc.start(now);
+      hissSrc.stop(now + 0.48);
+    }
+
+    // Bunyi kunci mekanik lembut saat roda terkunci (gear down-lock clunk)
+    const lockSrc = this.createNoiseSource(0.14);
+    if (lockSrc) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(130, now + 0.36);
+
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now + 0.36);
+      g.gain.linearRampToValueAtTime(0.14, now + 0.375);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+
+      lockSrc.connect(lp);
+      lp.connect(g);
+      g.connect(ctx.destination);
+      lockSrc.start(now + 0.36);
+      lockSrc.stop(now + 0.5);
+    }
   }
 
   /** Dipanggil setiap frame oleh AircraftModel untuk menyelaraskan suara dengan animasi 3D. */
