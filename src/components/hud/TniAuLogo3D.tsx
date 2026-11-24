@@ -16,7 +16,7 @@ export function TniAuLogo3D({ className = 'h-12 w-12', animated = false }: TniAu
         }`}
       >
         <img
-          src="/logo-tniau.png"
+          src="/logo-tniau.png?v=2"
           alt="Logo 3D Resmi TNI AU Swa Bhuwana Paksa"
           className="h-full w-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.65)] drop-shadow-[0_0_10px_rgba(255,183,3,0.42)]"
         />
