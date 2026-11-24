@@ -1,12 +1,15 @@
-import { HardHat, Radio, ShieldCheck } from 'lucide-react';
+import { HardHat, Radio, ShieldCheck, Volume2, VolumeX } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { aircraftAudio } from '../../utils/aircraftAudio';
 import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function TopHeader() {
   const unit = useSelectedUnit();
   const openWelcome = useHangarStore((s) => s.openWelcome);
   const selectAircraft = useHangarStore((s) => s.selectAircraft);
+  const soundEnabled = useHangarStore((s) => s.soundEnabled);
+  const toggle = useHangarStore((s) => s.toggle);
   const isGSuit = unit.id === 'gsuit';
   const isHelmet = unit.id === 'pilot-helmet';
 
@@ -67,6 +70,24 @@ export function TopHeader() {
           >
             <HardHat className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
             <span className="whitespace-nowrap">Helm</span>
+          </button>
+
+          {/* Ikon Sound ringkas (mobile & desktop) */}
+          <button
+            type="button"
+            onClick={() => {
+              aircraftAudio.unlock();
+              toggle('soundEnabled');
+            }}
+            aria-label={soundEnabled ? 'Matikan Suara' : 'Aktifkan Suara'}
+            title={soundEnabled ? 'Suara Aktif (Klik untuk Mute)' : 'Suara Mati (Klik untuk Aktifkan)'}
+            className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border transition-all cursor-pointer active:scale-95 ${
+              soundEnabled
+                ? 'border-emerald-400/60 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25'
+                : 'border-slate-600/70 bg-[#0c2448]/80 text-slate-400 hover:border-slate-400 hover:text-white'
+            }`}
+          >
+            {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
           </button>
         </div>
       </div>
