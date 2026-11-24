@@ -506,15 +506,25 @@ class AircraftAudioEngine {
     let speedMod = 0;
 
     if (flightMode === 'takeoff') {
-      if (phaseTime > 0.15 && !this.atcStartPlayed) {
+      const isHeli = profile === 'helicopter';
+      const atcTime = isHeli ? 2.6 : 4.2;
+      const rollStart = isHeli ? 4.4 : 5.8;
+      const gearUpTime = isHeli ? 6.8 : 10.4;
+
+      if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio('takeoff');
       }
-      if (phaseTime < 1.8) {
-        throttle = 0.28 + (phaseTime / 1.8) * 0.7;
-      } else if (phaseTime < 8.4) {
+      if (phaseTime < atcTime) {
+        // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
+        throttle = 0.24 + Math.sin(phaseTime * 2) * 0.03;
+      } else if (phaseTime < rollStart) {
+        // Spool-up full power di garis start Runway 09
+        const p = (phaseTime - atcTime) / (rollStart - atcTime);
+        throttle = 0.28 + p * 0.72;
+      } else if (phaseTime < 12.2) {
         throttle = 1.0;
-        if (phaseTime > 6.3 && !this.gearChimePlayed) {
+        if (phaseTime > gearUpTime && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
           this.playGearServoSfx();
         }
@@ -528,8 +538,8 @@ class AircraftAudioEngine {
       }
       const isHeli = profile === 'helicopter';
       const touchTime = isHeli ? 5.8 : 5.4;
-      const stopTime = isHeli ? 7.2 : 9.2;
-      const vacateTime = isHeli ? 6.6 : 8.4;
+      const stopTime = isHeli ? 6.4 : 9.2;
+      const vacateTime = isHeli ? 6.1 : 9.1;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
         this.playAtcRadio('vacate');
@@ -545,13 +555,17 @@ class AircraftAudioEngine {
           this.touchdownPlayed = true;
           this.playTouchdownSfx(isHeli);
         }
-        // Thrust reverser / deselerasi halus sampai berhenti
         const p = Math.min(1, (phaseTime - touchTime) / (stopTime - touchTime));
-        throttle = isHeli ? 0.42 * (1 - p * 0.72) : 0.66 * (1 - p * 0.8);
+        throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.66 * (1 - p * 0.68);
       } else {
-        // Mesin idle lembut di runway sebelum kembali ke hanggar
-        const idleP = Math.min(1, (phaseTime - stopTime) / 4.2);
-        throttle = Math.max(0.03, 0.14 * (1 - idleP * 0.78));
+        // Tenaga taxi halus saat pesawat meluncur masuk ke dalam hanggar, lalu idle berhenti
+        const taxiEnd = isHeli ? 8.6 : 14.4;
+        if (phaseTime < taxiEnd) {
+          throttle = 0.22;
+        } else {
+          const idleP = Math.min(1, (phaseTime - taxiEnd) / 1.4);
+          throttle = Math.max(0.03, 0.16 * (1 - idleP * 0.8));
+        }
       }
     } else if (flightMode === 'airborne') {
       throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;

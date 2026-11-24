@@ -370,15 +370,17 @@ export function SkyCloudsEnvironment() {
     let groundSpeed = 0;
 
     if (flightMode === 'takeoff') {
-      if (pt < 1.8) {
+      if (pt < 5.8) {
+        // Taxi keluar dari Hanggar TNI AU -> Line-up di Runway 09 -> Spool-up full power (dunia diam agar sejajar hanggar!)
         targetWorldY = -0.02;
         groundSpeed = 0;
-      } else if (pt < 4.8) {
-        const p = (pt - 1.8) / 3.0;
+        scrollZ.current = 0;
+      } else if (pt < 8.8) {
+        const p = (pt - 5.8) / 3.0;
         targetWorldY = -0.02;
         groundSpeed = 44 * p * p;
-      } else if (pt < 8.8) {
-        const p = Math.min(1, (pt - 4.8) / 4.0);
+      } else if (pt < 12.8) {
+        const p = Math.min(1, (pt - 8.8) / 4.0);
         targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
         groundSpeed = 48;
       } else {
@@ -395,13 +397,19 @@ export function SkyCloudsEnvironment() {
       if (pt < 5.4) {
         const p = Math.min(1, pt / 5.4);
         targetWorldY = THREE.MathUtils.lerp(-12.5, -0.02, p);
-        groundSpeed = THREE.MathUtils.lerp(36, 24, p);
+        // Gulir tepat menuju posisi Hanggar TNI AU (scrollZ = LOOP_LEN -> 0) saat pengereman selesai!
+        scrollZ.current = THREE.MathUtils.lerp(LOOP_LEN - 190, LOOP_LEN - 48, p);
+        groundSpeed = 0;
       } else if (pt < 9.2) {
         const p = Math.min(1, (pt - 5.4) / 3.8);
+        const ease = 1 - (1 - p) * (1 - p);
         targetWorldY = -0.02;
-        groundSpeed = 24 * (1 - p);
+        scrollZ.current = THREE.MathUtils.lerp(LOOP_LEN - 48, LOOP_LEN, ease) % LOOP_LEN;
+        groundSpeed = 0;
       } else {
+        // Berhenti di Runway & Taxi masuk ke dalam Hanggar TNI AU (scrollZ terkunci di 0 tepat sejajar pintu hanggar!)
         targetWorldY = -0.02;
+        scrollZ.current = 0;
         groundSpeed = 0;
       }
     }
@@ -549,7 +557,45 @@ export function SkyCloudsEnvironment() {
             </group>
           ))}
 
-          {/* Hanggar pangkalan & Menara ATC */}
+          {/* Hanggar TNI AU Terbuka + Apron Beton + Jalur Taxiway Kuning tepat sejajar titik keluar/masuk pesawat (local z = -102.5 -> world z = -10.5) */}
+          <group position={[-19.5, 0, -102.5]}>
+            {/* Apron beton penghubung dari dalam hanggar ke runway */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[8.5, 0.01, 0]} receiveShadow>
+              <planeGeometry args={[20, 14]} />
+              <meshStandardMaterial color="#475569" roughness={0.88} />
+            </mesh>
+            {/* Garis kuning taxiway penghubung hanggar <-> runway */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.2, 0.03, 0]}>
+              <planeGeometry args={[18, 0.32]} />
+              <meshBasicMaterial color="#fbbf24" />
+            </mesh>
+            {/* Dinding belakang & samping Hanggar (bagian depan +X terbuka lebar agar pesawat bisa keluar/masuk!) */}
+            <mesh position={[-5.5, 3.6, 0]}>
+              <boxGeometry args={[0.6, 7.2, 16.4]} />
+              <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+            </mesh>
+            <mesh position={[0, 3.6, -8.0]}>
+              <boxGeometry args={[11.4, 7.2, 0.5]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+            </mesh>
+            <mesh position={[0, 3.6, 8.0]}>
+              <boxGeometry args={[11.4, 7.2, 0.5]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+            </mesh>
+            {/* Atap lengkung baja Biru TNI AU + lis kuning */}
+            <mesh position={[0, 7.45, 0]}>
+              <boxGeometry args={[12.0, 0.7, 17.0]} />
+              <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
+            </mesh>
+            <mesh position={[5.95, 7.45, 0]}>
+              <boxGeometry args={[0.25, 0.5, 16.8]} />
+              <meshBasicMaterial color="#ffb703" />
+            </mesh>
+            {/* Lampu hangat di langit-langit hanggar */}
+            <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
+          </group>
+
+          {/* Hanggar cadangan & Menara ATC */}
           <group position={[-18.5, 0, -28]}>
             <mesh position={[0, 2.2, 0]}>
               <boxGeometry args={[7.5, 4.4, 14]} />
