@@ -82,11 +82,13 @@ interface HangarState {
   activeHotspot: number | null;
   camRequest: CamRequest | null;
   quiz: QuizState;
+  glbVersion: Record<string, number>;
 
   enterHangar: () => void;
   openWelcome: () => void;
   toggleInfographic: () => void;
   closeInfographic: () => void;
+  bumpGlbVersion: (unitId: string) => void;
   selectAircraft: (id: string) => void;
   setSearch: (v: string) => void;
   setCategory: (c: 'Semua' | AircraftCategory) => void;
@@ -147,11 +149,16 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   activeHotspot: null,
   camRequest: null,
   quiz: emptyQuiz,
+  glbVersion: {},
 
   enterHangar: () => set({ showWelcome: false }),
   openWelcome: () => set({ showWelcome: true, showInfographic: false }),
   toggleInfographic: () => set((s) => ({ showInfographic: !s.showInfographic })),
   closeInfographic: () => set({ showInfographic: false }),
+  bumpGlbVersion: (unitId) =>
+    set((s) => ({
+      glbVersion: { ...s.glbVersion, [unitId]: (s.glbVersion[unitId] ?? 0) + 1 },
+    })),
 
   selectAircraft: (id) => {
     const mobile = isCompactViewport();

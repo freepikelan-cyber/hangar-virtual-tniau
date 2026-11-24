@@ -1,8 +1,13 @@
 import * as THREE from 'three';
 import { getProceduralAircraft } from './proceduralBuilder';
+import { customGlbRegistry } from './glbEquipmentLoader';
 
 const snapshotCache = new Map<string, string>();
 let sharedRenderer: THREE.WebGLRenderer | null = null;
+
+export function invalidateSnapshot(aircraftId: string) {
+  snapshotCache.delete(aircraftId);
+}
 
 function getSharedRenderer(width: number, height: number): THREE.WebGLRenderer {
   if (sharedRenderer && sharedRenderer.getContext().isContextLost()) {
@@ -49,8 +54,8 @@ export function getAircraftTransparentSnapshot(aircraftId: string): string {
   const fill = new THREE.HemisphereLight('#e6f4ff', '#1b3d6e', 0.95);
   scene.add(fill);
 
-  // Kloning model prosedural agar tidak mengganggu adegan 3D utama
-  const source = getProceduralAircraft(aircraftId).group;
+  // Kloning model .GLB (jika dimuat) atau model prosedural agar tidak mengganggu adegan 3D utama
+  const source = customGlbRegistry.get(aircraftId) ?? getProceduralAircraft(aircraftId).group;
   const clone = source.clone(true);
   clone.traverse((obj) => {
     const mesh = obj as THREE.Mesh;

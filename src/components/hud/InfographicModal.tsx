@@ -19,6 +19,7 @@ export function InfographicModal() {
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const closeInfographic = useHangarStore((s) => s.closeInfographic);
   const focusHotspot = useHangarStore((s) => s.focusHotspot);
+  const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
 
   const previewUrl = useMemo(() => {
     if (!showInfographic) return '';
@@ -27,7 +28,7 @@ export function InfographicModal() {
     } catch {
       return '';
     }
-  }, [showInfographic, unit.id]);
+  }, [showInfographic, unit.id, glbVer]);
 
   if (!showInfographic) return null;
 

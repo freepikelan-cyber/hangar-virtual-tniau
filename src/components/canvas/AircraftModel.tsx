@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
+import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
+import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 
@@ -86,8 +88,11 @@ export function AircraftModel() {
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
+  const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
+
+  const [glbGroup, setGlbGroup] = useState<THREE.Group | null>(() => customGlbRegistry.get(unit.id) ?? null);
 
   const rootRef = useRef<THREE.Group>(null);
   const phaseTime = useRef(0);
@@ -97,6 +102,27 @@ export function AircraftModel() {
   const currentZ = useRef(0);
 
   const procedural = useMemo(() => getProceduralAircraft(unit.id), [unit.id]);
+
+  // Muat otomatis model .GLB dari public/models/<id>.glb (khusus G-Suit & Helm) atau dari unggahan lokal
+  useEffect(() => {
+    let cancelled = false;
+    const cached = customGlbRegistry.get(unit.id) ?? null;
+    setGlbGroup(cached);
+
+    if (!cached && GLB_SLOTS[unit.id]) {
+      tryAutoLoadGlb(unit.id).then((loaded) => {
+        if (!cancelled && loaded) {
+          invalidateSnapshot(unit.id);
+          setGlbGroup(loaded);
+        }
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [unit.id, glbVer]);
+
+  const activeGroup = glbGroup ?? procedural.group;
 
   // Reset saat berganti pesawat
   useEffect(() => {
@@ -150,8 +176,8 @@ export function AircraftModel() {
 
   // Pesawat selalu tampil utuh (tidak transparan/kerangka saat pin diklik)
   useEffect(() => {
-    applyVisualModes(procedural.group, false, wireframe);
-  }, [procedural.group, wireframe]);
+    applyVisualModes(activeGroup, false, wireframe);
+  }, [activeGroup, wireframe]);
 
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
@@ -494,7 +520,7 @@ export function AircraftModel() {
 
   return (
     <group ref={rootRef} name="aircraft-root">
-      <primitive object={procedural.group} />
+      <primitive object={activeGroup} />
       <EffectsLayer
         nozzles={procedural.nozzles}
         spinners={procedural.spinners}
