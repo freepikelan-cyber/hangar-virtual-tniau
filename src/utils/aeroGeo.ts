@@ -234,6 +234,7 @@ export function addDecal(
     polygonOffsetUnits: -4,
     metalness: 0.2,
     roughness: 0.5,
+    side: THREE.FrontSide,
   });
   const m = mkMesh(geo, mat, 'decal');
   m.renderOrder = 2;

@@ -756,23 +756,23 @@ export function buildDetailedSu30(): BuildResult {
   addDecal(g, wingR, [3.15, 1.64, -2.0], [-Math.PI / 2, 0, 0], [1.22, 1.22, 0.55], roundelTex);
   addDecal(g, wingL, [-3.15, 1.64, -2.0], [-Math.PI / 2, 0, 0], [1.22, 1.22, 0.55], roundelTex);
 
-  // Marka kedua sirip ekor tegak (x = ±1.32)
+  // Marka kedua sirip ekor tegak (depth tipis agar tidak tembus/terbalik ke sisi sebaliknya)
   for (const [finMesh, fx] of [
     [finR, 1.32],
     [finL, -1.32],
   ] as const) {
     for (const side of [1, -1]) {
       const rot: V3 = [0, (side * Math.PI) / 2, 0];
-      addDecal(g, finMesh, [fx + side * 0.06, 3.6, -5.7], rot, [0.92, 0.6, 0.3], flagTex);
-      addDecal(g, finMesh, [fx + side * 0.06, 2.7, -5.15], rot, [1.45, 0.34, 0.3], tailCodeTex);
+      addDecal(g, finMesh, [fx + side * 0.05, 3.6, -5.7], rot, [0.92, 0.6, 0.09], flagTex);
+      addDecal(g, finMesh, [fx + side * 0.05, 2.7, -5.15], rot, [1.45, 0.34, 0.09], tailCodeTex);
     }
   }
 
   // Marka samping badan pesawat
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
-    addDecal(g, fuseMesh, [s * 0.78, 1.82, 1.15], rot, [1.45, 0.36, 0.65], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.56, 1.6, 4.75], rot, [0.62, 0.42, 0.55], noseNumTex);
+    addDecal(g, fuseMesh, [s * 0.78, 1.82, 1.15], rot, [1.45, 0.36, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.56, 1.6, 4.75], rot, [0.62, 0.42, 0.24], noseNumTex);
   }
 
   return {

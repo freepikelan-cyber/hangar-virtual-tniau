@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, MapPin, Search, X } from 'lucide-react';
-import { CATEGORIES, type AircraftCategory } from '../../data/fleetData';
+import { CATEGORIES, FLEET, type AircraftCategory } from '../../data/fleetData';
 import { filterFleet, useHangarStore } from '../../store/useHangarStore';
 
 function CategorySilhouette({ category, active }: { category: AircraftCategory; active: boolean }) {
@@ -64,7 +64,7 @@ export function FleetSidebar() {
               <h2 className="font-display text-sm font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
                 KATALOG ARMADA
               </h2>
-              <p className="text-[11px] text-slate-400">{items.length} dari 8 unit Alutsista</p>
+              <p className="text-[11px] text-slate-400">{items.length} dari {FLEET.length} unit Alutsista</p>
             </div>
             <button
               type="button"

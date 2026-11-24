@@ -15,6 +15,12 @@ import {
 import { buildDetailedF16 } from './f16Builder';
 import { buildDetailedSu30 } from './su30Builder';
 import { buildDetailedRafale } from './rafaleBuilder';
+import {
+  buildDetailedHawk209,
+  buildDetailedSu27,
+  buildDetailedSuperTucano,
+  buildDetailedT50i,
+} from './fightersPackBuilder';
 
 /* =========================================================================
  * Rakitan geometri 3D prosedural armada TNI AU.
@@ -297,16 +303,6 @@ function canopy(group: THREE.Group, z: number, y: number, len: number, w: number
   return m;
 }
 
-/** Bagian hidung/radome dengan warna berbeda dari fuselage. */
-function noseCap(group: THREE.Group, pts: Pt[], from: number, to: number, mat: THREE.Material, y: number, sx: number, sy: number) {
-  const { geo } = latheZ(pts, 40, 24, [from, to], 1.006);
-  const m = mk(geo, mat);
-  m.scale.set(sx, sy, 1);
-  m.position.y = y;
-  group.add(m);
-  return m;
-}
-
 function gear(group: THREE.Group, k: Kit, x: number, z: number, topY: number, wheelR: number, opts: { twin?: boolean; width?: number; tandem?: boolean } = {}) {
   const w = opts.width ?? wheelR * 0.6;
   const strutLen = Math.max(0.05, topY - wheelR);
@@ -326,26 +322,6 @@ function gear(group: THREE.Group, k: Kit, x: number, z: number, topY: number, wh
       group.add(tire, hub);
     }
   }
-}
-
-function missile(group: THREE.Group, k: Kit, x: number, y: number, z: number, len: number, r: number) {
-  const body = mk(new THREE.CylinderGeometry(r, r, len, 14), k.missile);
-  body.rotation.x = Math.PI / 2;
-  body.position.set(x, y, z);
-  const nose = mk(new THREE.ConeGeometry(r, r * 3.2, 14), k.radome);
-  nose.rotation.x = Math.PI / 2;
-  nose.position.set(x, y, z + len / 2 + r * 1.6);
-  group.add(body, nose);
-  for (let i = 0; i < 4; i++) {
-    const a = (i * Math.PI) / 2 + Math.PI / 4;
-    const f = mk(new THREE.BoxGeometry(0.012, r * 3.2, r * 3), k.missile);
-    f.position.set(x + Math.cos(a) * r * 1.6, y + Math.sin(a) * r * 1.6, z - len / 2 + r * 1.6);
-    f.rotation.z = a - Math.PI / 2;
-    group.add(f);
-  }
-  const rail = mk(new THREE.BoxGeometry(0.08, 0.08, len * 0.85), k.metal);
-  rail.position.set(x, y + r + 0.03, z);
-  group.add(rail);
 }
 
 /** Baling-baling/rotor: kumpulan bilah berputar + cakram blur transparan. */
@@ -416,16 +392,6 @@ function seat(group: THREE.Group, k: Kit, z: number, y: number, x = 0, s = 1) {
   group.add(base, back);
 }
 
-function radarDish(group: THREE.Group, k: Kit, z: number, y: number, r: number) {
-  const d = mk(new THREE.CylinderGeometry(r, r, 0.04, 28), k.internal, 'internal');
-  d.rotation.x = Math.PI / 2;
-  d.position.set(0, y, z);
-  const mount = mk(new THREE.CylinderGeometry(0.04, 0.04, 0.4, 8), k.core, 'internal');
-  mount.rotation.x = Math.PI / 2;
-  mount.position.set(0, y, z - 0.22);
-  group.add(d, mount);
-}
-
 function fuelTank(group: THREE.Group, k: Kit, x: number, y: number, z: number, len: number, r: number) {
   const t = mk(new THREE.CapsuleGeometry(r, len, 6, 16), new THREE.MeshStandardMaterial({ color: '#2a6f97', metalness: 0.4, roughness: 0.4 }), 'internal');
   t.rotation.x = Math.PI / 2;
@@ -469,6 +435,7 @@ function decal(group: THREE.Group, target: THREE.Mesh, pos: V3, rot: V3, size: V
     polygonOffsetUnits: -4,
     metalness: opts.metal ?? 0.25,
     roughness: opts.rough ?? 0.5,
+    side: THREE.FrontSide,
   });
   const m = mk(geo, mat, 'decal');
   m.castShadow = false;
@@ -485,10 +452,11 @@ function decalSides(group: THREE.Group, target: THREE.Mesh, pos: V3, size: V3, t
 
 function finMarkings(group: THREE.Group, finMesh: THREE.Mesh, x: number, thick: number, flagPos: [number, number], flagW: number, code: string, codePos: [number, number], codeW: number, codeColor = '#14191f') {
   const off = thick / 2;
+  const depth = Math.min(0.08, thick * 0.6);
   for (const side of [1, -1]) {
     const rot = side > 0 ? SIDE_R : SIDE_L;
-    decal(group, finMesh, [x + side * off, flagPos[0], flagPos[1]], rot, [flagW, flagW * 0.62, thick * 0.9], FLAG());
-    decal(group, finMesh, [x + side * off, codePos[0], codePos[1]], rot, [codeW, codeW * 0.25, thick * 0.9], TEXT(code, codeColor));
+    decal(group, finMesh, [x + side * off, flagPos[0], flagPos[1]], rot, [flagW, flagW * 0.62, depth], FLAG());
+    decal(group, finMesh, [x + side * off, codePos[0], codePos[1]], rot, [codeW, codeW * 0.25, depth], TEXT(code, codeColor));
   }
 }
 
@@ -505,81 +473,6 @@ function result(group: THREE.Group, k: Kit, partial: Omit<BuildResult, 'group' |
     if (m.isMesh) m.receiveShadow = false;
   });
   return { group, glowMats: [k.glow], ...partial };
-}
-
-function nozzle(group: THREE.Group, k: Kit, x: number, y: number, zFront: number, len: number, rF: number, rB: number) {
-  const n = tubeZ(rF, rB, len, k.nozzle);
-  n.position.set(x, y, zFront - len / 2);
-  const face = disc(rF * 0.92, k.glow, 'back');
-  face.position.set(x, y, zFront - len * 0.35);
-  // Petal nozzle
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2;
-    const p = mk(new THREE.BoxGeometry(0.012, rB * 0.35, len * 0.5), k.metal);
-    p.position.set(x + Math.cos(a) * rB * 0.97, y + Math.sin(a) * rB * 0.97, zFront - len * 0.75);
-    p.rotation.z = a + Math.PI / 2;
-    group.add(p);
-  }
-  group.add(n, face);
-}
-
-function buildT50(): BuildResult {
-  const g = new THREE.Group();
-  const yC = 1.45;
-  const sx = 1.0;
-  const sy = 0.92;
-  const prof: Pt[] = [[-6.5, 0.36], [-6.0, 0.42], [-4, 0.52], [-1, 0.56], [1.5, 0.55], [3, 0.48], [4.3, 0.4], [5.4, 0.28], [6.1, 0.15], [6.5, 0.02]];
-  const k = makeKit('camo-grey', 13, 2 * Math.PI * 0.56);
-  const { geo, f } = latheZ(prof);
-  const fuse = mk(geo, k.fuse);
-  fuse.scale.set(sx, sy, 1);
-  fuse.position.y = yC;
-  g.add(fuse);
-  noseCap(g, prof, 5.3, 6.5, k.radome, yC, sx, sy);
-  const ductProf: Pt[] = [[-1.5, 0.05], [-0.8, 0.26], [0, 0.3], [2.0, 0.3]];
-  for (const x of [0.62, -0.62]) {
-    const d = mk(latheZ(ductProf, 28, 20).geo, k.fuse);
-    d.scale.set(0.85, 1.05, 1);
-    d.position.set(x, 1.25, 0);
-    const face = disc(0.29, k.intake);
-    face.scale.set(0.85, 1.05, 1);
-    face.position.set(x, 1.25, 1.98);
-    g.add(d, face);
-  }
-  const wings = wingPair(g, [[0.45, 3.6], [0.65, 1.4], [4.1, -1.2], [4.1, -2.0], [0.45, -2.7]], 0.09, 1.35, k.wing);
-  wingPair(g, [[0.35, -4.3], [2.3, -5.6], [2.3, -6.2], [0.35, -6.0]], 0.07, 1.4, k.wing);
-  const finM = fin(g, [[-3.0, 0], [-5.6, 2.6], [-6.3, 2.6], [-6.4, 0]], 0.09, 0, 1.9, k.tail);
-  canopy(g, 2.85, 1.88, 2.8, 0.74, 0.55, k.glass);
-  nozzle(g, k, 0, yC, -6.3, 0.65, 0.38, 0.33);
-  missile(g, k, 4.18, 1.29, -1.4, 2.2, 0.06);
-  missile(g, k, -4.18, 1.29, -1.4, 2.2, 0.06);
-
-  gear(g, k, 0, 3.6, 0.95, 0.24);
-  gear(g, k, 0.95, -1.0, 1.0, 0.3, { width: 0.2 });
-  gear(g, k, -0.95, -1.0, 1.0, 0.3, { width: 0.2 });
-
-  ribs(g, f, -6, 5.6, 0.85, yC, sx, sy, k.internal);
-  engineCore(g, k, 0, yC, -6.2, -1.2, 0.32);
-  seat(g, k, 3.4, 1.62, 0, 1.05);
-  seat(g, k, 2.3, 1.7, 0, 1.05);
-  radarDish(g, k, 5.6, yC, 0.22);
-  fuelTank(g, k, 0, 1.68, 0.4, 1.4, 0.2);
-
-  wingRoundels(g, wings, 2.4, 1.4, -0.9, 1.0);
-  finMarkings(g, finM, 0, 0.09, [3.75, -5.65], 0.9, 'TT-5007', [2.85, -4.85], 1.5);
-  decalSides(g, fuse, [0.56, 1.5, -1.6], [1.4, 0.34, 0.5], TEXT('TNI AU'));
-  decalSides(g, fuse, [0.45, 1.42, 4.7], [0.62, 0.42, 0.5], TEXT('07', '#14191f', 1.4));
-
-  return result(g, k, {
-    nozzles: [{ pos: [0, yC, -6.95], r: 0.31, kind: 'ab' }],
-    spinners: [],
-    navLights: [
-      { pos: [4.18, 1.29, -0.2], color: '#ff2a2a' },
-      { pos: [-4.18, 1.29, -0.2], color: '#22ff66' },
-      { pos: [0, 4.5, -6.2], color: '#ffffff', blink: 'strobe' },
-    ],
-    hoverHeight: 0.9,
-  });
 }
 
 /* ------------------------------ Pesawat Latih Turboprop ------------------------------ */
@@ -927,9 +820,12 @@ const builders: Record<string, () => BuildResult> = {
   su30mk2: buildDetailedSu30,
   f16id: buildDetailedF16,
   rafale: buildDetailedRafale,
+  su27skm: buildDetailedSu27,
+  hawk209: buildDetailedHawk209,
+  supertucano: buildDetailedSuperTucano,
   c130j: buildC130,
   b737vip: buildB737,
-  t50i: buildT50,
+  t50i: buildDetailedT50i,
   kt1b: buildKT1,
   caracal: buildCaracal,
 };

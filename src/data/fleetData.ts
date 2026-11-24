@@ -136,6 +136,96 @@ export const FLEET: AircraftUnit[] = [
     ],
   },
   {
+    id: 'su27skm',
+    name: 'Sukhoi Su-27SKM',
+    code: 'Flanker-B • Kursi Tunggal',
+    origin: 'Rusia',
+    tailNumber: 'TS-2703',
+    category: 'Tempur',
+    squadron: 'Skadron Udara 11 (Lanud Sultan Hasanuddin, Makassar)',
+    role: 'Pesawat tempur superioritas udara kursi tunggal berjangkauan jauh. Dirancang khusus untuk menguasai ruang udara dan mencegat ancaman udara di seluruh kepulauan Nusantara.',
+    specs: {
+      maxSpeed: 'Mach 2.35 (±2.500 km/jam)',
+      range: '±3.530 km',
+      ceiling: '19.000 m',
+      armament: 'Kanon GSh-30-1 30 mm • 10 hardpoint',
+    },
+    history: {
+      operational:
+        'TNI AU mulai mengoperasikan Sukhoi Su-27SK sejak 2003 dan kemudian Su-27SKM di Skadron Udara 11 Lanud Sultan Hasanuddin, Makassar. Kehadirannya menjadi tonggak kembalinya kekuatan tempur kelas berat TNI AU.',
+      tactical:
+        'Berbeda dari Su-30MK2 yang berkursi ganda, Su-27SKM berkursi tunggal dengan bobot lebih ringan dan kelincahan manuver tinggi (terkenal dengan manuver Pugachev Cobra), didukung radar N001VE serta rudal R-73 dan R-27.',
+      missions: ['Superioritas udara & pencegatan jarak jauh', 'Patroli udara tempur (CAP)', 'Pengawalan udara strategis', 'Penindakan pelanggaran wilayah udara'],
+    },
+    hotspots: [
+      { id: 1, name: 'Radar N001VE & Radome', pos: [0, 1.54, 6.45], camOffset: [3.2, 1.2, 3.4], desc: 'Radar Doppler pulsa jarak jauh di dalam radome putih-abu yang mendeteksi pesawat tempur lawan hingga lebih dari 100 km.' },
+      { id: 2, name: 'Kokpit Kursi Tunggal & IRST', pos: [0, 2.62, 3.7], camOffset: [2.8, 1.7, 2.6], desc: 'Kokpit satu awak dengan kanopi gelembung luas, kursi lontar K-36DM, dan sensor pelacak inframerah pasif IRST tepat di depan kaca kokpit.' },
+      { id: 3, name: 'Saluran Udara Raked 28°', pos: [0.88, 1.24, 2.75], camOffset: [2.8, 0.4, 3.0], desc: 'Dua saluran masuk udara miring di bawah LERX dengan ramp pengatur aliran supersonik untuk menyuplai dua mesin AL-31F.' },
+      { id: 4, name: 'Mesin Kembar AL-31F', pos: [0.88, 1.3, -6.55], camOffset: [3.2, 1.1, -3.5], desc: 'Dua mesin turbofan Saturn AL-31F dengan panel titanium ekspos yang menghasilkan rasio dorong-berat luar biasa tinggi.' },
+      { id: 5, name: 'Sayap & Ekor Kembar', pos: [3.1, 1.55, -2.0], camOffset: [3.4, 2.8, 2.2], desc: 'Sayap terpadu (blended wing-body) tanpa canard dengan 10 hardpoint untuk rudal R-73, R-27, dan R-77 serta ekor tegak kembar di atas tail boom.' },
+    ],
+  },
+  {
+    id: 'hawk209',
+    name: 'BAE Hawk 209',
+    code: 'Light Fighter Mk.209',
+    origin: 'Britania Raya',
+    tailNumber: 'TT-0207',
+    category: 'Tempur',
+    squadron: 'Skadron Udara 1 (Supadio) & Skadron Udara 12 (Roesmin Nurjadin)',
+    role: 'Pesawat tempur taktis ringan kursi tunggal berkemampuan serang darat dan pertahanan udara. Menjadi penjaga strategis perbatasan Kalimantan dan Sumatera.',
+    specs: {
+      maxSpeed: 'Mach 0.88 (±1.028 km/jam)',
+      range: '±2.520 km (ferry)',
+      ceiling: '13.500 m',
+      armament: 'Pod Kanon ADEN 30 mm • AIM-9 Sidewinder & bom',
+    },
+    history: {
+      operational:
+        'TNI AU mengoperasikan armada Hawk 109 (latih tempur 2 kursi) dan Hawk 209 (tempur kursi tunggal) sejak pertengahan 1990-an di Skadron Udara 1 "Elang Khatulistiwa" (Pontianak) dan Skadron Udara 12 "Black Panther" (Pekanbaru).',
+      tactical:
+        'Dilengkapi radar modern AN/APG-66H (varian khusus Mk.200) di hidungnya, membuat Hawk 209 mampu melacak sasaran udara maupun laut, membawa rudal AIM-9 Sidewinder di ujung sayap, serta pod kanon ADEN 30 mm di bawah perut.',
+      missions: ['Pertahanan udara & patroli perbatasan', 'Serangan udara langsung (CAS)', 'Serangan maritim ringan', 'Latihan tempur taktis'],
+    },
+    hotspots: [
+      { id: 1, name: 'Radar AN/APG-66H', pos: [0, 1.4, 5.55], camOffset: [2.8, 1.0, 3.0], desc: 'Radar multimode AN/APG-66H khusus varian Hawk 200 di hidung pesawat untuk deteksi sasaran udara, darat, dan permukaan laut.' },
+      { id: 2, name: 'Kokpit Kursi Tunggal & HUD', pos: [0, 2.38, 2.95], camOffset: [2.6, 1.6, 2.4], desc: 'Kokpit satu awak dengan Head-Up Display, layar multifungsi digital, dan kursi lontar Martin-Baker Mk.10L.' },
+      { id: 3, name: 'Air Intake Samping Kembar', pos: [0.64, 1.48, 1.8], camOffset: [2.6, 0.6, 2.6], desc: 'Dua saluran masuk udara setengah lingkaran di kedua sisi badan di belakang kokpit yang menyuplai mesin turbofan Rolls-Royce Adour.' },
+      { id: 4, name: 'Mesin Rolls-Royce Adour Mk.871', pos: [0, 1.46, -6.35], camOffset: [2.6, 1.1, -3.4], desc: 'Mesin turbofan tunggal Rolls-Royce Turbomeca Adour yang irit bahan bakar, andal, dan mudah dirawat untuk operasi di pangkalan aju.' },
+      { id: 5, name: 'Sayap, Tangki & AIM-9 Sidewinder', pos: [4.65, 1.32, -1.05], camOffset: [2.8, 2.4, 2.2], desc: 'Sayap rendah sapu belakang dengan rel rudal AIM-9 Sidewinder di ujung sayap, tangki eksternal bawah sayap, dan pod kanon ADEN 30 mm.' },
+    ],
+  },
+  {
+    id: 'supertucano',
+    name: 'EMB-314 Super Tucano',
+    code: 'A-29 Light Attack • COIN',
+    origin: 'Brasil',
+    tailNumber: 'TT-3108',
+    category: 'Tempur',
+    squadron: 'Skadron Udara 21 (Lanud Abdulrachman Saleh, Malang)',
+    role: 'Pesawat serang taktis ringan (Close Air Support) dan pengintaian bermesin turboprop. Sangat efektif untuk dukungan udara jarak dekat, patroli perbatasan, dan operasi anti-gerilya.',
+    specs: {
+      maxSpeed: '±590 km/jam',
+      range: '±2.855 km (ferry)',
+      ceiling: '10.670 m',
+      armament: '2× SMB 12,7 mm internal • 5 hardpoint (1,55 ton)',
+    },
+    history: {
+      operational:
+        'Skadron Udara 21 "Tutuka" di Lanud Abdulrachman Saleh, Malang, mengoperasikan 16 unit EMB-314 Super Tucano sejak 2012 menggantikan OV-10 Bronco. Ciri khasnya adalah lukisan mulut hiu (shark-mouth) dan spinner merah di hidung.',
+      tactical:
+        'Dirancang tahan banting dengan pelindung baja Kevlar di sekitar kokpit, mampu terbang lambat dan lama (loiter time tinggi) di atas medan operasi, membawa sensor inframerah FLIR, roket, serta bom berpemandu presisi.',
+      missions: ['Dukungan udara jarak dekat (CAS)', 'Pengintaian & patroli perbatasan', 'Operasi counter-insurgency (COIN)', 'Pencegatan pesawat berkecepatan rendah'],
+    },
+    hotspots: [
+      { id: 1, name: 'Baling-baling 5 Bilah & Shark-Mouth', pos: [0, 1.52, 6.48], camOffset: [2.8, 0.9, 3.0], desc: 'Baling-baling Hartzell 5 bilah dengan spinner merah dan lukisan mulut hiu (shark-mouth) ikonik Skadron Udara 21.' },
+      { id: 2, name: 'Mesin Turboprop PT6A-68C', pos: [0.48, 1.52, 4.95], camOffset: [2.6, 1.0, 2.6], desc: 'Mesin turboprop Pratt & Whitney Canada PT6A-68C bertenaga 1.600 shp yang kuat untuk lepas landas dari landasan pendek.' },
+      { id: 3, name: 'Kokpit Tandem Berlapis Baja', pos: [0, 2.52, 2.25], camOffset: [2.6, 1.7, 2.4], desc: 'Kokpit 2 kursi tandem berpelindung Kevlar dengan avionik modern, HUD, NVG-compatible, dan kursi lontar Martin-Baker.' },
+      { id: 4, name: 'Sayap Lurus, SMB 12,7 mm & Pod Roket', pos: [2.4, 1.15, 1.05], camOffset: [2.8, 2.2, 2.4], desc: 'Dua senapan mesin berat FN Herstal M3P 12,7 mm terpasang di dalam sayap, ditambah 5 cantelan untuk pod roket, bom, dan tangki bahan bakar.' },
+      { id: 5, name: 'Turret Sensor FLIR', pos: [0, 0.9, -0.45], camOffset: [2.6, 0.2, 2.6], desc: 'Kamera elektro-optik & inframerah FLIR di bawah perut untuk pengintaian siang/malam dan penandaan sasaran presisi.' },
+    ],
+  },
+  {
     id: 'c130j',
     name: 'C-130J Super Hercules',
     code: 'C-130J-30',
@@ -202,10 +292,10 @@ export const FLEET: AircraftUnit[] = [
     name: 'KAI T-50i Golden Eagle',
     code: 'LIFT Supersonic',
     origin: 'Korea Selatan',
-    tailNumber: 'TT-5007',
+    tailNumber: 'TT-5010',
     category: 'Latih',
     squadron: 'Skadron Udara 15 (Lanud Iswahjudi, Madiun)',
-    role: 'Pesawat latih lanjut supersonik (Lead-In Fighter Trainer) yang menjembatani calon penerbang tempur sebelum menerbangkan F-16 dan Sukhoi, sekaligus dapat berperan sebagai pesawat serang ringan.',
+    role: 'Pesawat latih lanjut supersonik (Lead-In Fighter Trainer) berlivery biru-kuning khas Skadron 15 yang menjembatani calon penerbang tempur sebelum menerbangkan F-16 dan Sukhoi, sekaligus mampu melaksanakan misi tempur ringan.',
     glbPath: '/models/t50i_golden_eagle.glb',
     specs: {
       maxSpeed: 'Mach 1.5 (±1.640 km/jam)',

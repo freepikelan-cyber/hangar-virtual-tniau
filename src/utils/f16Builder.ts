@@ -985,14 +985,14 @@ export function buildDetailedF16(): BuildResult {
   addDecal(g, wingR, [2.75, 1.54, -1.42], [-Math.PI / 2, 0, 0], [1.15, 1.15, 0.5], roundelTex);
   addDecal(g, wingL, [-2.75, 1.54, -1.42], [-Math.PI / 2, 0, 0], [1.15, 1.15, 0.5], roundelTex);
 
-  // Marka ekor & badan kedua sisi
+  // Marka ekor & badan kedua sisi (depth tipis agar tidak tembus/terbalik ke sisi sebaliknya)
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
-    addDecal(g, finMesh, [s * 0.07, 3.85, -5.85], rot, [0.95, 0.62, 0.3], flagTex);
-    addDecal(g, finMesh, [s * 0.07, 2.9, -5.25], rot, [1.55, 0.36, 0.3], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.65, 1.56, 0.85], rot, [1.45, 0.36, 0.65], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.48, 1.46, 4.9], rot, [0.58, 0.38, 0.5], noseNumTex);
-    addDecal(g, fuseMesh, [s * 0.66, 1.48, -2.55], rot, [0.72, 0.72, 0.65], roundelTex);
+    addDecal(g, finMesh, [s * 0.05, 3.85, -5.85], rot, [0.95, 0.62, 0.09], flagTex);
+    addDecal(g, finMesh, [s * 0.05, 2.9, -5.25], rot, [1.55, 0.36, 0.09], tailCodeTex);
+    addDecal(g, fuseMesh, [s * 0.65, 1.56, 0.85], rot, [1.45, 0.36, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.48, 1.46, 4.9], rot, [0.58, 0.38, 0.22], noseNumTex);
+    addDecal(g, fuseMesh, [s * 0.66, 1.48, -2.55], rot, [0.72, 0.72, 0.28], roundelTex);
   }
 
   return {

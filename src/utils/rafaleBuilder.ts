@@ -662,16 +662,16 @@ export function buildDetailedRafale(): BuildResult {
   addDecal(g, wingR, [3.15, 1.48, -3.55], [-Math.PI / 2, 0, 0], [0.78, 0.78, 0.5], loVizRoundel);
   addDecal(g, wingL, [-3.15, 1.48, -3.55], [-Math.PI / 2, 0, 0], [0.78, 0.78, 0.5], loVizRoundel);
 
-  // Marka ekor abu gelap: Bendera Merah-Putih, Emblem Kilat Merah-Kuning, dan T-0302
+  // Marka ekor abu gelap & badan (depth tipis agar tulisan TNI AU & T-0302 tidak tembus/terbalik)
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
-    addDecal(g, finMesh, [s * 0.06, 4.18, -6.05], rot, [0.58, 0.38, 0.3], flagTex);
-    addDecal(g, finMesh, [s * 0.06, 3.45, -5.65], rot, [0.95, 0.95, 0.3], flashTex);
-    addDecal(g, finMesh, [s * 0.06, 2.52, -5.15], rot, [1.28, 0.3, 0.3], tailCodeTex);
+    addDecal(g, finMesh, [s * 0.05, 4.18, -6.05], rot, [0.58, 0.38, 0.09], flagTex);
+    addDecal(g, finMesh, [s * 0.05, 3.45, -5.65], rot, [0.95, 0.95, 0.09], flashTex);
+    addDecal(g, finMesh, [s * 0.05, 2.52, -5.15], rot, [1.28, 0.3, 0.09], tailCodeTex);
 
     // Roundel lo-viz + tulisan TNI AU di sisi samping badan
-    addDecal(g, fuseMesh, [s * 0.76, 1.56, 0.45], rot, [0.46, 0.46, 0.6], loVizRoundel);
-    addDecal(g, fuseMesh, [s * 0.78, 1.56, -0.45], rot, [1.05, 0.28, 0.6], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.76, 1.56, 0.45], rot, [0.46, 0.46, 0.28], loVizRoundel);
+    addDecal(g, fuseMesh, [s * 0.78, 1.56, -0.45], rot, [1.05, 0.28, 0.28], tniAuTex);
   }
 
   return {
