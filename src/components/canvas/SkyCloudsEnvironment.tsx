@@ -111,6 +111,7 @@ export function SkyCloudsEnvironment() {
   const isOutdoorSim = !isEquipment && flightMode !== 'parked';
 
   const skyOpacity = useRef(0);
+  const cloudOpacity = useRef(0);
   const phaseTime = useRef(0);
   const worldY = useRef(-0.02);
   const scrollZ = useRef(0);
@@ -347,10 +348,15 @@ export function SkyCloudsEnvironment() {
       sunGroupRef.current.visible = mix > 0.05;
     }
 
-    cloudTopMat.opacity = mix * 0.92;
-    cloudTopMat.visible = mix > 0.01;
-    cloudBottomMat.opacity = mix * 0.86;
-    cloudBottomMat.visible = mix > 0.01;
+    // Awan 3D HANYA muncul saat pesawat sudah terbang tinggi (airborne / maneuver), TIDAK saat Take Off & Landing di runway!
+    const showClouds = isOutdoorSim && (flightMode === 'airborne' || flightMode === 'maneuver');
+    cloudOpacity.current = THREE.MathUtils.lerp(cloudOpacity.current, showClouds ? 1 : 0, Math.min(1, dt * 2.2));
+    const cMix = cloudOpacity.current;
+
+    cloudTopMat.opacity = cMix * 0.92;
+    cloudTopMat.visible = cMix > 0.01;
+    cloudBottomMat.opacity = cMix * 0.86;
+    cloudBottomMat.visible = cMix > 0.01;
 
     // Animasi riak ombak laut berkilau!
     if (isOutdoorSim) {
@@ -419,9 +425,8 @@ export function SkyCloudsEnvironment() {
       if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(92 + CHUNK_LEN * 2);
     }
 
-    if (mix > 0.01) {
-      const cloudSpeedMult =
-        flightMode === 'maneuver' ? 1.45 : flightMode === 'takeoff' ? 1.15 : flightMode === 'landing' ? 0.65 : 1.0;
+    if (cMix > 0.01) {
+      const cloudSpeedMult = flightMode === 'maneuver' ? 1.45 : 1.0;
       clouds.forEach((c, idx) => {
         const grp = cloudGroupRefs.current[idx];
         if (!grp) return;

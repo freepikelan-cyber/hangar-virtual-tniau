@@ -247,7 +247,7 @@ export function AircraftModel() {
           targetY = 0;
           targetPitch = Math.sin(t * 36) * 0.004;
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • TITIK START RUNWAY 09 & FULL POWER');
+          setFlightLabel('📡 ATC: CLEARED FOR TAKE OFF RUNWAY 09 • FULL POWER');
         } else if (pt < 4.8) {
           const p = (pt - 1.8) / 3.0;
           targetZ = THREE.MathUtils.lerp(-8.5, 2.8, p * p);
@@ -468,12 +468,18 @@ export function AircraftModel() {
           targetPitch = -0.08 * Math.sin(p * Math.PI);
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 7.2) {
+        } else if (pt < 8.4) {
           targetZ = 0;
           targetY = 0;
           targetPitch = 0;
           targetGear = 0;
-          setFlightLabel('LANDING SELESAI • PARKIR DI RUNWAY');
+          setFlightLabel('📡 ATC: WELCOME BACK • ROTOR IDLE DI LANDASAN');
+        } else if (pt < 10.6) {
+          targetZ = 0;
+          targetY = 0;
+          targetPitch = 0;
+          targetGear = 0;
+          setFlightLabel('LANDING SELESAI • PERSIAPAN MASUK HANGGAR...');
         } else {
           setFlightState('parked', null);
         }
@@ -487,7 +493,7 @@ export function AircraftModel() {
           targetPitch = 0.06;
           targetGear = 0;
           gearSpeed = 1.8;
-          setFlightLabel('TAHAP 3 • LANDING • LONG FINAL APPROACH & RODA KELUAR');
+          setFlightLabel('📡 ATC: CLEARED TO LAND RUNWAY 09 • LONG FINAL APPROACH');
         } else if (pt < 5.4) {
           // Fase 2: Landing Flare (hidung mendongak halus mendekati aspal runway)
           const p = (pt - 3.6) / 1.8;
@@ -513,12 +519,20 @@ export function AircraftModel() {
           targetPitch = THREE.MathUtils.lerp(-0.09, 0, Math.min(1, p * 1.8));
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • RODA DEPAN TURUN & PENGEREMAN');
-        } else if (pt < 10.2) {
+        } else if (pt < 11.6) {
+          // Jeda natural di runway (taxi keluar landasan & arahan ATC)
           targetZ = 0;
           targetY = 0;
           targetPitch = 0;
           targetGear = 0;
-          setFlightLabel('LANDING SELESAI • PARKIR');
+          setFlightLabel('📡 ATC: VACATE RUNWAY & TAXI TO HANGAR');
+        } else if (pt < 13.8) {
+          // Jeda mesin idle sebelum transisi kembali ke hanggar
+          targetZ = 0;
+          targetY = 0;
+          targetPitch = 0;
+          targetGear = 0;
+          setFlightLabel('LANDING SELESAI • PERSIAPAN MASUK HANGGAR...');
         } else {
           setFlightState('parked', null);
         }

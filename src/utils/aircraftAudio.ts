@@ -60,6 +60,8 @@ class AircraftAudioEngine {
   private currentProfile: SoundProfile | null = null;
   private touchdownPlayed = false;
   private gearChimePlayed = false;
+  private atcStartPlayed = false;
+  private atcVacatePlayed = false;
 
   /** Wajib dipanggil dari event klik pengguna agar AudioContext browser aktif. */
   unlock() {
@@ -145,10 +147,62 @@ class AircraftAudioEngine {
     this.lfo.start();
   }
 
-  /** Reset penanda one-shot SFX saat fase baru (Take Off / Landing) dimulai. */
+  /** Reset penanda one-shot SFX & transmisi ATC saat fase baru (Take Off / Landing) dimulai. */
   resetPhaseTriggers() {
     this.touchdownPlayed = false;
     this.gearChimePlayed = false;
+    this.atcStartPlayed = false;
+    this.atcVacatePlayed = false;
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+  }
+
+  /** Efek klik squelch statis radio VHF sebelum & sesudah suara ATC. */
+  private playRadioSquelch(delaySec = 0) {
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const start = ctx.currentTime + delaySec;
+    const src = this.createNoiseSource(0.085);
+    if (!src) return;
+    const bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.setValueAtTime(1750, start);
+    bp.Q.value = 3.2;
+
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.001, start);
+    g.gain.linearRampToValueAtTime(0.09, start + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+
+    src.connect(bp);
+    bp.connect(g);
+    g.connect(ctx.destination);
+    src.start(start);
+    src.stop(start + 0.085);
+  }
+
+  /** Memutar suara radio ATC (Air Traffic Control) lengkap dengan klik statis VHF. */
+  private speakAtc(message: string) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      this.playRadioSquelch(0);
+      const utter = new SpeechSynthesisUtterance(message);
+      utter.lang = 'en-US';
+      utter.rate = 1.06;
+      utter.pitch = 0.88;
+      utter.volume = 0.85;
+      const voices = window.speechSynthesis.getVoices();
+      const preferred =
+        voices.find((v) => v.lang.toLowerCase().startsWith('en') && /male|david|mark|google us|daniel/i.test(v.name)) ||
+        voices.find((v) => v.lang.toLowerCase().startsWith('en'));
+      if (preferred) utter.voice = preferred;
+      utter.onend = () => this.playRadioSquelch(0);
+      window.speechSynthesis.speak(utter);
+    } catch {
+      // Abaikan jika browser memblokir SpeechSynthesis
+    }
   }
 
   /** Helper membuat buffer white noise pendek untuk sintesis akustik realistis (non-arcade). */
@@ -312,6 +366,10 @@ class AircraftAudioEngine {
     let speedMod = 0;
 
     if (flightMode === 'takeoff') {
+      if (phaseTime > 0.15 && !this.atcStartPlayed) {
+        this.atcStartPlayed = true;
+        this.speakAtc('TNI AU Tower, cleared for take off, runway zero nine, wind calm.');
+      }
       if (phaseTime < 1.8) {
         throttle = 0.28 + (phaseTime / 1.8) * 0.7;
       } else if (phaseTime < 8.4) {
@@ -324,9 +382,18 @@ class AircraftAudioEngine {
         throttle = 0.76 + Math.sin(phaseTime * 1.4) * 0.04;
       }
     } else if (flightMode === 'landing') {
+      if (phaseTime > 0.15 && !this.atcStartPlayed) {
+        this.atcStartPlayed = true;
+        this.speakAtc('TNI AU Tower, cleared to land, runway zero nine, check gear down.');
+      }
       const isHeli = profile === 'helicopter';
       const touchTime = isHeli ? 5.8 : 5.4;
-      const stopTime = isHeli ? 7.0 : 9.2;
+      const stopTime = isHeli ? 7.2 : 9.2;
+      const vacateTime = isHeli ? 6.6 : 8.4;
+      if (phaseTime > vacateTime && !this.atcVacatePlayed) {
+        this.atcVacatePlayed = true;
+        this.speakAtc('Welcome back, vacate runway and taxi to hangar.');
+      }
       if (phaseTime < touchTime) {
         throttle = 0.62 - (phaseTime / touchTime) * 0.16;
         if (phaseTime > 1.0 && !this.gearChimePlayed) {
@@ -342,7 +409,9 @@ class AircraftAudioEngine {
         const p = Math.min(1, (phaseTime - touchTime) / (stopTime - touchTime));
         throttle = isHeli ? 0.42 * (1 - p * 0.72) : 0.66 * (1 - p * 0.8);
       } else {
-        throttle = 0.06;
+        // Mesin idle lembut di runway sebelum kembali ke hanggar
+        const idleP = Math.min(1, (phaseTime - stopTime) / 4.2);
+        throttle = Math.max(0.03, 0.14 * (1 - idleP * 0.78));
       }
     } else if (flightMode === 'airborne') {
       throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
@@ -492,6 +561,9 @@ class AircraftAudioEngine {
   stop() {
     if (this.ctx && this.masterGain) {
       this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.12);
+    }
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
     }
   }
 }
