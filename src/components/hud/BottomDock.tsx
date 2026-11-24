@@ -10,8 +10,11 @@ import {
   PlaneTakeoff,
   Rotate3d,
   RotateCcw,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
+import { aircraftAudio } from '../../utils/aircraftAudio';
 
 export function BottomDock() {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -19,6 +22,7 @@ export function BottomDock() {
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
+  const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
@@ -127,6 +131,18 @@ export function BottomDock() {
         icon: Rotate3d,
         active: autoRotate,
         onClick: () => toggle('autoRotate'),
+      },
+      {
+        id: 'sound',
+        label: soundEnabled ? 'Suara Aktif' : 'Suara Mati',
+        short: soundEnabled ? 'Suara' : 'Mute',
+        icon: soundEnabled ? Volume2 : VolumeX,
+        active: soundEnabled,
+        onClick: () => {
+          aircraftAudio.unlock();
+          toggle('soundEnabled');
+        },
+        accent: 'emerald' as const,
       },
     ];
 

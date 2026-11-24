@@ -5,6 +5,7 @@ import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
 import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
+import { aircraftAudio } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 
@@ -86,6 +87,7 @@ export function AircraftModel() {
   const unit = useSelectedUnit();
   const wireframe = useHangarStore((s) => s.wireframe);
   const autoRotate = useHangarStore((s) => s.autoRotate);
+  const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
@@ -124,8 +126,9 @@ export function AircraftModel() {
 
   const activeGroup = glbGroup ?? procedural.group;
 
-  // Reset saat berganti pesawat
+    // Reset saat berganti pesawat
   useEffect(() => {
+    aircraftAudio.stop();
     phaseTime.current = 0;
     gearRetract.current = 0;
     currentX.current = 0;
@@ -516,6 +519,9 @@ export function AircraftModel() {
         );
       }
     }
+
+    // Sinkronkan audio mesin real-time sesuai karakter pesawat & fase penerbangan
+    aircraftAudio.update(unit.id, flightMode, pt, soundEnabled);
   });
 
   return (

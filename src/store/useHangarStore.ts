@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
+import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
 export type FlightMode = 'parked' | 'takeoff' | 'landing' | 'engineSim';
@@ -75,6 +76,7 @@ interface HangarState {
   showInfographic: boolean;
   showPins: boolean;
   autoRotate: boolean;
+  soundEnabled: boolean;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -95,7 +97,7 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate') => void;
+  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled') => void;
 
   triggerTakeOff: () => void;
   triggerLanding: () => void;
@@ -142,6 +144,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   showInfographic: false,
   showPins: false,
   autoRotate: false,
+  soundEnabled: true,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -197,23 +200,31 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     if (key === 'autoRotate' && next) set({ activeHotspot: null });
   },
 
-  triggerTakeOff: () =>
+  triggerTakeOff: () => {
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
     set((s) => ({
       flightMode: 'takeoff',
       flightNonce: s.flightNonce + 1,
       flightLabel: 'TAKE OFF • ANCANG-ANCANG & FULL POWER',
       autoRotate: false,
       activeHotspot: null,
-    })),
-  triggerLanding: () =>
+    }));
+  },
+  triggerLanding: () => {
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
     set((s) => ({
       flightMode: 'landing',
       flightNonce: s.flightNonce + 1,
       flightLabel: 'LANDING • FINAL APPROACH & RODA KELUAR',
       autoRotate: false,
       activeHotspot: null,
-    })),
-  toggleEngineSim: () =>
+    }));
+  },
+  toggleEngineSim: () => {
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
     set((s) => {
       const activating = s.flightMode !== 'engineSim';
       const isGSuit = s.selectedId === 'gsuit';
@@ -230,7 +241,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
           : null,
         activeHotspot: activating ? null : s.activeHotspot,
       };
-    }),
+    });
+  },
   setFlightState: (flightMode, flightLabel) => set({ flightMode, flightLabel }),
   setFlightLabel: (flightLabel) => {
     if (get().flightLabel !== flightLabel) set({ flightLabel });
