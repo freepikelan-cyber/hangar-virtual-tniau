@@ -394,22 +394,30 @@ export function SkyCloudsEnvironment() {
       targetWorldY = -19.5;
       groundSpeed = 58;
     } else if (flightMode === 'landing') {
-      if (pt < 5.4) {
-        const p = Math.min(1, pt / 5.4);
-        targetWorldY = THREE.MathUtils.lerp(-12.5, -0.02, p);
-        // Gulir tepat menuju posisi Hanggar TNI AU (scrollZ = LOOP_LEN -> 0) saat pengereman selesai!
-        scrollZ.current = THREE.MathUtils.lerp(LOOP_LEN - 190, LOOP_LEN - 48, p);
+      const stopScroll = LOOP_LEN - 14; // Tepat menyelaraskan pintu Hanggar TNI AU di world z = +3.5 (di depan hidung pesawat saat berhenti!)
+      if (pt < 6.0) {
+        // Long Final Approach & Flare -> Runway naik mulus mendekati roda sambil melaju kencang
+        const p = Math.min(1, pt / 6.0);
+        targetWorldY = THREE.MathUtils.lerp(-13.0, -0.02, p);
+        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 330, stopScroll - 135, p);
         groundSpeed = 0;
-      } else if (pt < 9.2) {
-        const p = Math.min(1, (pt - 5.4) / 3.8);
-        const ease = 1 - (1 - p) * (1 - p);
+      } else if (pt < 7.8) {
+        // Touchdown: pesawat masih melaju CEPAT di atas aspal runway!
+        const p = (pt - 6.0) / 1.8;
         targetWorldY = -0.02;
-        scrollZ.current = THREE.MathUtils.lerp(LOOP_LEN - 48, LOOP_LEN, ease) % LOOP_LEN;
+        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 135, stopScroll - 72, p);
+        groundSpeed = 0;
+      } else if (pt < 12.2) {
+        // Pengereman panjang & halus (deselerasi kuadratik mulus sampai benar-benar berhenti!)
+        const p = Math.min(1, (pt - 7.8) / 4.4);
+        const decel = 1 - (1 - p) * (1 - p);
+        targetWorldY = -0.02;
+        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 72, stopScroll, decel);
         groundSpeed = 0;
       } else {
-        // Berhenti di Runway & Taxi masuk ke dalam Hanggar TNI AU (scrollZ terkunci di 0 tepat sejajar pintu hanggar!)
+        // Berhenti total di runway -> Taxi perlahan masuk ke dalam Hanggar TNI AU
         targetWorldY = -0.02;
-        scrollZ.current = 0;
+        scrollZ.current = stopScroll;
         groundSpeed = 0;
       }
     }
