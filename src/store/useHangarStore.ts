@@ -77,6 +77,7 @@ interface HangarState {
   showPins: boolean;
   autoRotate: boolean;
   soundEnabled: boolean;
+  cockpitMode: boolean;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -90,6 +91,8 @@ interface HangarState {
   openWelcome: () => void;
   toggleInfographic: () => void;
   closeInfographic: () => void;
+  toggleCockpitMode: () => void;
+  exitCockpitMode: () => void;
   bumpGlbVersion: (unitId: string) => void;
   selectAircraft: (id: string) => void;
   setSearch: (v: string) => void;
@@ -145,6 +148,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   showPins: false,
   autoRotate: false,
   soundEnabled: true,
+  cockpitMode: false,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -158,6 +162,28 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   openWelcome: () => set({ showWelcome: true, showInfographic: false }),
   toggleInfographic: () => set((s) => ({ showInfographic: !s.showInfographic })),
   closeInfographic: () => set({ showInfographic: false }),
+  toggleCockpitMode: () =>
+    set((s) => {
+      if (s.selectedId === 'gsuit' || s.selectedId === 'pilot-helmet') return {};
+      const next = !s.cockpitMode;
+      return {
+        cockpitMode: next,
+        activeHotspot: null,
+        autoRotate: false,
+        showInfographic: false,
+        leftOpen: next ? false : s.leftOpen,
+        rightOpen: next ? false : s.rightOpen,
+        camRequest: next
+          ? { pos: [0, 1.38, 0.08], target: [0, 1.32, 1.8], nonce: nonce++ }
+          : { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+      };
+    }),
+  exitCockpitMode: () =>
+    set((s) => ({
+      cockpitMode: false,
+      activeHotspot: null,
+      camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+    })),
   bumpGlbVersion: (unitId) =>
     set((s) => ({
       glbVersion: { ...s.glbVersion, [unitId]: (s.glbVersion[unitId] ?? 0) + 1 },
@@ -169,16 +195,21 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       if (mobile) set({ leftOpen: false });
       return;
     }
+    const isEquipment = id === 'gsuit' || id === 'pilot-helmet';
+    const stayCockpit = get().cockpitMode && !isEquipment;
     pinRegistry.clear();
     set({
       selectedId: id,
       activeHotspot: null,
       quiz: emptyQuiz,
+      cockpitMode: stayCockpit,
       flightMode: 'parked',
       flightLabel: null,
       leftOpen: mobile ? false : get().leftOpen,
       infoTab: get().infoTab === 'quiz' ? 'quiz' : get().infoTab,
-      camRequest: { ...getDefaultCamera(id), nonce: nonce++ },
+      camRequest: stayCockpit
+        ? { pos: [0, 1.38, 0.08], target: [0, 1.32, 1.8], nonce: nonce++ }
+        : { ...getDefaultCamera(id), nonce: nonce++ },
     });
   },
   setSearch: (search) => set({ search }),

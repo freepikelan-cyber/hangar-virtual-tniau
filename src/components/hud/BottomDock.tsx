@@ -1,5 +1,6 @@
 import {
   Activity,
+  Eye,
   FileText,
   Flame,
   Grid3X3,
@@ -19,11 +20,13 @@ export function BottomDock() {
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
+  const cockpitMode = useHangarStore((s) => s.cockpitMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
   const toggle = useHangarStore((s) => s.toggle);
   const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
+  const toggleCockpitMode = useHangarStore((s) => s.toggleCockpitMode);
   const triggerTakeOff = useHangarStore((s) => s.triggerTakeOff);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
@@ -96,6 +99,19 @@ export function BottomDock() {
     accent?: 'amber' | 'emerald';
   }[] = [
       ...flightButtons,
+      ...(!isGSuit && !isHelmet
+        ? [
+            {
+              id: 'cockpit',
+              label: cockpitMode ? 'Keluar Kokpit' : 'Masuk Kokpit',
+              short: cockpitMode ? 'Keluar' : 'Kokpit',
+              icon: Eye,
+              active: cockpitMode,
+              onClick: toggleCockpitMode,
+              accent: 'emerald' as const,
+            },
+          ]
+        : []),
       {
         id: 'infographic',
         label: 'Spesifikasi',
