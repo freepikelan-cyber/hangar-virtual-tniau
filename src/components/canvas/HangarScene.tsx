@@ -6,11 +6,17 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
+import { SkyCloudsEnvironment } from './SkyCloudsEnvironment';
 
 function RadarPlatform() {
+  const groupRef = useRef<THREE.Group>(null);
   const sweepRef = useRef<THREE.Mesh>(null);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const selectedId = useHangarStore((s) => s.selectedId);
   const floorTex = useMemo(() => radarFloorTexture(), []);
   const sweepTex = useMemo(() => sweepTexture(), []);
+
+  const isAirborneSim = flightMode === 'engineSim' && selectedId !== 'gsuit' && selectedId !== 'pilot-helmet';
 
   useEffect(() => {
     return () => {
@@ -23,10 +29,15 @@ function RadarPlatform() {
     if (sweepRef.current) {
       sweepRef.current.rotation.z -= delta * 0.45;
     }
+    if (groupRef.current) {
+      const targetY = isAirborneSim ? -18 : -0.02;
+      groupRef.current.position.y = THREE.MathUtils.lerp(groupRef.current.position.y, targetY, Math.min(1, delta * 2.5));
+      groupRef.current.visible = groupRef.current.position.y > -16;
+    }
   });
 
   return (
-    <group position={[0, -0.02, 0]} name="radar-platform">
+    <group ref={groupRef} position={[0, -0.02, 0]} name="radar-platform">
       {/* Piringan landasan radar utama */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[11.2, 96]} />
@@ -168,6 +179,7 @@ export function HangarScene() {
         <fog attach="fog" args={['#0a1e3c', 26, 62]} />
 
         <StudioLighting />
+        <SkyCloudsEnvironment />
         <RadarPlatform />
         <ContactShadows
           position={[0, 0.01, 0]}
