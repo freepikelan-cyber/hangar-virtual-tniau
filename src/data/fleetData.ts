@@ -109,7 +109,7 @@ export const FLEET: AircraftUnit[] = [
     name: 'Dassault Rafale',
     code: 'F4 Standard',
     origin: 'Prancis',
-    tailNumber: 'TS-0301',
+    tailNumber: 'T-0302',
     category: 'Tempur',
     squadron: 'Program Modernisasi Alutsista TNI AU',
     role: 'Pesawat tempur omnirole generasi 4.5 bersayap delta dengan canard. Mampu melaksanakan misi superioritas udara, serangan darat dalam, pengintaian, dan anti-kapal dalam satu sorti penerbangan.',
@@ -122,17 +122,17 @@ export const FLEET: AircraftUnit[] = [
     },
     history: {
       operational:
-        'Indonesia menandatangani kontrak pengadaan 42 unit Rafale pada 2022 sebagai bagian program modernisasi alutsista TNI AU. Rafale disiapkan untuk melengkapi dan menggantikan armada tempur lama, sekaligus membuka kerja sama industri pertahanan dengan Prancis.',
+        'Indonesia menandatangani kontrak pengadaan 42 unit Rafale pada 2022 sebagai bagian program modernisasi alutsista TNI AU. Unit Rafale B kursi ganda seperti T-0302 hadir dengan kamuflase abu dua nada dan roundel low-visibility khas TNI AU.',
       tactical:
         'Sistem fusi sensor mengintegrasikan radar AESA RBE2, sensor optronik OSF, dan perang elektronik SPECTRA sehingga pilot memperoleh gambaran situasi menyeluruh. Kombinasi rudal Meteor jarak jauh dan MICA menjadikannya unggul dalam pertempuran di luar jarak pandang (BVR).',
       missions: ['Misi omnirole (udara & darat sekaligus)', 'Serangan presisi jarak jauh (SCALP)', 'Pengintaian taktis', 'Penangkalan strategis kawasan'],
     },
     hotspots: [
-      { id: 1, name: 'Radar AESA RBE2', pos: [0, 1.6, 6.5], camOffset: [3.0, 1.0, 3.2], desc: 'Radar Active Electronically Scanned Array buatan Thales. Berkas radarnya digerakkan secara elektronik sehingga mampu melacak banyak sasaran udara dan darat secara bersamaan.' },
-      { id: 2, name: 'Kokpit Kaca & HUD', pos: [0, 2.4, 3.8], camOffset: [2.6, 1.8, 2.4], desc: 'Kokpit dengan layar sentuh, Head-Up Display lebar, serta kendali suara. Kursi lontar Martin-Baker Mk16 menjamin keselamatan pilot.' },
-      { id: 3, name: 'Canard Terpadu', pos: [1.7, 1.85, 2.2], camOffset: [3.0, 1.6, 2.6], desc: 'Canard yang terpasang dekat (close-coupled) dengan sayap delta, menciptakan pusaran udara yang meningkatkan daya angkat dan kelincahan tanpa kehilangan kecepatan.' },
-      { id: 4, name: 'Mesin Kembar Safran M88', pos: [0.42, 1.4, -6.9], camOffset: [2.8, 1.2, -3.6], desc: 'Dua mesin turbofan Safran M88-2 yang ringkas dan efisien, masing-masing ±7.500 kgf dengan afterburner. Memungkinkan supercruise ringan dengan muatan tertentu.' },
-      { id: 5, name: 'Sayap Delta & SPECTRA', pos: [3.8, 1.42, -3.8], camOffset: [3.2, 3.0, 2.2], desc: 'Sayap delta besar dengan 14 titik cantelan. Sistem perlindungan diri SPECTRA terintegrasi di badan pesawat untuk mendeteksi, mengacak, dan mengecoh ancaman radar maupun rudal.' },
+      { id: 1, name: 'Radar AESA RBE2 & Probe BBM', pos: [0.18, 1.72, 5.95], camOffset: [3.0, 1.1, 3.2], desc: 'Radar Active Electronically Scanned Array buatan Thales yang melacak banyak sasaran udara dan darat bersamaan, dilengkapi probe pengisian bahan bakar di udara tetap di sisi kanan hidung.' },
+      { id: 2, name: 'Kokpit Tandem & HUD', pos: [0, 2.52, 3.3], camOffset: [2.6, 1.8, 2.4], desc: 'Kokpit tandem Rafale B dengan layar sentuh, Head-Up Display lebar, serta kendali suara. Dua kursi lontar Martin-Baker Mk16 menjamin keselamatan kedua awak.' },
+      { id: 3, name: 'Canard Terpadu (Close-Coupled)', pos: [1.65, 1.84, 2.15], camOffset: [3.0, 1.5, 2.6], desc: 'Canard yang terpasang dekat (close-coupled) dengan sayap delta, menciptakan pusaran udara yang meningkatkan daya angkat dan kelincahan tanpa kehilangan kecepatan.' },
+      { id: 4, name: 'Mesin Kembar Safran M88-2', pos: [0.41, 1.44, -6.9], camOffset: [2.8, 1.2, -3.6], desc: 'Dua mesin turbofan Safran M88-2 yang terpasang rapat, ringkas, dan efisien (±7.500 kgf per mesin dengan afterburner), memungkinkan supercruise ringan.' },
+      { id: 5, name: 'Sayap Delta & SPECTRA', pos: [3.55, 1.46, -3.6], camOffset: [3.2, 2.8, 2.2], desc: 'Sayap delta besar dengan 14 titik cantelan untuk rudal Meteor/MICA dan tangki supersonik. Sistem perlindungan diri SPECTRA terintegrasi di pucuk dan pangkal ekor untuk mengecoh ancaman radar & rudal.' },
     ],
   },
   {

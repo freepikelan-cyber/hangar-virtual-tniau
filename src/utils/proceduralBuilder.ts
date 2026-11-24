@@ -14,6 +14,7 @@ import {
 } from './textures';
 import { buildDetailedF16 } from './f16Builder';
 import { buildDetailedSu30 } from './su30Builder';
+import { buildDetailedRafale } from './rafaleBuilder';
 
 /* =========================================================================
  * Rakitan geometri 3D prosedural armada TNI AU.
@@ -522,74 +523,6 @@ function nozzle(group: THREE.Group, k: Kit, x: number, y: number, zFront: number
   group.add(n, face);
 }
 
-function buildRafale(): BuildResult {
-  const g = new THREE.Group();
-  const yC = 1.55;
-  const sx = 1.15;
-  const sy = 0.85;
-  const prof: Pt[] = [[-6.8, 0.2], [-6.4, 0.45], [-5, 0.6], [-2, 0.68], [1, 0.66], [3, 0.55], [4.5, 0.45], [5.6, 0.33], [6.5, 0.17], [7.0, 0.02]];
-  const k = makeKit('grey', 14, 2 * Math.PI * 0.72);
-  const { geo, f } = latheZ(prof);
-  const fuse = mk(geo, k.fuse);
-  fuse.scale.set(sx, sy, 1);
-  fuse.position.y = yC;
-  g.add(fuse);
-  noseCap(g, prof, 5.5, 7.0, k.radome, yC, sx, sy);
-  const engProf: Pt[] = [[-6.6, 0.37], [-4, 0.4], [-2, 0.38]];
-  for (const x of [0.42, -0.42]) {
-    const e = mk(latheZ(engProf, 28, 16).geo, k.fuse);
-    e.position.set(x, 1.42, 0);
-    g.add(e);
-    nozzle(g, k, x, 1.42, -6.55, 0.65, 0.37, 0.32);
-    engineCore(g, k, x, 1.42, -6.5, -1.5, 0.3);
-    const ib = mk(new THREE.BoxGeometry(0.45, 0.55, 2.0), k.fuse);
-    ib.position.set(x * 1.72, 1.18, 1.3);
-    const face = mk(new THREE.PlaneGeometry(0.38, 0.46), k.intake);
-    face.position.set(x * 1.72, 1.18, 2.31);
-    g.add(ib, face);
-  }
-  const wings = wingPair(g, [[0.55, 1.9], [4.95, -4.4], [4.95, -5.05], [0.55, -5.6]], 0.1, 1.32, k.wing);
-  wingPair(g, [[0.65, 2.9], [2.05, 1.95], [2.05, 1.6], [0.65, 1.75]], 0.06, 1.72, k.wing);
-  const finM = fin(g, [[-2.8, 0], [-5.7, 2.75], [-6.45, 2.75], [-6.7, 0]], 0.09, 0, 1.95, k.tail);
-  canopy(g, 3.75, 1.98, 2.5, 0.78, 0.55, k.glass);
-  const probe = mk(new THREE.CylinderGeometry(0.035, 0.035, 1.3, 8), k.metal);
-  probe.rotation.x = Math.PI / 2;
-  probe.position.set(0.3, 1.92, 5.1);
-  g.add(probe);
-  missile(g, k, 5.0, 1.26, -4.2, 2.0, 0.07);
-  missile(g, k, -5.0, 1.26, -4.2, 2.0, 0.07);
-  missile(g, k, 2.9, 1.14, -2.6, 3.6, 0.1);
-  missile(g, k, -2.9, 1.14, -2.6, 3.6, 0.1);
-
-  gear(g, k, 0, 3.6, 0.95, 0.25, { twin: true });
-  gear(g, k, 1.35, -2.5, 1.1, 0.3, { width: 0.2 });
-  gear(g, k, -1.35, -2.5, 1.1, 0.3, { width: 0.2 });
-
-  ribs(g, f, -5.8, 6, 0.85, yC, sx, sy, k.internal);
-  seat(g, k, 3.6, 1.8, 0, 1.1);
-  radarDish(g, k, 6.0, yC, 0.3);
-  fuelTank(g, k, 0, 1.8, 0, 2.2, 0.26);
-
-  wingRoundels(g, wings, 3.0, 1.4, -3.3, 1.1);
-  finMarkings(g, finM, 0, 0.09, [3.95, -5.6], 0.95, 'TS-0301', [2.95, -4.95], 1.5);
-  decalSides(g, fuse, [0.78, 1.62, -1.2], [1.5, 0.36, 0.5], TEXT('TNI AU'));
-  decalSides(g, fuse, [0.62, 1.55, 4.9], [0.62, 0.42, 0.5], TEXT('03', '#14191f', 1.4));
-
-  return result(g, k, {
-    nozzles: [
-      { pos: [0.42, 1.42, -7.2], r: 0.3, kind: 'ab' },
-      { pos: [-0.42, 1.42, -7.2], r: 0.3, kind: 'ab' },
-    ],
-    spinners: [],
-    navLights: [
-      { pos: [5.0, 1.26, -3.0], color: '#ff2a2a' },
-      { pos: [-5.0, 1.26, -3.0], color: '#22ff66' },
-      { pos: [0, 4.72, -6.4], color: '#ffffff', blink: 'strobe' },
-    ],
-    hoverHeight: 0.9,
-  });
-}
-
 function buildT50(): BuildResult {
   const g = new THREE.Group();
   const yC = 1.45;
@@ -993,7 +926,7 @@ function buildCaracal(): BuildResult {
 const builders: Record<string, () => BuildResult> = {
   su30mk2: buildDetailedSu30,
   f16id: buildDetailedF16,
-  rafale: buildRafale,
+  rafale: buildDetailedRafale,
   c130j: buildC130,
   b737vip: buildB737,
   t50i: buildT50,
