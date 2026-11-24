@@ -27,7 +27,7 @@ function HotspotPin({ item }: HotspotPinProps) {
   const isSelected = activeHotspot === item.id;
   const fb = quiz.feedback;
 
-  const isInternal = !isQuizActive && item.partType === 'Jeroan';
+  const isInternal = !isQuizActive && item.partType === 'Sistem Internal';
 
   let tone: 'blue' | 'internal' | 'amber' | 'green' | 'red' = isInternal ? 'internal' : 'blue';
   if (isQuizActive && fb) {

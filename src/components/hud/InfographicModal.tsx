@@ -162,7 +162,7 @@ export function InfographicModal() {
                       {h.partType && (
                         <span
                           className={`rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase ${
-                            h.partType === 'Jeroan'
+                            h.partType === 'Sistem Internal'
                               ? 'border border-cyan-300/50 bg-cyan-400/15 text-cyan-200'
                               : h.partType === 'Senjata'
                                 ? 'border border-rose-400/50 bg-rose-500/15 text-rose-200'

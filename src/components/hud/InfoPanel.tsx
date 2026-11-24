@@ -166,7 +166,7 @@ export function InfoPanel() {
                           {h.partType && (
                             <span
                               className={`shrink-0 rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase ${
-                                h.partType === 'Jeroan'
+                                h.partType === 'Sistem Internal'
                                   ? 'bg-cyan-400/15 text-cyan-200 border border-cyan-300/40'
                                   : h.partType === 'Senjata'
                                     ? 'bg-rose-500/15 text-rose-200 border border-rose-400/40'

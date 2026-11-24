@@ -182,7 +182,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set((s) => ({
       flightMode: 'takeoff',
       flightNonce: s.flightNonce + 1,
-      flightLabel: 'TAKE OFF • AKSELERASI LANDASAN',
+      flightLabel: 'TAKE OFF • ANCANG-ANCANG & FULL POWER',
       autoRotate: false,
       activeHotspot: null,
     })),
@@ -190,7 +190,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set((s) => ({
       flightMode: 'landing',
       flightNonce: s.flightNonce + 1,
-      flightLabel: 'LANDING • PENDEKATAN & RODA KELUAR',
+      flightLabel: 'LANDING • FINAL APPROACH & RODA KELUAR',
       autoRotate: false,
       activeHotspot: null,
     })),

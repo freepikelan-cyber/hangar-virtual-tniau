@@ -39,14 +39,14 @@ export function HotspotCard() {
                 {item.partType && (
                   <span
                     className={`rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase ${
-                      item.partType === 'Jeroan'
+                      item.partType === 'Sistem Internal'
                         ? 'border border-cyan-300/60 bg-cyan-400/15 text-cyan-200'
                         : item.partType === 'Senjata'
                           ? 'border border-rose-400/60 bg-rose-500/15 text-rose-200'
                           : 'border border-[#4da6ff]/50 bg-[#4da6ff]/15 text-[#75bcff]'
                     }`}
                   >
-                    {item.partType === 'Jeroan' ? 'Jeroan Internal • Bedah Aktif' : item.partType}
+                    {item.partType === 'Sistem Internal' ? 'Sistem Internal • Tampilan Transparan' : item.partType}
                   </span>
                 )}
               </div>
