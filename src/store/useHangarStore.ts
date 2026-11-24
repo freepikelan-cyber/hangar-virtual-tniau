@@ -14,7 +14,13 @@ export function isPortraitMobile() {
   return typeof window !== 'undefined' && window.innerWidth < 768 && window.innerHeight > window.innerWidth;
 }
 
-export function getDefaultCamera(): { pos: Vec3; target: Vec3 } {
+export function getDefaultCamera(unitId?: string): { pos: Vec3; target: Vec3 } {
+  if (unitId === 'gsuit') {
+    if (isPortraitMobile()) {
+      return { pos: [3.4, 5.8, 17.8], target: [0, 5.4, 0] };
+    }
+    return { pos: [2.6, 5.8, 13.8], target: [0, 5.4, 0] };
+  }
   if (isPortraitMobile()) {
     return { pos: [17.5, 7.6, 20.5], target: [0, 1.4, 0] };
   }
@@ -156,7 +162,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       flightLabel: null,
       leftOpen: mobile ? false : get().leftOpen,
       infoTab: get().infoTab === 'quiz' ? 'quiz' : get().infoTab,
-      camRequest: { ...getDefaultCamera(), nonce: nonce++ },
+      camRequest: { ...getDefaultCamera(id), nonce: nonce++ },
     });
   },
   setSearch: (search) => set({ search }),
@@ -197,10 +203,15 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   toggleEngineSim: () =>
     set((s) => {
       const activating = s.flightMode !== 'engineSim';
+      const isGSuit = s.selectedId === 'gsuit';
       return {
         flightMode: activating ? 'engineSim' : 'parked',
         flightNonce: s.flightNonce + 1,
-        flightLabel: activating ? 'SIMULASI MESIN • RODA MASUK OTOMATIS' : null,
+        flightLabel: activating
+          ? isGSuit
+            ? 'SIMULASI 9G • KANTUNG UDARA G-SUIT MENGEMBANG & VISOR HMDS AKTIF'
+            : 'SIMULASI MESIN • RODA MASUK OTOMATIS'
+          : null,
         activeHotspot: activating ? null : s.activeHotspot,
       };
     }),
@@ -210,7 +221,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
 
   requestCamera: (pos, target) => set({ camRequest: { pos, target, nonce: nonce++ } }),
-  resetCamera: () => set({ camRequest: { ...getDefaultCamera(), nonce: nonce++ }, activeHotspot: null }),
+  resetCamera: () => set({ camRequest: { ...getDefaultCamera(get().selectedId), nonce: nonce++ }, activeHotspot: null }),
   focusHotspot: (id) => {
     const unit = getUnit(get().selectedId);
     const h = unit.hotspots.find((x) => x.id === id);
@@ -244,7 +255,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       activeHotspot: null,
       leftOpen: mobile ? false : get().leftOpen,
       rightOpen: mobile ? false : get().rightOpen,
-      camRequest: { ...getDefaultCamera(), nonce: nonce++ },
+      camRequest: { ...getDefaultCamera(unit.id), nonce: nonce++ },
     });
   },
   answerQuiz: (pickedId) => {

@@ -1,4 +1,5 @@
 import {
+  Activity,
   FileText,
   Flame,
   Grid3X3,
@@ -13,6 +14,7 @@ import {
 import { useHangarStore } from '../../store/useHangarStore';
 
 export function BottomDock() {
+  const selectedId = useHangarStore((s) => s.selectedId);
   const wireframe = useHangarStore((s) => s.wireframe);
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
@@ -27,34 +29,60 @@ export function BottomDock() {
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
-  const buttons = [
-    {
-      id: 'takeoff',
-      label: 'Take Off',
-      short: 'Take Off',
-      icon: PlaneTakeoff,
-      active: flightMode === 'takeoff',
-      onClick: triggerTakeOff,
-      accent: 'amber' as const,
-    },
-    {
-      id: 'landing',
-      label: 'Landing',
-      short: 'Landing',
-      icon: PlaneLanding,
-      active: flightMode === 'landing',
-      onClick: triggerLanding,
-      accent: 'emerald' as const,
-    },
-    {
-      id: 'engine',
-      label: 'Simulasi Mesin',
-      short: 'Mesin',
-      icon: Flame,
-      active: flightMode === 'engineSim',
-      onClick: toggleEngineSim,
-      accent: 'amber' as const,
-    },
+  const isGSuit = selectedId === 'gsuit';
+
+  const flightButtons = isGSuit
+    ? [
+        {
+          id: 'sim9g',
+          label: 'Simulasi 9G',
+          short: 'Sim 9G',
+          icon: Activity,
+          active: flightMode === 'engineSim',
+          onClick: toggleEngineSim,
+          accent: 'amber' as const,
+        },
+      ]
+    : [
+        {
+          id: 'takeoff',
+          label: 'Take Off',
+          short: 'Take Off',
+          icon: PlaneTakeoff,
+          active: flightMode === 'takeoff',
+          onClick: triggerTakeOff,
+          accent: 'amber' as const,
+        },
+        {
+          id: 'landing',
+          label: 'Landing',
+          short: 'Landing',
+          icon: PlaneLanding,
+          active: flightMode === 'landing',
+          onClick: triggerLanding,
+          accent: 'emerald' as const,
+        },
+        {
+          id: 'engine',
+          label: 'Simulasi Mesin',
+          short: 'Mesin',
+          icon: Flame,
+          active: flightMode === 'engineSim',
+          onClick: toggleEngineSim,
+          accent: 'amber' as const,
+        },
+      ];
+
+  const buttons: {
+    id: string;
+    label: string;
+    short: string;
+    icon: typeof Activity;
+    active: boolean;
+    onClick: () => void;
+    accent?: 'amber' | 'emerald';
+  }[] = [
+    ...flightButtons,
     {
       id: 'infographic',
       label: 'Spesifikasi',

@@ -1,4 +1,4 @@
-import { Radio } from 'lucide-react';
+import { Radio, ShieldCheck } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { TniAuLogo3D } from './TniAuLogo3D';
@@ -6,6 +6,8 @@ import { TniAuLogo3D } from './TniAuLogo3D';
 export function TopHeader() {
   const unit = useSelectedUnit();
   const openWelcome = useHangarStore((s) => s.openWelcome);
+  const selectAircraft = useHangarStore((s) => s.selectAircraft);
+  const isGSuit = unit.id === 'gsuit';
 
   return (
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
@@ -35,6 +37,21 @@ export function TopHeader() {
             </span>
           </div>
         </div>
+
+        {/* Tombol Menu Cepat G-Suit 3D (Baju Pilot Tempur) */}
+        <button
+          type="button"
+          onClick={() => selectAircraft(isGSuit ? 'f16id' : 'gsuit')}
+          title={isGSuit ? 'Kembali ke Pesawat Tempur' : 'Buka Menu G-Suit 3D (Baju & Helm Pilot Tempur)'}
+          className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-2.5 sm:px-3.5 py-2 font-display text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+            isGSuit
+              ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c] shadow-[0_0_16px_rgba(255,183,3,0.45)]'
+              : 'border-[#ffb703]/60 bg-[#ffb703]/15 text-[#ffb703] hover:bg-[#ffb703]/25 hover:border-[#ffb703]'
+          }`}
+        >
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          <span className="whitespace-nowrap">{isGSuit ? 'G-Suit Aktif' : 'G-Suit 3D'}</span>
+        </button>
       </div>
 
       {/* Header Kanan Atas: Telemetri Unit Aktif & Kategori (Tablet/Desktop/Smartboard) */}

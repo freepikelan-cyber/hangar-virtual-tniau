@@ -324,45 +324,64 @@ export function AircraftModel() {
         }
       }
     } else if (flightMode === 'engineSim') {
-      // Simulasi Mesin: manuver udara dinamis (belok kanan, belok kiri, menanjak atas, menukik bawah) + roda masuk!
-      const cycle = pt % 16;
-      const bankAmp = isHeavy ? 0.22 : isHeli ? 0.2 : 0.44;
-      const pitchAmp = isHeavy ? 0.14 : isHeli ? 0.12 : 0.26;
-      const baseH = Math.max(2.1, procedural.hoverHeight + 0.9);
-      targetGear = 1;
-
-      if (cycle < 4) {
-        const s = Math.sin((cycle / 4) * Math.PI);
-        targetX = 1.9 * s;
-        targetY = baseH + 0.25 * s;
-        targetRoll = -bankAmp * s;
-        targetPitch = -0.05 * s;
-        targetYawOffset = -0.18 * s;
-        setFlightLabel('SIMULASI MESIN • MANUVER BELOK KANAN');
-      } else if (cycle < 8) {
-        const s = Math.sin(((cycle - 4) / 4) * Math.PI);
-        targetX = -1.9 * s;
-        targetY = baseH + 0.25 * s;
-        targetRoll = bankAmp * s;
-        targetPitch = -0.05 * s;
-        targetYawOffset = 0.18 * s;
-        setFlightLabel('SIMULASI MESIN • MANUVER BELOK KIRI');
-      } else if (cycle < 12) {
-        const s = Math.sin(((cycle - 8) / 4) * Math.PI);
+      if (unit.id === 'gsuit') {
+        // SIMULASI 9G khusus G-Suit Pilot: berdiri kokoh di platform, kantung udara mengembang & visor HMDS menyala
         targetX = 0;
-        targetY = baseH + 1.35 * s;
-        targetZ = 0.7 * s;
-        targetPitch = -pitchAmp * s;
-        targetRoll = Math.sin(t * 2) * 0.04;
-        setFlightLabel('SIMULASI MESIN • MANUVER MENANJAK (ATAS)');
+        targetY = 0;
+        targetZ = 0;
+        targetPitch = 0;
+        targetRoll = 0;
+        targetYawOffset = Math.sin(t * 0.6) * 0.25;
+        targetGear = 0;
+        const gCycle = pt % 8;
+        if (gCycle < 2.5) {
+          setFlightLabel('SIMULASI 9G • KATUP ANTI-G MEMOMPA UDARA (5G → 9G)');
+        } else if (gCycle < 5.5) {
+          setFlightLabel('SIMULASI 9G • KANTUNG PERUT, PAHA & BETIS MENEKAN PENUH');
+        } else {
+          setFlightLabel('SIMULASI 9G • ALIRAN DARAH KE OTAK STABIL & VISOR HMDS AKTIF');
+        }
       } else {
-        const s = Math.sin(((cycle - 12) / 4) * Math.PI);
-        targetX = 0;
-        targetY = Math.max(1.25, baseH - 0.85 * s);
-        targetZ = -0.6 * s;
-        targetPitch = pitchAmp * 0.72 * s;
-        targetRoll = Math.cos(t * 2) * 0.04;
-        setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
+        // Simulasi Mesin: manuver udara dinamis (belok kanan, belok kiri, menanjak atas, menukik bawah) + roda masuk!
+        const cycle = pt % 16;
+        const bankAmp = isHeavy ? 0.22 : isHeli ? 0.2 : 0.44;
+        const pitchAmp = isHeavy ? 0.14 : isHeli ? 0.12 : 0.26;
+        const baseH = Math.max(2.1, procedural.hoverHeight + 0.9);
+        targetGear = 1;
+
+        if (cycle < 4) {
+          const s = Math.sin((cycle / 4) * Math.PI);
+          targetX = 1.9 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = -bankAmp * s;
+          targetPitch = -0.05 * s;
+          targetYawOffset = -0.18 * s;
+          setFlightLabel('SIMULASI MESIN • MANUVER BELOK KANAN');
+        } else if (cycle < 8) {
+          const s = Math.sin(((cycle - 4) / 4) * Math.PI);
+          targetX = -1.9 * s;
+          targetY = baseH + 0.25 * s;
+          targetRoll = bankAmp * s;
+          targetPitch = -0.05 * s;
+          targetYawOffset = 0.18 * s;
+          setFlightLabel('SIMULASI MESIN • MANUVER BELOK KIRI');
+        } else if (cycle < 12) {
+          const s = Math.sin(((cycle - 8) / 4) * Math.PI);
+          targetX = 0;
+          targetY = baseH + 1.35 * s;
+          targetZ = 0.7 * s;
+          targetPitch = -pitchAmp * s;
+          targetRoll = Math.sin(t * 2) * 0.04;
+          setFlightLabel('SIMULASI MESIN • MANUVER MENANJAK (ATAS)');
+        } else {
+          const s = Math.sin(((cycle - 12) / 4) * Math.PI);
+          targetX = 0;
+          targetY = Math.max(1.25, baseH - 0.85 * s);
+          targetZ = -0.6 * s;
+          targetPitch = pitchAmp * 0.72 * s;
+          targetRoll = Math.cos(t * 2) * 0.04;
+          setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
+        }
       }
     } else {
       targetX = 0;
@@ -400,6 +419,41 @@ export function AircraftModel() {
       gearObj.visible = r < 0.96;
       gearObj.position.y = r * 0.78;
       gearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
+    }
+
+    // Animasi khusus Simulasi 9G pada G-Suit (kantung udara mengembang & visor HMDS menyala)
+    if (unit.id === 'gsuit') {
+      const bladders = procedural.group.getObjectByName('gsuit-bladders');
+      const simActive = flightMode === 'engineSim';
+      const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.4) : 0;
+      if (bladders) {
+        const targetInflate = simActive ? 1.07 + pulse * 0.05 : 1.0;
+        bladders.children.forEach((child) => {
+          const mesh = child as THREE.Mesh;
+          const isAbd = mesh.name.includes('abdomen');
+          mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, targetInflate, Math.min(1, dt * 6));
+          mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, (isAbd ? 0.66 : 1.08) * targetInflate, Math.min(1, dt * 6));
+          const mat = mesh.material as THREE.MeshStandardMaterial;
+          if (mat && 'emissive' in mat) {
+            mat.emissive.set(simActive ? '#00d8ff' : '#000000');
+            mat.emissiveIntensity = THREE.MathUtils.lerp(
+              mat.emissiveIntensity,
+              simActive ? 0.28 + pulse * 0.32 : 0,
+              Math.min(1, dt * 6),
+            );
+          }
+        });
+      }
+      const visorObj = procedural.group.getObjectByName('gsuit-visor') as THREE.Mesh | undefined;
+      if (visorObj && visorObj.material) {
+        const vMat = visorObj.material as THREE.MeshPhysicalMaterial;
+        vMat.emissive.set(simActive ? '#00ffaa' : '#00e5ff');
+        vMat.emissiveIntensity = THREE.MathUtils.lerp(
+          vMat.emissiveIntensity,
+          simActive ? 0.45 + pulse * 0.25 : 0.05,
+          Math.min(1, dt * 6),
+        );
+      }
     }
   });
 

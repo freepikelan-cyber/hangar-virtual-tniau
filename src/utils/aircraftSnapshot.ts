@@ -95,10 +95,17 @@ export function getAircraftTransparentSnapshot(aircraftId: string): string {
   }
 
   const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 120);
-  const maxDim = Math.max(size.x, size.y, size.z, 10);
-  const dist = maxDim * 1.12;
-  camera.position.set(center.x + dist * 0.78, center.y + dist * 0.28, center.z + dist * 0.62);
-  camera.lookAt(center.x, center.y - 0.15, center.z);
+  const isVerticalSubject = size.y > size.x * 1.15;
+  if (isVerticalSubject) {
+    const dist = Math.max(size.y * 1.85, 14);
+    camera.position.set(center.x + dist * 0.28, center.y + dist * 0.04, center.z + dist * 0.96);
+    camera.lookAt(center.x, center.y, center.z);
+  } else {
+    const maxDim = Math.max(size.x, size.y, size.z, 10);
+    const dist = maxDim * 1.12;
+    camera.position.set(center.x + dist * 0.78, center.y + dist * 0.28, center.z + dist * 0.62);
+    camera.lookAt(center.x, center.y - 0.15, center.z);
+  }
 
   renderer.clear();
   renderer.render(scene, camera);

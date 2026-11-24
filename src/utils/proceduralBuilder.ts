@@ -22,6 +22,7 @@ import {
   buildDetailedT50i,
 } from './fightersPackBuilder';
 import { buildDetailedC130J, buildDetailedKT1B } from './herculesKt1Builder';
+import { buildDetailedGSuit } from './gsuitBuilder';
 
 /* =========================================================================
  * Rakitan geometri 3D prosedural armada TNI AU.
@@ -662,6 +663,7 @@ const builders: Record<string, () => BuildResult> = {
   t50i: buildDetailedT50i,
   kt1b: buildDetailedKT1B,
   caracal: buildCaracal,
+  gsuit: buildDetailedGSuit,
 };
 
 const cache = new Map<string, BuildResult>();

@@ -4,6 +4,15 @@ import { filterFleet, useHangarStore } from '../../store/useHangarStore';
 
 function CategorySilhouette({ category, active }: { category: AircraftCategory; active: boolean }) {
   const color = active ? '#4da6ff' : '#94a3b8';
+  if (category === 'G-Suit & Pilot') {
+    return (
+      <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="20" cy="8" r="5" fill={active ? 'rgba(77,166,255,0.22)' : 'none'} />
+        <path d="M16 8 h8" />
+        <path d="M12 21 c0-4.5 3.2-7 8-7 s8 2.5 8 7" fill={active ? 'rgba(77,166,255,0.16)' : 'none'} />
+      </svg>
+    );
+  }
   if (category === 'Helikopter') {
     return (
       <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

@@ -1,4 +1,4 @@
-export type AircraftCategory = 'Tempur' | 'Angkut & VIP' | 'Latih' | 'Helikopter';
+export type AircraftCategory = 'Tempur' | 'Angkut & VIP' | 'Latih' | 'Helikopter' | 'G-Suit & Pilot';
 export type HotspotPartType = 'Sistem Internal' | 'Eksterior' | 'Senjata' | 'Aerodinamika';
 
 export interface HotspotItem {
@@ -34,13 +34,14 @@ export interface AircraftUnit {
   hotspots: HotspotItem[];
 }
 
-export const CATEGORIES: ('Semua' | AircraftCategory)[] = ['Semua', 'Tempur', 'Angkut & VIP', 'Latih', 'Helikopter'];
+export const CATEGORIES: ('Semua' | AircraftCategory)[] = ['Semua', 'Tempur', 'Angkut & VIP', 'Latih', 'Helikopter', 'G-Suit & Pilot'];
 
 export const CATEGORY_LABEL: Record<AircraftCategory, string> = {
   Tempur: 'TEMPUR',
   'Angkut & VIP': 'ANGKUT & VIP',
   Latih: 'LATIH',
   Helikopter: 'HELIKOPTER',
+  'G-Suit & Pilot': 'G-SUIT PILOT',
 };
 
 export const FLEET: AircraftUnit[] = [
@@ -442,6 +443,43 @@ export const FLEET: AircraftUnit[] = [
       { id: 8, name: 'Tail Boom & Poros Penggerak Ekor', partType: 'Sistem Internal', pos: [0, 1.95, -4.4], camOffset: [3.2, 1.2, -1.4], desc: 'Batang ekor panjang yang di dalamnya terdapat poros transmisi berputar cepat untuk menggerakkan rotor ekor.' },
       { id: 9, name: 'Stabilizer Horizontal Ekor', partType: 'Aerodinamika', pos: [0.75, 1.9, -6.0], camOffset: [2.8, 1.2, -2.0], desc: 'Sayap kecil di batang ekor yang menjaga keseimbangan anggukan (pitch) helikopter saat terbang melaju kencang.' },
       { id: 10, name: 'Rotor Ekor 4 Bilah (Anti-Torsi)', partType: 'Aerodinamika', pos: [0.35, 2.85, -7.25], camOffset: [3.0, 1.2, -1.6], desc: 'Rotor ekor 4 bilah yang melawan gaya puntir (torsi) rotor utama agar badan helikopter tidak ikut berputar serta mengatur arah haluan.' },
+    ],
+  },
+  {
+    id: 'gsuit',
+    name: 'G-Suit & Helm Pilot Tempur',
+    code: 'CSU-13B/P • HGU-55/P • MBU-20/P',
+    origin: 'Standar Penerbang Tempur TNI AU',
+    tailNumber: 'ANTI-9G',
+    category: 'G-Suit & Pilot',
+    squadron: 'Penerbang Tempur Skadron Udara TNI AU (F-16, Su-27/30, Rafale, T-50i)',
+    role: 'Perlengkapan tempur wajib penerbang jet tempur supersonik untuk melindungi tubuh dari gaya gravitasi ekstrem hingga 9G (mencegah G-LOC / pingsan akibat darah turun ke kaki), menjaga pasokan oksigen di ketinggian 50.000 kaki, serta melindungi dari api dan benturan saat kursi lontar aktif.',
+    specs: {
+      maxSpeed: 'Toleransi hingga +9G kontinu',
+      range: '5 Kantung Udara Pneumatik (Perut, 2 Paha, 2 Betis)',
+      ceiling: 'Proteksi Oksigen hingga 50.000 ft (15.240 m)',
+      armament: 'Helm HGU-55/P HMDS • Masker MBU-20/P • Nomex Anti-Api',
+    },
+    history: {
+      operational:
+        'Setiap penerbang tempur TNI AU yang menerbangkan jet berkinerja tinggi seperti F-16, Sukhoi Su-27/30, Rafale, T-50i, dan Hawk 209 wajib mengenakan set lengkap G-Suit, baju terbang Nomex tahan api, rompi survival LPU-9/P, harness kursi lontar, serta helm tempur beroksigen bertekanan.',
+      tactical:
+        'Saat pesawat berbelok tajam hingga 9 kali gaya gravitasi (9G), katup Anti-G di kokpit otomatis memompa udara bertekanan ke 5 kantung udara di perut, paha, dan betis dalam hitungan milidetik. Tekanan ini menahan darah agar tetap mengalir ke otak sehingga pilot tetap sadar dan fokus membidik sasaran.',
+      missions: ['Proteksi Manuver Ekstrem 9G (Anti G-LOC)', 'Suplai Oksigen Ketinggian Tinggi (OBOGS)', 'Proyeksi Bidikan Rudal di Visor (HMDS)', 'Keselamatan Kursi Lontar & Survival'],
+    },
+    hotspots: [
+      { id: 1, name: 'Helm Tempur HGU-55/P & HMDS', partType: 'Eksterior', pos: [0, 10.65, 0.25], camOffset: [2.2, 0.5, 2.8], desc: 'Cangkang komposit serat karbon & Kevlar super ringan yang melindungi kepala dari benturan saat ejeksi, sekaligus dilengkapi dudukan HMDS (Helmet-Mounted Display System) & NVG untuk membidik rudal cukup dengan menoleh.' },
+      { id: 2, name: 'Visor Ganda Anti-Silau & Proyeksi HUD', partType: 'Sistem Internal', pos: [0, 10.05, 0.85], camOffset: [2.0, 0.2, 2.6], desc: 'Visor polikarbonat ganda (gelap untuk anti-silau matahari/laser & bening untuk malam hari) yang juga memproyeksikan data kecepatan, ketinggian, dan kunci target rudal langsung di depan mata pilot.' },
+      { id: 3, name: 'Masker Oksigen MBU-20/P', partType: 'Sistem Internal', pos: [0, 9.52, 0.92], camOffset: [1.9, 0.1, 2.5], desc: 'Masker kedap udara bertekanan positif (Positive Pressure Breathing) yang menyalurkan oksigen murni di ketinggian ekstrem, sekaligus berisi mikrofon peredam bising untuk komunikasi radio kokpit.' },
+      { id: 4, name: 'Selang Oksigen & Konektor OBOGS', partType: 'Sistem Internal', pos: [0.36, 8.65, 0.98], camOffset: [2.2, 0.2, 2.5], desc: 'Selang fleksibel berulir anti-tertekuk yang menghubungkan masker ke sistem pembangkit oksigen pesawat (OBOGS) agar pasokan napas pilot tidak terputus meski kepala menoleh ke segala arah.' },
+      { id: 5, name: 'Harness Kursi Lontar & Koch Fitting (PCU-15/P)', partType: 'Eksterior', pos: [-0.62, 8.62, 0.86], camOffset: [-2.2, 0.3, 2.6], desc: 'Sabuk pengaman beban tinggi dengan pengait cepat logam Koch di bahu yang mengikat pilot ke parasut kursi lontar dan dapat dilepas dalam 1 detik saat mendarat darurat di air atau darat.' },
+      { id: 6, name: 'Rompi Survival & Pelampung (LPU-9/P)', partType: 'Eksterior', pos: [0.74, 8.05, 0.88], camOffset: [2.3, 0.2, 2.6], desc: 'Rompi penyelamatan berisi kerah pelampung otomatis jika jatuh di laut, radio darurat pemancar sinyal SAR (PLB), suar asap, kompas, dan pisau survival.' },
+      { id: 7, name: 'Baju Terbang Nomex Anti-Api', partType: 'Eksterior', pos: [-1.76, 7.65, 0.38], camOffset: [-2.6, 0.3, 2.6], desc: 'Seragam penerbang dari serat Aramid/Nomex tahan panas ekstrem yang tidak meleleh saat terkena api kokpit, dilengkapi patch Bendera Merah Putih, Roundel TNI AU, dan kantong pena lengan.' },
+      { id: 8, name: 'Kantung Udara Perut (Abdominal G-Bladder)', partType: 'Sistem Internal', pos: [0, 6.92, 0.88], camOffset: [2.4, 0.3, 2.8], desc: 'Kantung udara pneumatik utama di perut yang mengembang otomatis saat manuver G tinggi untuk menekan diafragma dan pembuluh darah perut agar darah tidak turun meninggalkan otak.' },
+      { id: 9, name: 'Selang Pneumatik Katup Anti-G', partType: 'Sistem Internal', pos: [-1.32, 6.18, 0.56], camOffset: [-2.5, 0.2, 2.5], desc: 'Selang udara bertekanan di pinggul kiri yang tersambung ke katup G-Valve pesawat. Semakin besar gaya G, semakin cepat udara dipompa ke seluruh 5 kantung udara G-Suit.' },
+      { id: 10, name: 'Kantung Udara Paha & Kneeboard', partType: 'Sistem Internal', pos: [0.85, 5.18, 0.84], camOffset: [2.5, 0.2, 2.8], desc: 'Kantung udara paha kiri & kanan yang meremas otot paha agar darah tidak menumpuk di tungkai (mencegah blackout/G-LOC), dilengkapi papan Kneeboard berisi checklist dan peta navigasi.' },
+      { id: 11, name: 'Kantung Udara Betis (Calf G-Bladder)', partType: 'Sistem Internal', pos: [-0.86, 2.88, 0.68], camOffset: [-2.5, 0.3, 2.8], desc: 'Kantung udara di kedua betis yang bekerja serentak dengan paha dan perut mendorong aliran darah vena kembali naik ke jantung saat pesawat melakukan belokan tajam hingga 9G.' },
+      { id: 12, name: 'Sarung Tangan Nomex & Sepatu Bot Penerbang', partType: 'Eksterior', pos: [0.92, 1.05, 0.85], camOffset: [2.6, 0.5, 2.8], desc: 'Sarung tangan kulit-Nomex tipis tahan api agar jari tetap peka menyentuh tombol kokpit (HOTAS), serta sepatu bot kulit anti-slip yang melindungi kaki dan pergelangan saat ejeksi.' },
     ],
   },
 ];
