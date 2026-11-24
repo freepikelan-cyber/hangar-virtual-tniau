@@ -147,8 +147,8 @@ export function EffectsLayer({ nozzles, spinners, navLights, glowMats, engineSim
     for (const sp of spinners) {
       const omega = sp.speed * speedFactor.current;
       if (omega > 0.05) {
-        // Pivot berputar pada sumbu Z lokalnya (wrap sudah mengatur orientasi x/y/z)
-        sp.obj.rotation.z += omega * delta;
+        // Putar tepat pada sumbu rotor masing-masing (Y untuk rotor utama heli, X untuk rotor ekor/Fenestron, Z untuk baling-baling pesawat)
+        sp.obj.rotation[sp.axis] += omega * delta;
       }
       if (sp.blur) {
         const showBlur = speedFactor.current > 0.25;
