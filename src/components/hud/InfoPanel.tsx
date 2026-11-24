@@ -42,7 +42,7 @@ export function InfoPanel() {
       : null;
 
   return (
-    <aside className="pointer-events-none fixed top-[84px] bottom-[92px] right-4 z-20 flex items-start gap-2">
+    <aside className="pointer-events-none fixed top-[84px] bottom-[112px] right-4 z-20 flex items-start gap-2">
       {!rightOpen && (
         <button
           type="button"

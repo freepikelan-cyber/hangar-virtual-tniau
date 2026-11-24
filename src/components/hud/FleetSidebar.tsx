@@ -51,7 +51,7 @@ export function FleetSidebar() {
   const items = filterFleet(search, category);
 
   return (
-    <aside className="pointer-events-none fixed top-[84px] bottom-[92px] left-4 z-20 flex items-start gap-2">
+    <aside className="pointer-events-none fixed top-[84px] bottom-[112px] left-4 z-20 flex items-start gap-2">
       {leftOpen && (
         <div className="hud-panel pointer-events-auto flex h-full w-[290px] xl:w-[320px] flex-col rounded-xl overflow-hidden animate-slidein">
           {/* Header Katalog */}

@@ -1,4 +1,4 @@
-import { Flame, Grid3X3, MapPin, Rotate3d, RotateCcw, ScanEye } from 'lucide-react';
+import { Flame, Grid3X3, Mail, MapPin, Phone, Rotate3d, RotateCcw, ScanEye } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
 
 export function BottomDock() {
@@ -20,11 +20,8 @@ export function BottomDock() {
   ];
 
   return (
-    <nav
-      aria-label="Kontrol Hangar 3D"
-      className="pointer-events-none fixed bottom-3 left-0 right-0 z-30 flex justify-center px-3"
-    >
-      <div className="hud-panel pointer-events-auto flex max-w-full items-center gap-2 overflow-x-auto rounded-2xl px-3 py-2">
+    <div className="pointer-events-none fixed bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1.5 px-3">
+      <nav aria-label="Kontrol Hangar 3D" className="hud-panel pointer-events-auto flex max-w-full items-center gap-2 overflow-x-auto rounded-2xl px-3 py-2">
         {buttons.map((b) => {
           const Icon = b.icon;
           const activeClass =
@@ -59,7 +56,30 @@ export function BottomDock() {
           <RotateCcw className="h-4 w-4 shrink-0 text-[#00d2ff]" />
           <span className="whitespace-nowrap">Reset Kamera</span>
         </button>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Footer Kredit & Kontak di Bagian Bawah Aplikasi */}
+      <footer className="hud-panel pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 rounded-full px-4 py-1 text-[11px] sm:text-xs text-slate-300">
+        <a
+          href="mailto:bangelan@gmail.com"
+          title="Kirim email ke bangelan@gmail.com"
+          className="inline-flex items-center gap-1.5 text-[#ffb703] hover:text-[#ffd166] hover:underline transition-colors"
+        >
+          <Mail className="h-3.5 w-3.5 shrink-0" />
+          <span>
+            Created By : <strong className="font-semibold">Abang Elan</strong>
+          </span>
+        </a>
+        <span className="text-[#00d2ff]/45">•</span>
+        <a
+          href="tel:+6281314127822"
+          title="Hubungi +6281314127822"
+          className="inline-flex items-center gap-1.5 text-[#00d2ff] hover:text-white hover:underline transition-colors"
+        >
+          <Phone className="h-3.5 w-3.5 shrink-0" />
+          <span>+6281314127822</span>
+        </a>
+      </footer>
+    </div>
   );
 }
