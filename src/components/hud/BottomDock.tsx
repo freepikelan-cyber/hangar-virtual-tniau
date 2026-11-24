@@ -19,10 +19,13 @@ import {
   Waves,
   Wind,
 } from 'lucide-react';
-import { useHangarStore } from '../../store/useHangarStore';
+import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 
 export function BottomDock() {
+  const unit = useSelectedUnit();
   const selectedId = useHangarStore((s) => s.selectedId);
+  const selectedLivery = useHangarStore((s) => s.selectedLivery);
+  const setLivery = useHangarStore((s) => s.setLivery);
   const wireframe = useHangarStore((s) => s.wireframe);
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
@@ -148,6 +151,35 @@ export function BottomDock() {
       {flightLabel && (
         <div className="hud-panel pointer-events-none rounded-full border-[#ffb703]/60 px-3.5 py-1 font-display text-[11px] sm:text-xs font-bold tracking-[0.16em] text-[#ffb703] uppercase shadow-amber animate-slidein">
           {flightLabel}
+        </div>
+      )}
+
+      {/* Pilihan Warna / Livery untuk pesawat yang memiliki 2 versi cat TNI AU */}
+      {unit.liveries && unit.liveries.length > 1 && !simMenuOpen && (
+        <div className="hud-panel pointer-events-auto flex items-center gap-1.5 rounded-full border-[#4da6ff]/40 bg-[#091c3a]/90 px-2.5 py-1 text-[10px] sm:text-xs">
+          <span className="font-display font-bold tracking-wider text-slate-300 uppercase px-1">Warna:</span>
+          {unit.liveries.map((lv) => {
+            const activeId = selectedLivery[unit.id] ?? unit.liveries![0].id;
+            const isActive = activeId === lv.id;
+            return (
+              <button
+                key={lv.id}
+                type="button"
+                onClick={() => setLivery(unit.id, lv.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-display font-bold tracking-wide transition-all cursor-pointer active:scale-95 ${
+                  isActive
+                    ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703]'
+                    : 'border-slate-700/80 bg-[#0e2a54]/80 text-slate-200 hover:border-[#4da6ff]/60'
+                }`}
+              >
+                <span
+                  className="h-2.5 w-2.5 rounded-full border border-white/40 shrink-0"
+                  style={{ background: `linear-gradient(135deg, ${lv.swatch} 55%, ${lv.accent} 55%)` }}
+                />
+                <span className="whitespace-nowrap">{lv.name}</span>
+              </button>
+            );
+          })}
         </div>
       )}
 

@@ -1,3 +1,5 @@
+import { NEW_FLEET } from './newFleetData';
+
 export type AircraftCategory = 'Tempur' | 'Angkut & VIP' | 'Latih' | 'Helikopter' | 'G-Suit & Pilot';
 export type HotspotPartType = 'Sistem Internal' | 'Eksterior' | 'Senjata' | 'Aerodinamika';
 
@@ -10,6 +12,14 @@ export interface HotspotItem {
   desc: string; // Penjelasan edukatif komponen & fungsinya
 }
 
+export interface LiveryVariant {
+  id: string;
+  name: string;
+  swatch: string;
+  accent: string;
+  tailNumber: string;
+}
+
 export interface AircraftUnit {
   id: string;
   name: string;
@@ -20,6 +30,7 @@ export interface AircraftUnit {
   squadron: string;
   role: string;
   glbPath?: string;
+  liveries?: LiveryVariant[];
   specs: {
     maxSpeed: string;
     range: string;
@@ -258,10 +269,14 @@ export const FLEET: AircraftUnit[] = [
   {
     id: 'c130j',
     name: 'C-130J Super Hercules',
-    code: 'C-130J-30 • 34,69 m',
+    code: 'C-130J-30 / KC-130H',
     origin: 'Amerika Serikat',
     tailNumber: 'A-1342',
     category: 'Angkut & VIP',
+    liveries: [
+      { id: 'grey', name: 'Abu-Abu C-130J', swatch: '#7e8994', accent: '#cbd5e1', tailNumber: 'A-1342' },
+      { id: 'camo', name: 'Loreng Hutan KC-130/H', swatch: '#4a5a36', accent: '#6d5034', tailNumber: 'A-1332' },
+    ],
     squadron: 'Skadron Udara 31 Wing I (Lanud Halim Perdanakusuma, Jakarta)',
     role: 'Pesawat angkut taktis berbadan panjang berlivery abu-abu taktis modern (5 unit: A-1339, A-1340, A-1342, A-1343, A-1344). Dimensi panjang 34,69 m, rentang sayap 39,7 m, tinggi 11,9 m, mampu terbang 11 jam nonstop.',
     specs: {
@@ -335,8 +350,12 @@ export const FLEET: AircraftUnit[] = [
     name: 'KAI T-50i Golden Eagle',
     code: 'LIFT Supersonic • 13,14 m',
     origin: 'Korea Selatan',
-    tailNumber: 'TT-5005',
+    tailNumber: 'TT-5001',
     category: 'Latih',
+    liveries: [
+      { id: 'demo', name: 'Biru-Kuning Akrobatik', swatch: '#183f96', accent: '#f5be18', tailNumber: 'TT-5001' },
+      { id: 'camo', name: 'Camo Toska Operasional', swatch: '#4f8c8a', accent: '#b7c4cc', tailNumber: 'TT-5002' },
+    ],
     squadron: 'Skadron Udara 15 (Lanud Iswahjudi, Madiun)',
     role: 'Pesawat latih tempur supersonik (Lead-In Fighter Trainer) berlivery biru-kuning Elang Emas. Dimensi panjang 13,14 m, rentang sayap 9,45 m, tinggi 4,81 m, berat lepas landas 10,7 ton, untuk 2 awak tandem.',
     specs: {
@@ -372,11 +391,15 @@ export const FLEET: AircraftUnit[] = [
   },
   {
     id: 'kt1b',
-    name: 'KAI KT-1B Wong Bee (JAT)',
-    code: 'Jupiter Aerobatic Team',
+    name: 'KAI KT-1B Wong Bee',
+    code: 'Jupiter Aerobatic & Latih',
     origin: 'Korea Selatan',
-    tailNumber: 'LD-0110',
+    tailNumber: 'TT-0101',
     category: 'Latih',
+    liveries: [
+      { id: 'jupiter', name: 'Jupiter Merah-Putih', swatch: '#cf1020', accent: '#f5f7fa', tailNumber: 'TT-0101' },
+      { id: 'trainer', name: 'Latih Abu-Kuning', swatch: '#b4bcc4', accent: '#f5c518', tailNumber: 'LD-0101' },
+    ],
     squadron: 'Skadik 102 & Jupiter Aerobatic Team (Lanud Adisutjipto, Yogyakarta)',
     role: 'Pesawat latih dasar modern bermesin turboprop PT6A-62 sekaligus tunggangan kebanggaan tim aerobatik TNI AU "The Jupiters" (Jupiter Aerobatic Team) berlivery Merah-Putih dengan spinner putih.',
     specs: {
@@ -412,11 +435,15 @@ export const FLEET: AircraftUnit[] = [
   },
   {
     id: 'caracal',
-    name: 'H225M Caracal / Super Puma',
-    code: 'NAS 332 / EC725',
+    name: 'H225M Caracal / Super Cougar',
+    code: 'H225M / EC725',
     origin: 'Prancis-Indonesia',
-    tailNumber: 'H-7206',
+    tailNumber: 'TT-7220',
     category: 'Helikopter',
+    liveries: [
+      { id: 'camo', name: 'Loreng Taktis', swatch: '#4b5b36', accent: '#6d4c32', tailNumber: 'TT-7220' },
+      { id: 'vip', name: 'Abu-Abu SAR / VIP', swatch: '#8b95a0', accent: '#e2e8f0', tailNumber: 'H-7206' },
+    ],
     squadron: 'Skadron Udara 6 & 8 (Lanud Atang Sendjaja, Bogor)',
     role: 'Helikopter angkut menengah bermesin ganda untuk misi SAR tempur (CSAR), angkut pasukan, evakuasi medis, dan dukungan logistik. Dirakit sebagian oleh PT Dirgantara Indonesia.',
     specs: {
@@ -450,8 +477,12 @@ export const FLEET: AircraftUnit[] = [
     name: 'EC120B Colibri',
     code: 'Airbus / Eurocopter EC120B',
     origin: 'Prancis-Eropa',
-    tailNumber: 'HL-1211',
+    tailNumber: 'H-1201',
     category: 'Helikopter',
+    liveries: [
+      { id: 'grey', name: 'Abu-Abu TNI AU (H-1201)', swatch: '#c5ccd4', accent: '#f5be18', tailNumber: 'H-1201' },
+      { id: 'orange', name: 'Putih-Oranye Latih (HL-1211)', swatch: '#dce2e8', accent: '#f05a1f', tailNumber: 'HL-1211' },
+    ],
     squadron: 'Skadron Udara 7 (Lanud Suryadarma, Kalijati) & Dynamic Pegasus',
     role: 'Helikopter latih dasar dan angkut ringan bermesin turbin tunggal yang sangat lincah dan senyap. Digunakan untuk mencetak penerbang helikopter TNI AU serta tampil memukau sebagai armada Tim Aerobatik Helikopter Dynamic Pegasus.',
     specs: {
@@ -480,6 +511,7 @@ export const FLEET: AircraftUnit[] = [
       { id: 10, name: 'Sirip Tegak & Bendera Merah Putih', partType: 'Aerodinamika', pos: [0.15, 3.05, -6.28], camOffset: [2.8, 1.2, -1.8], desc: 'Sirip tegak aerodinamis di atas Fenestron yang membantu stabilitas arah saat terbang cepat sekaligus menampilkan identitas Bendera Merah Putih TNI AU.' },
     ],
   },
+  ...NEW_FLEET,
   {
     id: 'gsuit',
     name: 'G-Suit & Baju Terbang Tempur',

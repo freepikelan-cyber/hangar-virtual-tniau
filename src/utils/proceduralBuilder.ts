@@ -24,6 +24,24 @@ import { buildDetailedC130J, buildDetailedKT1B } from './herculesKt1Builder';
 import { buildDetailedGSuit } from './gsuitBuilder';
 import { buildDetailedPilotHelmet } from './helmetBuilder';
 import { buildDetailedCaracal, buildDetailedColibri } from './helicoptersBuilder';
+import {
+  buildA330MRTT,
+  buildA400M,
+  buildA4Skyhawk,
+  buildAS365,
+  buildAW101,
+  buildC182,
+  buildC212,
+  buildCN235,
+  buildCN295,
+  buildDG1000,
+  buildFalcon8X,
+  buildG120TP,
+  buildH145,
+  buildSGS233,
+  buildSuperPuma,
+  buildT41,
+} from './newFleetBuilder';
 
 /* =========================================================================
  * Rakitan geometri 3D prosedural armada TNI AU.
@@ -544,7 +562,7 @@ function buildB737(): BuildResult {
 
 /* ------------------------------ Registry ------------------------------ */
 
-const builders: Record<string, () => BuildResult> = {
+const builders: Record<string, (liveryId?: string) => BuildResult> = {
   su30mk2: buildDetailedSu30,
   f16id: buildDetailedF16,
   rafale: buildDetailedRafale,
@@ -557,19 +575,36 @@ const builders: Record<string, () => BuildResult> = {
   kt1b: buildDetailedKT1B,
   caracal: buildDetailedCaracal,
   colibri: buildDetailedColibri,
+  a400m: buildA400M,
+  cn295: buildCN295,
+  cn235: buildCN235,
+  c212: buildC212,
+  falcon8x: buildFalcon8X,
+  a330mrtt: buildA330MRTT,
+  a4skyhawk: buildA4Skyhawk,
+  g120tp: buildG120TP,
+  superpuma: buildSuperPuma,
+  aw101: buildAW101,
+  h145: buildH145,
+  as365: buildAS365,
+  c182: buildC182,
+  t41: buildT41,
+  sgs233: buildSGS233,
+  dg1000: buildDG1000,
   gsuit: buildDetailedGSuit,
   'pilot-helmet': buildDetailedPilotHelmet,
 };
 
 const cache = new Map<string, BuildResult>();
 
-/** Mengambil (atau merakit lalu menyimpan di cache) model prosedural untuk ID pesawat. */
-export function getProceduralAircraft(id: string): BuildResult {
-  let r = cache.get(id);
+/** Mengambil (atau merakit lalu menyimpan di cache) model prosedural untuk ID pesawat + variasi livery. */
+export function getProceduralAircraft(id: string, liveryId?: string): BuildResult {
+  const key = liveryId ? `${id}:${liveryId}` : id;
+  let r = cache.get(key);
   if (!r) {
-    r = (builders[id] ?? buildDetailedF16)();
-    r.group.name = `procedural-${id}`;
-    cache.set(id, r);
+    r = (builders[id] ?? buildDetailedF16)(liveryId);
+    r.group.name = `procedural-${key}`;
+    cache.set(key, r);
   }
   return r;
 }

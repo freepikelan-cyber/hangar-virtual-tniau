@@ -19,17 +19,32 @@ export function getSoundProfile(unitId: string): SoundProfile {
     case 'f16id':
     case 't50i':
     case 'hawk209':
+    case 'a4skyhawk':
       return 'fighter_single';
     case 'c130j':
+    case 'a400m':
+    case 'cn295':
+    case 'cn235':
       return 'turboprop_heavy';
     case 'supertucano':
     case 'kt1b':
+    case 'c212':
+    case 'g120tp':
+    case 'c182':
+    case 't41':
       return 'turboprop_light';
     case 'b737vip':
+    case 'falcon8x':
+    case 'a330mrtt':
+    case 'sgs233':
+    case 'dg1000':
       return 'airliner';
     case 'caracal':
-      return 'helicopter';
     case 'colibri':
+    case 'superpuma':
+    case 'aw101':
+    case 'h145':
+    case 'as365':
       return 'helicopter';
     case 'gsuit':
       return 'gsuit';

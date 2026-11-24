@@ -153,9 +153,14 @@ function buildMainRotor(
 /* ============================================================================
  * 1. AIRBUS H225M CARACAL TNI AU (SKADRON UDARA 8 LANUD ATANG SENDJAJA)
  * ============================================================================ */
-export function buildDetailedCaracal(): BuildResult {
+export function buildDetailedCaracal(liveryId = 'camo'): BuildResult {
   const g = new THREE.Group();
   const m = makeHeliMaterials('caracal');
+  if (liveryId === 'vip') {
+    m.skin.map = solidNoiseTexture('#8b95a0', 7208, 0.025);
+    m.skin.roughness = 0.38;
+    m.skin.needsUpdate = true;
+  }
   const glowMats: THREE.MeshStandardMaterial[] = [m.glow];
 
   // ---- 1. FUSELAGE UTAMA H225M CARACAL (LOFT ORGANIK HALUS z = -1.7 .. +5.35) ----
@@ -472,34 +477,35 @@ function makeColibriFuseTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-export function buildDetailedColibri(): BuildResult {
+export function buildDetailedColibri(liveryId = 'grey'): BuildResult {
   const g = new THREE.Group();
   const m = makeHeliMaterials('colibri');
   const glowMats: THREE.MeshStandardMaterial[] = [m.glow];
+  const isGreyOps = liveryId === 'grey';
 
-  // Material khusus livery asli HL-1211 TNI AU (Putih, Abu-Abu, Oranye-Kuning, Skid Hitam)
+  // Material khusus livery Colibri TNI AU: Operasional Abu-Abu (H-1201) atau Latih Putih-Oranye (HL-1211)
   const colWhite = new THREE.MeshPhysicalMaterial({
-    color: '#eef2f6',
+    color: isGreyOps ? '#c4ccd4' : '#eef2f6',
     roughness: 0.24,
     metalness: 0.14,
     clearcoat: 0.65,
     clearcoatRoughness: 0.18,
   });
   const colGrey = new THREE.MeshPhysicalMaterial({
-    color: '#9aa4ae',
+    color: isGreyOps ? '#b5bec8' : '#9aa4ae',
     roughness: 0.30,
     metalness: 0.20,
     clearcoat: 0.45,
   });
   const colFuseMat = new THREE.MeshPhysicalMaterial({
-    map: makeColibriFuseTexture(),
+    map: isGreyOps ? solidNoiseTexture('#c4ccd4', 1201, 0.02) : makeColibriFuseTexture(),
     roughness: 0.26,
     metalness: 0.16,
     clearcoat: 0.6,
     clearcoatRoughness: 0.18,
   });
   const colOrange = new THREE.MeshPhysicalMaterial({
-    color: '#e89310', // Oranye-kuning khas ujung sirip & ventral fin HL-1211
+    color: isGreyOps ? '#c4ccd4' : '#e89310',
     roughness: 0.28,
     metalness: 0.15,
     clearcoat: 0.55,

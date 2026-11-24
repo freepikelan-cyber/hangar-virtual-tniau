@@ -239,36 +239,41 @@ function t50TailFinTexture() {
   return t;
 }
 
-export function buildDetailedT50i(): BuildResult {
+export function buildDetailedT50i(liveryId = 'demo'): BuildResult {
   const g = new THREE.Group();
   const yC = 1.48;
   const m = commonMats(5005);
+  const isCamo = liveryId === 'camo';
+  const camoTealTex = isCamo
+    ? camoTexture('#528f8d', [{ c: '#b8c4cc', n: 16, r: 62 }, { c: '#486d70', n: 10, r: 44 }], 5002, { noise: 0.03 })
+    : null;
 
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: t50BlueYellowTexture(),
+    map: isCamo ? camoTealTex! : t50BlueYellowTexture(),
     bumpMap: cloneRep(m.bump, 2.2, 4.4),
     bumpScale: 0.014,
-    metalness: 0.45,
-    roughness: 0.32,
+    metalness: isCamo ? 0.42 : 0.45,
+    roughness: isCamo ? 0.44 : 0.32,
   });
   const blueWingMat = new THREE.MeshStandardMaterial({
-    color: '#163b8c',
+    color: isCamo ? '#ffffff' : '#163b8c',
+    map: isCamo ? cloneRep(camoTealTex!, 1.5, 1.5) : null,
     bumpMap: cloneRep(m.bump, 1.5, 1.5),
     bumpScale: 0.012,
-    metalness: 0.48,
-    roughness: 0.32,
+    metalness: isCamo ? 0.42 : 0.48,
+    roughness: isCamo ? 0.44 : 0.32,
   });
   const tailFinMat = new THREE.MeshStandardMaterial({
-    color: '#ffffff',
-    map: t50TailFinTexture(),
+    color: isCamo ? '#528f8d' : '#ffffff',
+    map: isCamo ? cloneRep(camoTealTex!, 1.2, 1.2) : t50TailFinTexture(),
     bumpMap: cloneRep(m.bump, 1.4, 1.4),
     bumpScale: 0.012,
     metalness: 0.44,
-    roughness: 0.34,
+    roughness: isCamo ? 0.46 : 0.34,
   });
   const yellowAccentMat = new THREE.MeshStandardMaterial({
-    color: '#f5c400',
+    color: isCamo ? '#9aa6b0' : '#f5c400',
     metalness: 0.35,
     roughness: 0.36,
   });

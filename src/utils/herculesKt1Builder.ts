@@ -9,6 +9,7 @@ import {
   type AirfoilSection,
 } from './aeroGeo';
 import {
+  camoTexture,
   cockpitWindowTexture,
   flagTexture,
   panelBumpTexture,
@@ -89,28 +90,32 @@ function makePropeller(blades: number, radius: number, chord: number, bladeMat: 
 /* =========================================================================
  * 1. C-130J-30 SUPER HERCULES TNI AU (A-1342) — LIVERY ABU-ABU TAKTIS MODERN
  * ========================================================================= */
-export function buildDetailedC130J(): BuildResult {
+export function buildDetailedC130J(liveryId = 'grey'): BuildResult {
   const g = new THREE.Group();
   const yC = 1.32;
   const bump = panelBumpTexture(1342);
-  const greyTex = solidNoiseTexture('#8c949c', 1342, 0.028);
+  const isCamo = liveryId === 'camo';
+  const baseTex = isCamo
+    ? camoTexture('#4b5d36', [{ c: '#6e4e32', n: 16, r: 62 }, { c: '#2d3922', n: 12, r: 46 }], 1332, { noise: 0.04 })
+    : solidNoiseTexture('#8c949c', 1342, 0.028);
 
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: cloneRep(greyTex, 2.5, 5.0),
+    map: cloneRep(baseTex, 2.5, 5.0),
     bumpMap: cloneRep(bump, 2.6, 5.2),
     bumpScale: 0.015,
-    metalness: 0.38,
-    roughness: 0.54,
+    metalness: isCamo ? 0.28 : 0.38,
+    roughness: isCamo ? 0.62 : 0.54,
   });
   const wingMat = new THREE.MeshStandardMaterial({
-    color: '#9199a1',
+    color: isCamo ? '#ffffff' : '#9199a1',
+    map: isCamo ? cloneRep(baseTex, 1.8, 1.8) : null,
     bumpMap: cloneRep(bump, 2.0, 2.0),
     bumpScale: 0.014,
-    metalness: 0.4,
-    roughness: 0.52,
+    metalness: isCamo ? 0.28 : 0.4,
+    roughness: isCamo ? 0.6 : 0.52,
   });
-  const radomeMat = new THREE.MeshStandardMaterial({ color: '#464d54', metalness: 0.25, roughness: 0.58 });
+  const radomeMat = new THREE.MeshStandardMaterial({ color: isCamo ? '#1c2026' : '#464d54', metalness: 0.25, roughness: 0.58 });
   const darkMetal = new THREE.MeshStandardMaterial({ color: '#2b3038', metalness: 0.82, roughness: 0.34 });
   const bladeMat = new THREE.MeshStandardMaterial({ color: '#1b1f24', metalness: 0.42, roughness: 0.48 });
   const tipMat = new THREE.MeshStandardMaterial({ color: '#eab308', metalness: 0.2, roughness: 0.5 });
@@ -363,21 +368,62 @@ function kt1JupiterTailTexture() {
   return t;
 }
 
-export function buildDetailedKT1B(): BuildResult {
+function kt1TrainerBodyTexture() {
+  const W = 512;
+  const H = 512;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#bcc4cc';
+  ctx.fillRect(0, 0, W, H);
+  // Anti-glare hitam di punggung hidung depan (u ~ 0/1, v > 0.65)
+  ctx.fillStyle = '#1b2026';
+  ctx.fillRect(0, H * 0.62, W * 0.14, H * 0.38);
+  ctx.fillRect(W * 0.86, H * 0.62, W * 0.14, H * 0.38);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+function kt1TrainerTailTexture() {
+  const S = 512;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#bcc4cc';
+  ctx.fillRect(0, 0, S, S);
+  // Pita kuning cerah di puncak ekor KT-1B latih LD-0101
+  ctx.fillStyle = '#f5c518';
+  ctx.fillRect(0, S * 0.08, S, S * 0.22);
+  ctx.fillStyle = '#1b2026';
+  ctx.fillRect(0, S * 0.3, S, S * 0.025);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+export function buildDetailedKT1B(liveryId = 'jupiter'): BuildResult {
   const g = new THREE.Group();
   const yC = 1.48;
   const bump = panelBumpTexture(1010);
+  const isTrainer = liveryId === 'trainer';
 
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: kt1JupiterBodyTexture(),
+    map: isTrainer ? kt1TrainerBodyTexture() : kt1JupiterBodyTexture(),
     bumpMap: cloneRep(bump, 2.0, 4.0),
     bumpScale: 0.012,
     metalness: 0.36,
-    roughness: 0.3,
+    roughness: 0.32,
   });
   const redWingMat = new THREE.MeshStandardMaterial({
-    color: '#cf1020',
+    color: isTrainer ? '#bcc4cc' : '#cf1020',
     bumpMap: cloneRep(bump, 1.5, 1.5),
     bumpScale: 0.011,
     metalness: 0.36,
@@ -385,13 +431,13 @@ export function buildDetailedKT1B(): BuildResult {
   });
   const tailMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: kt1JupiterTailTexture(),
+    map: isTrainer ? kt1TrainerTailTexture() : kt1JupiterTailTexture(),
     bumpMap: cloneRep(bump, 1.2, 1.2),
     bumpScale: 0.01,
     metalness: 0.36,
     roughness: 0.32,
   });
-  const whiteSpinnerMat = new THREE.MeshStandardMaterial({ color: '#f5f7fa', metalness: 0.3, roughness: 0.28 });
+  const whiteSpinnerMat = new THREE.MeshStandardMaterial({ color: isTrainer ? '#f5c518' : '#f5f7fa', metalness: 0.3, roughness: 0.28 });
   const darkMetal = new THREE.MeshStandardMaterial({ color: '#2b3038', metalness: 0.82, roughness: 0.32 });
   const bladeMat = new THREE.MeshStandardMaterial({ color: '#24282e', metalness: 0.45, roughness: 0.44 });
   const whiteTipMat = new THREE.MeshStandardMaterial({ color: '#f5f7fa', metalness: 0.2, roughness: 0.4 });

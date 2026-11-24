@@ -90,12 +90,14 @@ interface HangarState {
   camRequest: CamRequest | null;
   quiz: QuizState;
   glbVersion: Record<string, number>;
+  selectedLivery: Record<string, string>;
 
   enterHangar: () => void;
   openWelcome: () => void;
   toggleInfographic: () => void;
   closeInfographic: () => void;
   bumpGlbVersion: (unitId: string) => void;
+  setLivery: (unitId: string, liveryId: string) => void;
   selectAircraft: (id: string) => void;
   setSearch: (v: string) => void;
   setCategory: (c: 'Semua' | AircraftCategory) => void;
@@ -166,6 +168,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   camRequest: null,
   quiz: emptyQuiz,
   glbVersion: {},
+  selectedLivery: {},
 
   enterHangar: () => set({ showWelcome: false }),
   openWelcome: () => set({ showWelcome: true, showInfographic: false }),
@@ -174,6 +177,10 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   bumpGlbVersion: (unitId) =>
     set((s) => ({
       glbVersion: { ...s.glbVersion, [unitId]: (s.glbVersion[unitId] ?? 0) + 1 },
+    })),
+  setLivery: (unitId, liveryId) =>
+    set((s) => ({
+      selectedLivery: { ...s.selectedLivery, [unitId]: liveryId },
     })),
 
   selectAircraft: (id) => {

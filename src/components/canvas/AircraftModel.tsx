@@ -94,6 +94,7 @@ export function AircraftModel() {
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
+  const liveryId = useHangarStore((s) => s.selectedLivery[unit.id] ?? unit.liveries?.[0]?.id);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
 
@@ -106,7 +107,7 @@ export function AircraftModel() {
   const currentY = useRef(0);
   const currentZ = useRef(0);
 
-  const procedural = useMemo(() => getProceduralAircraft(unit.id), [unit.id]);
+  const procedural = useMemo(() => getProceduralAircraft(unit.id, liveryId), [unit.id, liveryId]);
 
   // Muat otomatis model .GLB dari public/models/<id>.glb (khusus G-Suit & Helm) atau dari unggahan lokal
   useEffect(() => {
