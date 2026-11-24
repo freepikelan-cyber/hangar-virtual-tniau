@@ -2,6 +2,15 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore } from '../../store/useHangarStore';
+import {
+  buildMountainRangeGeometry,
+  buildOrganicIslandGeometry,
+  makeHouseWallTexture,
+  makeOceanTextures,
+  makeRoofTileTexture,
+  makeRunwayAsphaltTexture,
+  makeSkyscraperGlassTexture,
+} from '../../utils/terrainTextures';
 
 interface CloudPuff {
   ox: number;
@@ -29,6 +38,7 @@ interface TowerData {
   h: number;
   d: number;
   tint: string;
+  tiered: boolean;
 }
 
 interface HouseData {
@@ -37,30 +47,14 @@ interface HouseData {
   w: number;
   h: number;
   d: number;
-  wall: string;
-  roof: string;
-}
-
-interface MountainData {
-  x: number;
-  z: number;
-  r: number;
-  h: number;
-  snow: boolean;
-  color: string;
-}
-
-interface IslandData {
-  x: number;
-  z: number;
-  r: number;
-  h: number;
+  wallTint: string;
+  roofTint: string;
+  rotY: number;
 }
 
 const CHUNK_LEN = 220;
-const LOOP_LEN = CHUNK_LEN * 3; // 3 zona dinamis: Runway/Kota -> Pegunungan -> Laut & Pulau!
+const LOOP_LEN = CHUNK_LEN * 3; // 3 zona dinamis: Runway/Kota -> Pegunungan -> Laut & Kepulauan
 
-/** Tekstur gradasi langit biru tropis cerah + horizon atmosferik untuk 3D Sky Dome. */
 function makeBlueSkyTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 64;
@@ -82,133 +76,6 @@ function makeBlueSkyTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Tekstur fasad jendela kaca gedung bertingkat agar tampak seperti gedung perkotaan nyata. */
-function makeTowerWindowTexture(): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = 128;
-  c.height = 256;
-  const ctx = c.getContext('2d')!;
-
-  ctx.fillStyle = '#cbd5e1';
-  ctx.fillRect(0, 0, 128, 256);
-
-  let seed = 3119;
-  const rand = () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-
-  // Grid lantai & jendela kaca biru-gelap + pantulan langit
-  for (let row = 0; row < 16; row++) {
-    const y = 6 + row * 15;
-    // Garis beton antar lantai
-    ctx.fillStyle = '#94a3b8';
-    ctx.fillRect(0, y + 11, 128, 3);
-    for (let col = 0; col < 6; col++) {
-      const x = 6 + col * 20;
-      const lit = rand() > 0.72;
-      ctx.fillStyle = lit ? '#bae6fd' : rand() > 0.45 ? '#334e68' : '#1e3a5f';
-      ctx.fillRect(x, y, 14, 9);
-    }
-  }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.wrapS = THREE.RepeatWrapping;
-  tex.wrapT = THREE.RepeatWrapping;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-/** Tekstur Aspal Runway 3D TNI AU lengkap: Threshold Piano Keys, Garis Start, Nomor "09", Aiming Point & Centerline. */
-function makeRunwayAsphaltTexture(): THREE.CanvasTexture {
-  const c = document.createElement('canvas');
-  c.width = 512;
-  c.height = 2048;
-  const ctx = c.getContext('2d')!;
-
-  ctx.fillStyle = '#252930';
-  ctx.fillRect(0, 0, 512, 2048);
-
-  let seed = 9187;
-  const rand = () => {
-    seed = (seed * 16807) % 2147483647;
-    return (seed - 1) / 2147483646;
-  };
-  for (let i = 0; i < 9000; i++) {
-    const x = rand() * 512;
-    const y = rand() * 2048;
-    const v = 30 + Math.floor(rand() * 26);
-    ctx.fillStyle = `rgb(${v},${v + 2},${v + 5})`;
-    ctx.fillRect(x, y, 2 + rand() * 3, 2 + rand() * 4);
-  }
-
-  // Bekas karet ban di zona touchdown
-  const skidGrad = ctx.createLinearGradient(0, 260, 0, 760);
-  skidGrad.addColorStop(0, 'rgba(12,14,18,0)');
-  skidGrad.addColorStop(0.4, 'rgba(10,12,16,0.55)');
-  skidGrad.addColorStop(0.75, 'rgba(10,12,16,0.45)');
-  skidGrad.addColorStop(1, 'rgba(12,14,18,0)');
-  ctx.fillStyle = skidGrad;
-  ctx.fillRect(150, 260, 82, 500);
-  ctx.fillRect(280, 260, 82, 500);
-
-  // Garis tepi putih tebal
-  ctx.fillStyle = '#e8eef5';
-  ctx.fillRect(24, 0, 12, 2048);
-  ctx.fillRect(476, 0, 12, 2048);
-
-  // Piano Keys (Threshold Stripes) di pangkal Take Off
-  const keyPositions = [64, 108, 152, 196, 286, 330, 374, 418];
-  for (const kx of keyPositions) {
-    ctx.fillRect(kx, 22, 26, 86);
-    ctx.fillRect(kx, 1940, 26, 86);
-  }
-
-  // Garis Titik Start Take Off kuning
-  ctx.fillStyle = '#ffb703';
-  ctx.fillRect(42, 118, 428, 12);
-
-  // Nomor Landasan "09"
-  ctx.save();
-  ctx.fillStyle = '#f1f5f9';
-  ctx.font = 'bold 110px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('09', 256, 200);
-  ctx.restore();
-
-  // Nomor "27" di ujung jauh
-  ctx.save();
-  ctx.translate(256, 1850);
-  ctx.rotate(Math.PI);
-  ctx.fillStyle = '#f1f5f9';
-  ctx.font = 'bold 110px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('27', 0, 0);
-  ctx.restore();
-
-  // Aiming Point Blocks
-  ctx.fillStyle = '#e8eef5';
-  ctx.fillRect(92, 310, 62, 140);
-  ctx.fillRect(358, 310, 62, 140);
-  ctx.fillRect(92, 1580, 62, 140);
-  ctx.fillRect(358, 1580, 62, 140);
-
-  // Centerline putus-putus putih
-  for (let y = 310; y <= 1710; y += 110) {
-    ctx.fillRect(247, y, 18, 62);
-  }
-
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  tex.needsUpdate = true;
-  return tex;
-}
-
-/** Tekstur lembut matahari bersinar untuk Sun Halo Sprite. */
 function makeSunHaloTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 128;
@@ -227,12 +94,12 @@ function makeSunHaloTexture(): THREE.CanvasTexture {
 }
 
 /**
- * Lingkungan 3D Dinamis saat Simulasi Penerbangan:
+ * Lingkungan 3D Realistis & Dinamis saat Simulasi Penerbangan:
  * - Langit Biru 3D, Matahari, & Awan Cumulus 3D Bertingkat
  * - 3 Zona Bawah Bergantian Dinamis:
- *   1. Pangkalan Udara Runway 09 + Perumahan Beratap Genteng & Gedung Berjendela
- *   2. Pegunungan Hijau 3D & Lembah Sungai
- *   3. Laut Lepas Biru, Kepulauan Tropis, & Kapal Patroli
+ *   1. Pangkalan Udara Runway 09 + Perumahan Berjendela/Genteng & Gedung Kaca Bertingkat
+ *   2. Pegunungan Heightmap 3D Realistis + Lembah Sungai & Hutan
+ *   3. Laut Berombak Realistis (Animated Bump Waves) + Pulau Tropis Organik + Kapal Patroli KRI
  */
 export function SkyCloudsEnvironment() {
   const { scene } = useThree();
@@ -260,17 +127,32 @@ export function SkyCloudsEnvironment() {
     phaseTime.current = 0;
     if (flightMode === 'takeoff') {
       worldY.current = -0.02;
-      scrollZ.current = 0; // Mulai tepat di Runway 09!
+      scrollZ.current = 0;
     } else if (flightMode === 'landing') {
       worldY.current = -12.5;
-      scrollZ.current = 0; // Arahkan tepat kembali ke Runway 09 untuk pendekatan akhir!
+      scrollZ.current = 0;
     }
   }, [flightMode, flightNonce]);
 
   const skyTex = useMemo(() => makeBlueSkyTexture(), []);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
-  const towerTex = useMemo(() => makeTowerWindowTexture(), []);
+  const skyscraperTex = useMemo(() => makeSkyscraperGlassTexture(), []);
+  const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
+  const roofTileTex = useMemo(() => makeRoofTileTexture(), []);
+  const oceanTextures = useMemo(() => makeOceanTextures(), []);
   const sunHaloTex = useMemo(() => makeSunHaloTexture(), []);
+
+  // Geometri Pegunungan 3D Heightmap + 4 Pulau Tropis Organik
+  const mountainGeo = useMemo(() => buildMountainRangeGeometry(280, CHUNK_LEN), []);
+  const islandGeos = useMemo(
+    () => [
+      { geo: buildOrganicIslandGeometry(20, 7.5, 1.3), x: -52, z: -48 },
+      { geo: buildOrganicIslandGeometry(24, 9.2, 4.7), x: 56, z: -12 },
+      { geo: buildOrganicIslandGeometry(17, 6.2, 8.1), x: -38, z: 58 },
+      { geo: buildOrganicIslandGeometry(16, 5.4, 12.4), x: 42, z: 72 },
+    ],
+    [],
+  );
 
   const cloudTopMat = useMemo(
     () =>
@@ -306,12 +188,30 @@ export function SkyCloudsEnvironment() {
     return () => {
       skyTex.dispose();
       runwayTex.dispose();
-      towerTex.dispose();
+      skyscraperTex.dispose();
+      houseWallTex.dispose();
+      roofTileTex.dispose();
+      oceanTextures.map.dispose();
+      oceanTextures.bumpMap.dispose();
       sunHaloTex.dispose();
+      mountainGeo.dispose();
+      islandGeos.forEach((ig) => ig.geo.dispose());
       cloudTopMat.dispose();
       cloudBottomMat.dispose();
     };
-  }, [skyTex, runwayTex, towerTex, sunHaloTex, cloudTopMat, cloudBottomMat]);
+  }, [
+    skyTex,
+    runwayTex,
+    skyscraperTex,
+    houseWallTex,
+    roofTileTex,
+    oceanTextures,
+    sunHaloTex,
+    mountainGeo,
+    islandGeos,
+    cloudTopMat,
+    cloudBottomMat,
+  ]);
 
   const hangarBg = useMemo(() => new THREE.Color('#0a1e3c'), []);
   const skyBg = useMemo(() => new THREE.Color('#53aef5'), []);
@@ -325,7 +225,6 @@ export function SkyCloudsEnvironment() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-
     for (let i = 0; i < 26; i++) {
       const layer = i % 3;
       let x = (rand() - 0.5) * 140;
@@ -334,7 +233,6 @@ export function SkyCloudsEnvironment() {
       const z = -110 + rand() * 220;
       const scale = layer === 2 ? 1.8 + rand() * 2.2 : 1.4 + rand() * 2.0;
       const speed = 13 + rand() * 11;
-
       const puffs: CloudPuff[] = [
         { ox: -1.7, oy: -0.35, oz: 0.1, sx: 2.0, sy: 0.72, sz: 1.55, isTop: false },
         { ox: 0.0, oy: -0.4, oz: 0.0, sx: 2.5, sy: 0.78, sz: 1.75, isTop: false },
@@ -350,7 +248,7 @@ export function SkyCloudsEnvironment() {
     return list;
   }, []);
 
-  // Gedung perkantoran berjendela kaca (sisi kiri jauh)
+  // Gedung pencakar langit kaca bertingkat (tier podium + menara utama + mahkota atap)
   const towers = useMemo<TowerData[]>(() => {
     const list: TowerData[] = [];
     let seed = 5109;
@@ -358,21 +256,22 @@ export function SkyCloudsEnvironment() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    const tints = ['#dbeafe', '#e2e8f0', '#cbd5e1', '#e0f2fe', '#f1f5f9'];
-    for (let i = 0; i < 20; i++) {
+    const tints = ['#ffffff', '#e0f2fe', '#e2e8f0', '#dbeafe', '#f1f5f9'];
+    for (let i = 0; i < 18; i++) {
       list.push({
-        x: -66 - rand() * 44,
-        z: -95 + rand() * 190,
-        w: 4.5 + rand() * 3.8,
-        d: 4.5 + rand() * 3.8,
-        h: 9.0 + rand() * 12.0,
+        x: -68 - rand() * 44,
+        z: -92 + rand() * 184,
+        w: 4.8 + rand() * 3.8,
+        d: 4.8 + rand() * 3.8,
+        h: 10.5 + rand() * 13.5,
         tint: tints[Math.floor(rand() * tints.length)],
+        tiered: rand() > 0.35,
       });
     }
     return list;
   }, []);
 
-  // Rumah-rumah penduduk beratap genteng miring (terakota/merah/biru) di sekitar pangkalan
+  // Perumahan penduduk nyata (dinding berjendela & berpintu + atap genteng menjorok keluar)
   const houses = useMemo<HouseData[]>(() => {
     const list: HouseData[] = [];
     let seed = 8821;
@@ -380,57 +279,39 @@ export function SkyCloudsEnvironment() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    const walls = ['#f8fafc', '#fef3c7', '#f1f5f9', '#ffedd5', '#e2e8f0'];
-    const roofs = ['#b91c1c', '#c2410c', '#9a3412', '#1d4ed8', '#b45309'];
-    for (let i = 0; i < 36; i++) {
+    const walls = ['#ffffff', '#fef9e7', '#f4f4f5', '#fff7ed'];
+    const roofs = ['#ffffff', '#d97757', '#b84a32', '#64748b'];
+    for (let i = 0; i < 34; i++) {
       list.push({
         x: -24 - rand() * 36,
-        z: -96 + rand() * 192,
-        w: 3.0 + rand() * 2.2,
-        d: 3.0 + rand() * 2.2,
-        h: 2.0 + rand() * 1.4,
-        wall: walls[Math.floor(rand() * walls.length)],
-        roof: roofs[Math.floor(rand() * roofs.length)],
+        z: -94 + rand() * 188,
+        w: 3.4 + rand() * 1.8,
+        d: 3.2 + rand() * 1.6,
+        h: 2.2 + rand() * 1.0,
+        wallTint: walls[Math.floor(rand() * walls.length)],
+        roofTint: roofs[Math.floor(rand() * roofs.length)],
+        rotY: Math.floor(rand() * 4) * (Math.PI / 2),
       });
     }
     return list;
   }, []);
 
-  // Deretan Gunung 3D untuk Zona Pegunungan & Lembah Hijau
-  const mountains = useMemo<MountainData[]>(() => {
-    const list: MountainData[] = [];
-    let seed = 6427;
+  // Pepohonan rindang di pemukiman & lembah
+  const trees = useMemo(() => {
+    const list: { x: number; z: number; s: number }[] = [];
+    let seed = 2049;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    const colors = ['#2d5a3c', '#366945', '#285236', '#3d7049', '#2f5f42'];
-    for (let i = 0; i < 28; i++) {
-      const side = i % 2 === 0 ? -1 : 1;
-      const x = side * (22 + rand() * 92);
-      const z = -98 + rand() * 196;
-      const r = 12 + rand() * 18;
-      const h = 11 + rand() * 20;
+    for (let i = 0; i < 42; i++) {
       list.push({
-        x,
-        z,
-        r,
-        h,
-        snow: h > 23,
-        color: colors[Math.floor(rand() * colors.length)],
+        x: -21 - rand() * 42,
+        z: -98 + rand() * 196,
+        s: 0.75 + rand() * 0.65,
       });
     }
     return list;
-  }, []);
-
-  // Kepulauan Tropis 3D untuk Zona Laut Lepas
-  const islands = useMemo<IslandData[]>(() => {
-    return [
-      { x: -46, z: -48, r: 16, h: 6.5 },
-      { x: 52, z: -18, r: 20, h: 8.5 },
-      { x: -34, z: 54, r: 14, h: 5.5 },
-      { x: 38, z: 68, r: 13, h: 4.8 },
-    ];
   }, []);
 
   const runwayLightZ = useMemo(() => {
@@ -454,8 +335,8 @@ export function SkyCloudsEnvironment() {
     }
     if (scene.fog instanceof THREE.Fog) {
       scene.fog.color.copy(tmpColor);
-      scene.fog.near = THREE.MathUtils.lerp(26, 80, mix);
-      scene.fog.far = THREE.MathUtils.lerp(62, 280, mix);
+      scene.fog.near = THREE.MathUtils.lerp(26, 82, mix);
+      scene.fog.far = THREE.MathUtils.lerp(62, 290, mix);
     }
 
     if (skyMatRef.current) {
@@ -471,7 +352,14 @@ export function SkyCloudsEnvironment() {
     cloudBottomMat.opacity = mix * 0.86;
     cloudBottomMat.visible = mix > 0.01;
 
-    // Ketinggian & kecepatan gulir dunia bawah tersinkronisasi penuh dengan Take Off & Long Landing!
+    // Animasi riak ombak laut berkilau!
+    if (isOutdoorSim) {
+      oceanTextures.map.offset.y -= dt * 0.14;
+      oceanTextures.map.offset.x += dt * 0.04;
+      oceanTextures.bumpMap.offset.y -= dt * 0.14;
+      oceanTextures.bumpMap.offset.x += dt * 0.04;
+    }
+
     let targetWorldY = -0.02;
     let groundSpeed = 0;
 
@@ -499,12 +387,10 @@ export function SkyCloudsEnvironment() {
       groundSpeed = 58;
     } else if (flightMode === 'landing') {
       if (pt < 5.4) {
-        // Long Final Approach & Flare -> Runway naik halus mendekati roda pesawat!
         const p = Math.min(1, pt / 5.4);
         targetWorldY = THREE.MathUtils.lerp(-12.5, -0.02, p);
         groundSpeed = THREE.MathUtils.lerp(36, 24, p);
       } else if (pt < 9.2) {
-        // Touchdown & pengereman panjang di aspal runway
         const p = Math.min(1, (pt - 5.4) / 3.8);
         targetWorldY = -0.02;
         groundSpeed = 24 * (1 - p);
@@ -523,23 +409,16 @@ export function SkyCloudsEnvironment() {
 
     if (isOutdoorSim) {
       scrollZ.current = (scrollZ.current + groundSpeed * dt) % LOOP_LEN;
-
-      // Bungkus posisi 3 zona dinamis dalam jangkauan [-CHUNK_LEN, +2*CHUNK_LEN] agar selalu mulus tanpa celah!
       const wrapZ = (offset: number) => {
         let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
         if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
         return z;
       };
-
-      // Zona 0 (Runway 09 + Perumahan/Kota): start di z = +92 (Threshold 09 tepat di bawah roda Take Off!)
-      // Zona 1 (Pegunungan & Lembah Hijau): tepat di depan Zona 0
-      // Zona 2 (Laut Lepas & Kepulauan Tropis): tepat di depan Zona 1
       if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(92);
       if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(92 + CHUNK_LEN);
       if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(92 + CHUNK_LEN * 2);
     }
 
-    // Gerakkan awan 3D
     if (mix > 0.01) {
       const cloudSpeedMult =
         flightMode === 'maneuver' ? 1.45 : flightMode === 'takeoff' ? 1.15 : flightMode === 'landing' ? 0.65 : 1.0;
@@ -617,9 +496,9 @@ export function SkyCloudsEnvironment() {
         </group>
       ))}
 
-      {/* 4. Dunia Bawah 3D Dinamis (3 Zona Bergantian: Runway/Perumahan -> Pegunungan -> Laut & Kepulauan) */}
+      {/* 4. Dunia Bawah 3D Realistis & Dinamis (3 Zona Bergantian) */}
       <group ref={worldGroupRef} visible={false} position={[0, -0.02, 0]} name="outdoor-world-3d">
-        {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN BERATAP GENTENG + GEDUNG BERJENDELA + PESISIR === */}
+        {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN REALISTIS + GEDUNG KACA BERTINGKAT + LAUT PESISIR === */}
         <group ref={runwayChunkRef} name="biome-runway-city">
           {/* Rumput pangkalan udara */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-4, -0.08, 0]} receiveShadow>
@@ -691,142 +570,178 @@ export function SkyCloudsEnvironment() {
             </mesh>
           </group>
 
-          {/* Daratan hijau pemukiman & kota di sisi kiri */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-76, -0.1, 0]}>
-            <planeGeometry args={[112, CHUNK_LEN]} />
-            <meshStandardMaterial color="#4b7550" roughness={0.95} />
+          {/* Daratan hijau pemukiman & jaringan jalan raya kota */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-78, -0.1, 0]}>
+            <planeGeometry args={[116, CHUNK_LEN]} />
+            <meshStandardMaterial color="#466e4a" roughness={0.95} />
           </mesh>
-          {/* Jalan raya perumahan & kota */}
+          {/* Jalan raya aspal bermarka */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-42, -0.05, 0]}>
-            <planeGeometry args={[2.6, CHUNK_LEN]} />
-            <meshStandardMaterial color="#2f3640" roughness={0.9} />
+            <planeGeometry args={[3.2, CHUNK_LEN]} />
+            <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-76, -0.05, 0]}>
-            <planeGeometry args={[3.0, CHUNK_LEN]} />
-            <meshStandardMaterial color="#2f3640" roughness={0.9} />
+            <planeGeometry args={[3.8, CHUNK_LEN]} />
+            <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>
 
-          {/* Rumah-rumah penduduk 3D (Dinding + Atap Limas Genteng Merah/Terakota/Biru) */}
+          {/* Rumah-rumah penduduk realistis (Dinding berjendela/pintu + Atap Genteng Terakota menjorok keluar) */}
           {houses.map((h, idx) => (
-            <group key={idx} position={[h.x, -0.1, h.z]}>
+            <group key={idx} position={[h.x, -0.1, h.z]} rotation={[0, h.rotY, 0]}>
               <mesh position={[0, h.h / 2, 0]}>
                 <boxGeometry args={[h.w, h.h, h.d]} />
-                <meshStandardMaterial color={h.wall} roughness={0.85} />
+                <meshStandardMaterial map={houseWallTex} color={h.wallTint} roughness={0.85} />
               </mesh>
-              <mesh position={[0, h.h + 0.85, 0]} rotation={[0, Math.PI / 4, 0]}>
-                <coneGeometry args={[Math.max(h.w, h.d) * 0.78, 1.7, 4]} />
-                <meshStandardMaterial color={h.roof} roughness={0.78} />
+              {/* Lis atap / talang (overhang) + atap genteng bergelombang */}
+              <mesh position={[0, h.h + 0.08, 0]}>
+                <boxGeometry args={[h.w + 0.45, 0.16, h.d + 0.45]} />
+                <meshStandardMaterial color="#e2e8f0" roughness={0.8} />
+              </mesh>
+              <mesh position={[0, h.h + 0.95, 0]} rotation={[0, Math.PI / 4, 0]}>
+                <coneGeometry args={[Math.max(h.w, h.d) * 0.84, 1.65, 4]} />
+                <meshStandardMaterial map={roofTileTex} color={h.roofTint} roughness={0.78} />
               </mesh>
             </group>
           ))}
 
-          {/* Gedung-gedung bertingkat 3D bertekstur jendela kaca + rooftop */}
+          {/* Pepohonan rindang di pemukiman */}
+          {trees.map((tr, idx) => (
+            <group key={idx} position={[tr.x, -0.1, tr.z]} scale={tr.s}>
+              <mesh position={[0, 0.65, 0]}>
+                <cylinderGeometry args={[0.14, 0.2, 1.3, 6]} />
+                <meshStandardMaterial color="#5c4033" roughness={0.95} />
+              </mesh>
+              <mesh position={[0, 1.65, 0]}>
+                <icosahedronGeometry args={[0.95, 1]} />
+                <meshStandardMaterial color="#2a6236" roughness={0.9} />
+              </mesh>
+            </group>
+          ))}
+
+          {/* Gedung Pencakar Langit Kaca Bertingkat (Podium + Menara Kaca + Mahkota Atap + Antena) */}
           {towers.map((tw, idx) => (
             <group key={idx} position={[tw.x, -0.1, tw.z]}>
+              {/* Podium lantai dasar */}
+              <mesh position={[0, 1.3, 0]}>
+                <boxGeometry args={[tw.w * 1.15, 2.6, tw.d * 1.15]} />
+                <meshStandardMaterial map={skyscraperTex} color="#cbd5e1" roughness={0.4} metalness={0.3} />
+              </mesh>
+              {/* Menara utama berkaca reflektif */}
               <mesh position={[0, tw.h / 2, 0]}>
                 <boxGeometry args={[tw.w, tw.h, tw.d]} />
-                <meshStandardMaterial map={towerTex} color={tw.tint} roughness={0.42} metalness={0.28} />
+                <meshStandardMaterial map={skyscraperTex} color={tw.tint} roughness={0.28} metalness={0.48} />
               </mesh>
-              {/* Rooftop gelap & unit AC */}
-              <mesh position={[0, tw.h + 0.12, 0]}>
-                <boxGeometry args={[tw.w * 0.94, 0.24, tw.d * 0.94]} />
+              {/* Bagian puncak bertingkat (stepped crown) */}
+              {tw.tiered && (
+                <mesh position={[0, tw.h + 1.4, 0]}>
+                  <boxGeometry args={[tw.w * 0.72, 2.8, tw.d * 0.72]} />
+                  <meshStandardMaterial map={skyscraperTex} color={tw.tint} roughness={0.25} metalness={0.5} />
+                </mesh>
+              )}
+              {/* Rooftop & Antena */}
+              <mesh position={[0, tw.tiered ? tw.h + 2.9 : tw.h + 0.14, 0]}>
+                <boxGeometry args={[tw.w * 0.66, 0.28, tw.d * 0.66]} />
                 <meshStandardMaterial color="#334155" roughness={0.8} />
               </mesh>
-              <mesh position={[0, tw.h + 0.6, 0]}>
-                <boxGeometry args={[tw.w * 0.35, 0.75, tw.d * 0.35]} />
-                <meshStandardMaterial color="#64748b" roughness={0.7} />
+              <mesh position={[0, (tw.tiered ? tw.h + 3.0 : tw.h + 0.2) + 1.4, 0]}>
+                <cylinderGeometry args={[0.06, 0.12, 2.8, 6]} />
+                <meshStandardMaterial color="#cbd5e1" metalness={0.7} roughness={0.3} />
               </mesh>
             </group>
           ))}
 
-          {/* Pesisir pantai & laut biru di sisi kanan pangkalan */}
+          {/* Pesisir pantai & laut berombak di sisi kanan pangkalan */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[18.5, -0.09, 0]}>
             <planeGeometry args={[6.5, CHUNK_LEN]} />
-            <meshStandardMaterial color="#d9c69e" roughness={0.95} />
+            <meshStandardMaterial color="#dfd0a8" roughness={0.95} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.2, -0.07, 0]}>
-            <planeGeometry args={[1.6, CHUNK_LEN]} />
+            <planeGeometry args={[1.8, CHUNK_LEN]} />
             <meshBasicMaterial color="#e0f4ff" transparent opacity={0.78} />
           </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[84, -0.11, 0]}>
             <planeGeometry args={[124, CHUNK_LEN]} />
-            <meshStandardMaterial color="#1167a3" roughness={0.28} metalness={0.3} />
+            <meshStandardMaterial
+              map={oceanTextures.map}
+              bumpMap={oceanTextures.bumpMap}
+              bumpScale={0.42}
+              roughness={0.18}
+              metalness={0.44}
+            />
           </mesh>
         </group>
 
-        {/* === ZONA 2: PEGUNUNGAN HIJAU 3D & LEMBAH SUNGAI === */}
+        {/* === ZONA 2: PEGUNUNGAN HEIGHTMAP 3D REALISTIS & LEMBAH SUNGAI === */}
         <group ref={mountainChunkRef} name="biome-mountains">
-          {/* Lembah hijau pegunungan luas */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
-            <planeGeometry args={[280, CHUNK_LEN]} />
-            <meshStandardMaterial color="#386641" roughness={0.95} />
+          {/* Mesh Pegunungan Heightmap 3D dengan punggungan tajam, lereng hutan, tebing batu & puncak salju */}
+          <mesh geometry={mountainGeo} receiveShadow>
+            <meshStandardMaterial vertexColors roughness={0.92} metalness={0.04} />
           </mesh>
-          {/* Sungai biru jernih mengalir membelah lembah */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[2, -0.04, 0]}>
-            <planeGeometry args={[11, CHUNK_LEN]} />
-            <meshStandardMaterial color="#1e88c9" roughness={0.25} metalness={0.35} />
+          {/* Permukaan sungai biru berkilau mengalir di dasar lembah */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]}>
+            <planeGeometry args={[48, CHUNK_LEN]} />
+            <meshStandardMaterial
+              map={oceanTextures.map}
+              bumpMap={oceanTextures.bumpMap}
+              bumpScale={0.25}
+              color="#38bdf8"
+              roughness={0.15}
+              metalness={0.5}
+            />
           </mesh>
-          {/* Deretan gunung 3D bertingkat dengan puncak salju/kabut lembut */}
-          {mountains.map((m, idx) => (
-            <group key={idx} position={[m.x, -0.1, m.z]}>
-              <mesh position={[0, m.h / 2, 0]}>
-                <coneGeometry args={[m.r, m.h, 7]} />
-                <meshStandardMaterial color={m.color} roughness={0.92} flatShading />
-              </mesh>
-              {m.snow && (
-                <mesh position={[0, m.h * 0.84, 0]}>
-                  <coneGeometry args={[m.r * 0.34, m.h * 0.34, 7]} />
-                  <meshStandardMaterial color="#eef6ff" roughness={0.85} flatShading />
-                </mesh>
-              )}
-            </group>
-          ))}
         </group>
 
-        {/* === ZONA 3: LAUT LEPAS BIRU, KEPULAUAN TROPIS & KAPAL PATROLI === */}
+        {/* === ZONA 3: LAUT LEPAS BEROMBAK REALISTIS, PULAU TROPIS ORGANIK & KAPAL PATROLI KRI === */}
         <group ref={oceanChunkRef} name="biome-ocean">
-          {/* Hamparan samudra biru luas dari kiri ke kanan */}
+          {/* Samudra luas dengan tekstur riak ombak animasi & pantulan matahari */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
             <planeGeometry args={[280, CHUNK_LEN]} />
-            <meshStandardMaterial color="#0d5c99" roughness={0.24} metalness={0.36} />
+            <meshStandardMaterial
+              map={oceanTextures.map}
+              bumpMap={oceanTextures.bumpMap}
+              bumpScale={0.48}
+              roughness={0.16}
+              metalness={0.46}
+            />
           </mesh>
-          {/* Kepulauan tropis 3D (pasir pantai + bukit hijau) */}
-          {islands.map((isl, idx) => (
-            <group key={idx} position={[isl.x, -0.1, isl.z]}>
-              {/* Buih ombak & pantai pasir */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]}>
-                <circleGeometry args={[isl.r * 1.15, 20]} />
-                <meshBasicMaterial color="#7dd3fc" transparent opacity={0.45} />
-              </mesh>
-              <mesh position={[0, 0.3, 0]}>
-                <cylinderGeometry args={[isl.r * 0.92, isl.r * 1.05, 0.6, 16]} />
-                <meshStandardMaterial color="#e3d2a6" roughness={0.95} />
-              </mesh>
-              {/* Bukit hijau pulau */}
-              <mesh position={[0, isl.h / 2 + 0.3, 0]}>
-                <coneGeometry args={[isl.r * 0.72, isl.h, 9]} />
-                <meshStandardMaterial color="#2f7a44" roughness={0.92} flatShading />
-              </mesh>
-            </group>
+
+          {/* 4 Pulau Tropis Organik (heightmap pantai pasir + perbukitan hijau) */}
+          {islandGeos.map((isl, idx) => (
+            <mesh key={idx} geometry={isl.geo} position={[isl.x, -0.05, isl.z]}>
+              <meshStandardMaterial vertexColors roughness={0.92} metalness={0.04} />
+            </mesh>
           ))}
-          {/* Kapal patroli TNI AL / kargo 3D + jejak buih air */}
+
+          {/* Kapal Patroli KRI / Fregat 3D lengkap dengan haluan lancip, anjungan, radar & jejak buih V-wake */}
           {[
-            { x: -12, z: -28 },
-            { x: 24, z: 32 },
-            { x: -58, z: 18 },
+            { x: -14, z: -26 },
+            { x: 24, z: 34 },
+            { x: -56, z: 16 },
           ].map((ship, sIdx) => (
-            <group key={sIdx} position={[ship.x, 0.35, ship.z]}>
+            <group key={sIdx} position={[ship.x, 0.3, ship.z]}>
+              {/* Lambung kapal abu-abu TNI AL */}
               <mesh>
-                <boxGeometry args={[2.0, 0.9, 6.8]} />
-                <meshStandardMaterial color="#475569" roughness={0.55} />
+                <boxGeometry args={[2.1, 0.9, 7.6]} />
+                <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.3} />
               </mesh>
-              <mesh position={[0, 0.85, -1.0]}>
-                <boxGeometry args={[1.4, 0.95, 1.8]} />
-                <meshStandardMaterial color="#f8fafc" roughness={0.45} />
+              {/* Haluan lancip */}
+              <mesh position={[0, 0.05, 4.9]} rotation={[Math.PI / 2, 0, 0]}>
+                <coneGeometry args={[1.1, 2.4, 4]} />
+                <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.3} />
               </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, -8.5]}>
-                <planeGeometry args={[1.8, 11.5]} />
-                <meshBasicMaterial color="#d8f2ff" transparent opacity={0.48} />
+              {/* Anjungan & tiang radar */}
+              <mesh position={[0, 0.95, 0.6]}>
+                <boxGeometry args={[1.5, 1.1, 2.4]} />
+                <meshStandardMaterial color="#cbd5e1" roughness={0.45} />
+              </mesh>
+              <mesh position={[0, 2.1, 0.4]}>
+                <cylinderGeometry args={[0.08, 0.14, 1.4, 6]} />
+                <meshStandardMaterial color="#94a3b8" metalness={0.5} />
+              </mesh>
+              {/* Jejak buih air V-wake di belakang kapal */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -10.5]}>
+                <planeGeometry args={[2.8, 14]} />
+                <meshBasicMaterial color="#e0f6ff" transparent opacity={0.42} />
               </mesh>
             </group>
           ))}
