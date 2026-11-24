@@ -1,4 +1,4 @@
-import { Radio, ShieldCheck } from 'lucide-react';
+import { HardHat, Radio, ShieldCheck } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { TniAuLogo3D } from './TniAuLogo3D';
@@ -8,6 +8,7 @@ export function TopHeader() {
   const openWelcome = useHangarStore((s) => s.openWelcome);
   const selectAircraft = useHangarStore((s) => s.selectAircraft);
   const isGSuit = unit.id === 'gsuit';
+  const isHelmet = unit.id === 'pilot-helmet';
 
   return (
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
@@ -38,20 +39,36 @@ export function TopHeader() {
           </div>
         </div>
 
-        {/* Tombol Menu Cepat G-Suit 3D (Baju Pilot Tempur) */}
-        <button
-          type="button"
-          onClick={() => selectAircraft(isGSuit ? 'f16id' : 'gsuit')}
-          title={isGSuit ? 'Kembali ke Pesawat Tempur' : 'Buka Menu G-Suit 3D (Baju & Helm Pilot Tempur)'}
-          className={`shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-2.5 sm:px-3.5 py-2 font-display text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-            isGSuit
-              ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c] shadow-[0_0_16px_rgba(255,183,3,0.45)]'
-              : 'border-[#ffb703]/60 bg-[#ffb703]/15 text-[#ffb703] hover:bg-[#ffb703]/25 hover:border-[#ffb703]'
-          }`}
-        >
-          <ShieldCheck className="h-4 w-4 shrink-0" />
-          <span className="whitespace-nowrap">{isGSuit ? 'G-Suit Aktif' : 'G-Suit 3D'}</span>
-        </button>
+        {/* Tombol Menu Cepat Terpisah: G-Suit 3D & Helm Pilot 3D */}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => selectAircraft(isGSuit ? 'f16id' : 'gsuit')}
+            title={isGSuit ? 'Kembali ke Pesawat Tempur' : 'Buka Menu G-Suit 3D (Baju Terbang & Anti-9G)'}
+            className={`shrink-0 inline-flex items-center gap-1 rounded-xl border px-2 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+              isGSuit
+                ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c] shadow-[0_0_14px_rgba(255,183,3,0.45)]'
+                : 'border-[#ffb703]/60 bg-[#ffb703]/15 text-[#ffb703] hover:bg-[#ffb703]/25 hover:border-[#ffb703]'
+            }`}
+          >
+            <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="whitespace-nowrap">G-Suit</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => selectAircraft(isHelmet ? 'f16id' : 'pilot-helmet')}
+            title={isHelmet ? 'Kembali ke Pesawat Tempur' : 'Buka Menu Helm Pilot 3D (HGU-55/P HMDS & Masker Oksigen)'}
+            className={`shrink-0 inline-flex items-center gap-1 rounded-xl border px-2 sm:px-3 py-1.5 sm:py-2 font-display text-[10px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+              isHelmet
+                ? 'border-[#4da6ff] bg-[#4da6ff] text-[#0a1e3c] shadow-[0_0_14px_rgba(77,166,255,0.45)]'
+                : 'border-[#4da6ff]/60 bg-[#4da6ff]/15 text-[#75bcff] hover:bg-[#4da6ff]/25 hover:border-[#4da6ff]'
+            }`}
+          >
+            <HardHat className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+            <span className="whitespace-nowrap">Helm</span>
+          </button>
+        </div>
       </div>
 
       {/* Header Kanan Atas: Telemetri Unit Aktif & Kategori (Tablet/Desktop/Smartboard) */}

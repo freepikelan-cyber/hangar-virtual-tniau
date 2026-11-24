@@ -325,13 +325,13 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'engineSim') {
       if (unit.id === 'gsuit') {
-        // SIMULASI 9G khusus G-Suit Pilot: berdiri kokoh di platform, kantung udara mengembang & visor HMDS menyala
+        // SIMULASI 9G khusus G-Suit: berdiri kokoh di platform, 5 kantung udara + selang mengembang & berpendar
         targetX = 0;
         targetY = 0;
         targetZ = 0;
         targetPitch = 0;
         targetRoll = 0;
-        targetYawOffset = Math.sin(t * 0.6) * 0.25;
+        targetYawOffset = Math.sin(t * 0.6) * 0.28;
         targetGear = 0;
         const gCycle = pt % 8;
         if (gCycle < 2.5) {
@@ -339,7 +339,24 @@ export function AircraftModel() {
         } else if (gCycle < 5.5) {
           setFlightLabel('SIMULASI 9G • KANTUNG PERUT, PAHA & BETIS MENEKAN PENUH');
         } else {
-          setFlightLabel('SIMULASI 9G • ALIRAN DARAH KE OTAK STABIL & VISOR HMDS AKTIF');
+          setFlightLabel('SIMULASI 9G • ALIRAN DARAH KE OTAK STABIL (ANTI G-LOC)');
+        }
+      } else if (unit.id === 'pilot-helmet') {
+        // SIMULASI HMDS khusus Helm Pilot: visor turun & proyeksi HUD hijau menyala
+        targetX = 0;
+        targetY = 0;
+        targetZ = 0;
+        targetPitch = 0;
+        targetRoll = 0;
+        targetYawOffset = Math.sin(t * 0.65) * 0.32;
+        targetGear = 0;
+        const hCycle = pt % 8;
+        if (hCycle < 2.8) {
+          setFlightLabel('SIMULASI HMDS • VISOR GELAP TURUN & PROYEKTOR HUD AKTIF');
+        } else if (hCycle < 5.5) {
+          setFlightLabel('SIMULASI HMDS • PELACAK GERAK KEPALA & KUNCI TARGET RUDAL');
+        } else {
+          setFlightLabel('SIMULASI HMDS • MASKER MBU-20/P SUPLAI OKSIGEN OBOGS AKTIF');
         }
       } else {
         // Simulasi Mesin: manuver udara dinamis (belok kanan, belok kiri, menanjak atas, menukik bawah) + roda masuk!
@@ -421,37 +438,50 @@ export function AircraftModel() {
       gearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
     }
 
-    // Animasi khusus Simulasi 9G pada G-Suit (kantung udara mengembang & visor HMDS menyala)
+    // Animasi khusus Simulasi 9G pada G-Suit (5 kantung udara & saluran selang mengembang + berpendar)
     if (unit.id === 'gsuit') {
       const bladders = procedural.group.getObjectByName('gsuit-bladders');
       const simActive = flightMode === 'engineSim';
       const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.4) : 0;
       if (bladders) {
-        const targetInflate = simActive ? 1.07 + pulse * 0.05 : 1.0;
+        const targetInflate = simActive ? 1.045 + pulse * 0.035 : 1.0;
         bladders.children.forEach((child) => {
           const mesh = child as THREE.Mesh;
-          const isAbd = mesh.name.includes('abdomen');
-          mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, targetInflate, Math.min(1, dt * 6));
-          mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, (isAbd ? 0.66 : 1.08) * targetInflate, Math.min(1, dt * 6));
+          const isTube = mesh.name.includes('tube');
+          if (!isTube) {
+            mesh.scale.x = THREE.MathUtils.lerp(mesh.scale.x, targetInflate, Math.min(1, dt * 6));
+            mesh.scale.z = THREE.MathUtils.lerp(mesh.scale.z, targetInflate, Math.min(1, dt * 6));
+          }
           const mat = mesh.material as THREE.MeshStandardMaterial;
           if (mat && 'emissive' in mat) {
-            mat.emissive.set(simActive ? '#00d8ff' : '#000000');
+            mat.emissive.set(simActive ? (isTube ? '#ffb703' : '#00d8ff') : '#000000');
             mat.emissiveIntensity = THREE.MathUtils.lerp(
               mat.emissiveIntensity,
-              simActive ? 0.28 + pulse * 0.32 : 0,
+              simActive ? (isTube ? 0.55 + pulse * 0.45 : 0.25 + pulse * 0.35) : 0,
               Math.min(1, dt * 6),
             );
           }
         });
       }
+    }
+
+    // Animasi khusus Simulasi HMDS pada Helm Pilot (visor geser turun & proyeksi HUD hijau menyala)
+    if (unit.id === 'pilot-helmet') {
+      const simActive = flightMode === 'engineSim';
+      const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
+      const visorPivot = procedural.group.getObjectByName('helmet-visor-pivot');
+      if (visorPivot) {
+        const targetRotX = simActive ? 0.16 : -0.18;
+        visorPivot.rotation.x = THREE.MathUtils.lerp(visorPivot.rotation.x, targetRotX, Math.min(1, dt * 4.5));
+      }
       const visorObj = procedural.group.getObjectByName('gsuit-visor') as THREE.Mesh | undefined;
       if (visorObj && visorObj.material) {
         const vMat = visorObj.material as THREE.MeshPhysicalMaterial;
-        vMat.emissive.set(simActive ? '#00ffaa' : '#00e5ff');
+        vMat.emissive.set('#00ffaa');
         vMat.emissiveIntensity = THREE.MathUtils.lerp(
           vMat.emissiveIntensity,
-          simActive ? 0.45 + pulse * 0.25 : 0.05,
-          Math.min(1, dt * 6),
+          simActive ? 0.42 + pulse * 0.28 : 0.04,
+          Math.min(1, dt * 5),
         );
       }
     }

@@ -30,6 +30,7 @@ export function BottomDock() {
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const isGSuit = selectedId === 'gsuit';
+  const isHelmet = selectedId === 'pilot-helmet';
 
   const flightButtons = isGSuit
     ? [
@@ -43,7 +44,19 @@ export function BottomDock() {
           accent: 'amber' as const,
         },
       ]
-    : [
+    : isHelmet
+      ? [
+          {
+            id: 'simhmds',
+            label: 'Simulasi HMDS',
+            short: 'HMDS',
+            icon: Activity,
+            active: flightMode === 'engineSim',
+            onClick: toggleEngineSim,
+            accent: 'emerald' as const,
+          },
+        ]
+      : [
         {
           id: 'takeoff',
           label: 'Take Off',

@@ -17,9 +17,15 @@ export function isPortraitMobile() {
 export function getDefaultCamera(unitId?: string): { pos: Vec3; target: Vec3 } {
   if (unitId === 'gsuit') {
     if (isPortraitMobile()) {
-      return { pos: [3.4, 5.8, 17.8], target: [0, 5.4, 0] };
+      return { pos: [3.2, 5.2, 16.5], target: [0, 4.9, 0] };
     }
-    return { pos: [2.6, 5.8, 13.8], target: [0, 5.4, 0] };
+    return { pos: [2.8, 5.2, 13.0], target: [0, 4.9, 0] };
+  }
+  if (unitId === 'pilot-helmet') {
+    if (isPortraitMobile()) {
+      return { pos: [3.2, 4.8, 12.6], target: [0, 3.8, 0] };
+    }
+    return { pos: [2.8, 4.6, 9.6], target: [0, 3.8, 0] };
   }
   if (isPortraitMobile()) {
     return { pos: [17.5, 7.6, 20.5], target: [0, 1.4, 0] };
@@ -204,13 +210,16 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set((s) => {
       const activating = s.flightMode !== 'engineSim';
       const isGSuit = s.selectedId === 'gsuit';
+      const isHelmet = s.selectedId === 'pilot-helmet';
       return {
         flightMode: activating ? 'engineSim' : 'parked',
         flightNonce: s.flightNonce + 1,
         flightLabel: activating
           ? isGSuit
-            ? 'SIMULASI 9G • KANTUNG UDARA G-SUIT MENGEMBANG & VISOR HMDS AKTIF'
-            : 'SIMULASI MESIN • RODA MASUK OTOMATIS'
+            ? 'SIMULASI 9G • KANTUNG UDARA G-SUIT MENGEMBANG & SALURAN TEKANAN AKTIF'
+            : isHelmet
+              ? 'SIMULASI HMDS • VISOR HUD AKTIF & SUPLAI OKSIGEN OBOGS'
+              : 'SIMULASI MESIN • RODA MASUK OTOMATIS'
           : null,
         activeHotspot: activating ? null : s.activeHotspot,
       };
