@@ -164,11 +164,12 @@ export function buildDetailedC130J(): BuildResult {
     g.add(sponson);
   }
 
-  // Sayap tinggi lebar (lebar sayap 39,7 m -> ±7.15 unit!) berprofil airfoil
+  // Sayap tinggi lebar (lebar sayap 39,7 m -> ±7.15 unit!) menyatu penuh dari tengah badan (spanPos: 0) tanpa celah & tanpa punuk
   const wingSecs: AirfoilSection[] = [
-    { spanPos: 0.65, leZ: 1.7, teZ: -0.45, offset: 2.18, thick: 0.34 },
-    { spanPos: 3.4, leZ: 1.48, teZ: -0.25, offset: 2.22, thick: 0.24 },
-    { spanPos: 7.15, leZ: 0.92, teZ: 0.12, offset: 2.26, thick: 0.12 },
+    { spanPos: 0.0, leZ: 1.72, teZ: -0.48, offset: 2.08, thick: 0.34 },
+    { spanPos: 0.85, leZ: 1.68, teZ: -0.44, offset: 2.12, thick: 0.32 },
+    { spanPos: 3.4, leZ: 1.48, teZ: -0.25, offset: 2.18, thick: 0.24 },
+    { spanPos: 7.15, leZ: 0.92, teZ: 0.12, offset: 2.24, thick: 0.12 },
   ];
   const wingR = mkMesh(buildAirfoilSurface(wingSecs, 'horizontal', 1, 0.12), wingMat);
   const wingL = mkMesh(buildAirfoilSurface(wingSecs, 'horizontal', -1, 0.12), wingMat);
@@ -176,8 +177,8 @@ export function buildDetailedC130J(): BuildResult {
 
   // Stabilator belakang tinggi & sirip ekor tegak besar (tinggi 11,9 m -> y = 4.65)
   const stabSecs: AirfoilSection[] = [
-    { spanPos: 0.24, leZ: -4.65, teZ: -6.15, offset: 2.18, thick: 0.14 },
-    { spanPos: 2.85, leZ: -5.25, teZ: -6.02, offset: 2.22, thick: 0.07 },
+    { spanPos: 0.0, leZ: -4.65, teZ: -6.15, offset: 2.16, thick: 0.14 },
+    { spanPos: 2.85, leZ: -5.25, teZ: -6.02, offset: 2.20, thick: 0.07 },
   ];
   g.add(
     mkMesh(buildAirfoilSurface(stabSecs, 'horizontal', 1, 0), wingMat),
