@@ -7,7 +7,6 @@ import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { InfographicModal } from './components/hud/InfographicModal';
-import { FloatingWhatsApp } from './components/hud/FloatingWhatsApp';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
@@ -87,7 +86,6 @@ export function App() {
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />
-      <FloatingWhatsApp />
       <InfographicModal />
       <WelcomeScreen />
     </main>
