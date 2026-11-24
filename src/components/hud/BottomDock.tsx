@@ -1,4 +1,3 @@
-import { useRef, useState } from 'react';
 import {
   Activity,
   FileText,
@@ -11,11 +10,8 @@ import {
   PlaneTakeoff,
   Rotate3d,
   RotateCcw,
-  Upload,
 } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
-import { loadLocalGlbFile } from '../../utils/glbEquipmentLoader';
-import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
 
 export function BottomDock() {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -32,36 +28,9 @@ export function BottomDock() {
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const resetCamera = useHangarStore((s) => s.resetCamera);
-  const bumpGlbVersion = useHangarStore((s) => s.bumpGlbVersion);
-  const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [loadingGlb, setLoadingGlb] = useState(false);
 
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
-  const supportsGlb = isGSuit || isHelmet;
-
-  const handleGlbPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    setLoadingGlb(true);
-    setFlightLabel(`MEMUAT MODEL 3D: ${file.name.toUpperCase()}...`);
-    try {
-      await loadLocalGlbFile(file, selectedId);
-      invalidateSnapshot(selectedId);
-      bumpGlbVersion(selectedId);
-      resetCamera();
-      setFlightLabel(`MODEL .GLB AKTIF • ${file.name.toUpperCase()}`);
-      setTimeout(() => setFlightLabel(null), 3500);
-    } catch {
-      setFlightLabel('GAGAL MEMUAT .GLB • PASTIKAN FILE VALID (.GLB/.GLTF)');
-      setTimeout(() => setFlightLabel(null), 4000);
-    } finally {
-      setLoadingGlb(false);
-    }
-  };
 
   const flightButtons = isGSuit
     ? [
@@ -202,29 +171,6 @@ export function BottomDock() {
         })}
 
         <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#4da6ff]/25" />
-
-        {supportsGlb && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".glb,.gltf"
-              onChange={handleGlbPick}
-              className="hidden"
-            />
-            <button
-              type="button"
-              disabled={loadingGlb}
-              onClick={() => fileInputRef.current?.click()}
-              title={`Muat file .GLB 3D nyata untuk ${isGSuit ? 'G-Suit (gsuit.glb)' : 'Helm Pilot (pilot-helmet.glb)'}`}
-              className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-[#ffb703]/60 bg-[#ffb703]/15 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-[#ffb703] uppercase hover:bg-[#ffb703]/25 hover:border-[#ffb703] transition-all duration-200 cursor-pointer active:scale-95 disabled:opacity-50"
-            >
-              <Upload className="h-4 w-4 shrink-0" />
-              <span className="sm:hidden whitespace-nowrap leading-none">.GLB</span>
-              <span className="hidden sm:inline whitespace-nowrap">{loadingGlb ? 'Memuat...' : 'Muat .GLB'}</span>
-            </button>
-          </>
-        )}
 
         <button
           type="button"
