@@ -156,13 +156,7 @@ export function buildDetailedC130J(): BuildResult {
   const noseZs = Array.from({ length: 16 }, (_, i) => lerp(5.72, 6.25, i / 15));
   g.add(fuseMesh, mkMesh(buildLoftGeometry(noseZs.map((z) => ({ z, point: (th) => cross(z, th) })), 36), radomeMat));
 
-  // Fairing pangkal sayap atas & sponson roda pendarat samping
-  const wingFairing = mkMesh(new THREE.CapsuleGeometry(0.45, 2.6, 8, 18), fuseMat);
-  wingFairing.rotation.x = Math.PI / 2;
-  wingFairing.scale.set(1.45, 0.55, 1);
-  wingFairing.position.set(0, 2.15, 0.65);
-  g.add(wingFairing);
-
+  // Sponson roda pendarat samping (punggung C-130J rata & bersih tanpa punuk atas)
   for (const s of [1, -1]) {
     const sponson = mkMesh(new THREE.CapsuleGeometry(0.32, 2.45, 8, 18), fuseMat);
     sponson.rotation.x = Math.PI / 2;
@@ -418,25 +412,25 @@ export function buildDetailedKT1B(): BuildResult {
   const coreMat = new THREE.MeshStandardMaterial({ color: '#c47a3c', metalness: 0.85, roughness: 0.3 });
   const glowMat = new THREE.MeshStandardMaterial({ color: '#261208', metalness: 0.6, roughness: 0.4 });
 
-  // Badan KT-1B Wong Bee ramping aerodinamis
+  // Badan KT-1B Wong Bee proporsional berisi & kekar (sesuai foto Jupiter Aerobatic Team)
   const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
-    let rx = 0.54;
-    let ryT = 0.58;
-    let ryB = 0.54;
+    let rx = 0.74;
+    let ryT = 0.78;
+    let ryB = 0.74;
     let ys = 0;
-    if (z >= 4.0) {
-      const t = Math.max(0, Math.min(1, (6.2 - z) / (6.2 - 4.0)));
-      rx = lerp(0.28, 0.5, Math.pow(t, 0.7));
-      ryT = lerp(0.28, 0.54, Math.pow(t, 0.7));
-      ryB = lerp(0.28, 0.5, Math.pow(t, 0.7));
-    } else if (z < -1.0) {
-      const t = Math.max(0, Math.min(1, (-1.0 - z) / (-1.0 - -6.3)));
-      rx = lerp(0.54, 0.14, smoothstep(0, 1, t));
-      ryT = lerp(0.56, 0.24, smoothstep(0, 1, t));
-      ryB = lerp(0.52, 0.16, smoothstep(0, 1, t));
-      ys = lerp(0, 0.12, t);
+    if (z >= 3.85) {
+      const t = Math.max(0, Math.min(1, (6.2 - z) / (6.2 - 3.85)));
+      rx = lerp(0.38, 0.72, Math.pow(t, 0.68));
+      ryT = lerp(0.38, 0.76, Math.pow(t, 0.68));
+      ryB = lerp(0.38, 0.72, Math.pow(t, 0.68));
+    } else if (z < -0.9) {
+      const t = Math.max(0, Math.min(1, (-0.9 - z) / (-0.9 - -6.3)));
+      rx = lerp(0.74, 0.18, smoothstep(0, 1, t));
+      ryT = lerp(0.78, 0.30, smoothstep(0, 1, t));
+      ryB = lerp(0.74, 0.22, smoothstep(0, 1, t));
+      ys = lerp(0, 0.16, t);
     }
     return [s * rx, yC + ys + c * (c >= 0 ? ryT : ryB)];
   };
@@ -447,10 +441,10 @@ export function buildDetailedKT1B(): BuildResult {
 
   // Spinner PUTIH bersih (persis foto Jupiter!) + baling-baling 4 bilah Hartzell
   const spinnerPts = [
-    new THREE.Vector2(0.29, 6.18),
-    new THREE.Vector2(0.24, 6.48),
-    new THREE.Vector2(0.12, 6.8),
-    new THREE.Vector2(0.015, 6.96),
+    new THREE.Vector2(0.39, 6.18),
+    new THREE.Vector2(0.32, 6.5),
+    new THREE.Vector2(0.16, 6.82),
+    new THREE.Vector2(0.015, 7.0),
   ];
   const spinnerGeo = new THREE.LatheGeometry(spinnerPts, 28);
   spinnerGeo.rotateX(Math.PI / 2);
@@ -458,32 +452,32 @@ export function buildDetailedKT1B(): BuildResult {
   spinnerMesh.position.y = yC;
   g.add(spinnerMesh);
 
-  const prop = makePropeller(4, 1.32, 0.15, bladeMat, whiteTipMat, 0.14, whiteSpinnerMat);
+  const prop = makePropeller(4, 1.48, 0.17, bladeMat, whiteTipMat, 0.18, whiteSpinnerMat);
   prop.wrap.position.set(0, yC, 6.45);
   g.add(prop.wrap);
   const spinners: SpinnerFx[] = [{ obj: prop.pivot, axis: 'z', speed: 38, blur: prop.blur }];
 
   // Pipa knalpot PT6A-62 di kedua sisi hidung
   for (const s of [1, -1]) {
-    const ex = mkMesh(new THREE.CylinderGeometry(0.075, 0.095, 0.3, 10), darkMetal);
+    const ex = mkMesh(new THREE.CylinderGeometry(0.085, 0.105, 0.34, 10), darkMetal);
     ex.rotation.z = (Math.PI / 2) * s;
-    ex.position.set(s * 0.46, yC + 0.06, 4.95);
+    ex.position.set(s * 0.64, yC + 0.08, 4.95);
     g.add(ex);
   }
 
   // Kanopi gelembung tandem lebar transparan + 2 kursi Martin-Baker terlihat langsung
-  const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(0.7, 3.85, i / 27));
+  const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(0.55, 3.85, i / 27));
   g.add(
     mkMesh(
       buildLoftGeometry(
         canopyZs.map((z) => {
-          const u = Math.max(0, Math.min(1, (z - 0.7) / 3.15));
+          const u = Math.max(0, Math.min(1, (z - 0.55) / 3.3));
           const arch = Math.max(0, Math.sin(Math.pow(u, 0.74) * Math.PI));
           return {
             z,
             point: (th) => {
               const a = (th / (Math.PI * 2)) * Math.PI - Math.PI / 2;
-              return [Math.sin(a) * 0.44 * Math.pow(arch, 0.56), 1.98 + Math.cos(a) * 0.64 * arch];
+              return [Math.sin(a) * 0.56 * Math.pow(arch, 0.56), 2.16 + Math.cos(a) * 0.68 * arch];
             },
           };
         }),
@@ -589,10 +583,10 @@ export function buildDetailedKT1B(): BuildResult {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
     addDecal(g, finMesh, [s * 0.05, 3.05, -5.5], rot, [0.68, 0.44, 0.08], flagTex);
     addDecal(g, finMesh, [s * 0.05, 3.55, -5.62], rot, [0.95, 0.24, 0.08], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.48, 1.66, 3.75], rot, [0.5, 0.34, 0.22], num10Tex);
-    addDecal(g, fuseMesh, [s * 0.52, 1.38, 3.1], rot, [1.9, 0.38, 0.24], jupitersTex);
-    addDecal(g, fuseMesh, [s * 0.42, 1.52, -1.85], rot, [0.55, 0.55, 0.22], roundelTex);
-    addDecal(g, fuseMesh, [s * 0.38, 1.52, -2.85], rot, [1.1, 0.28, 0.2], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.68, 1.78, 3.75], rot, [0.56, 0.38, 0.26], num10Tex);
+    addDecal(g, fuseMesh, [s * 0.72, 1.46, 3.05], rot, [2.1, 0.42, 0.28], jupitersTex);
+    addDecal(g, fuseMesh, [s * 0.60, 1.60, -1.85], rot, [0.62, 0.62, 0.26], roundelTex);
+    addDecal(g, fuseMesh, [s * 0.54, 1.60, -2.85], rot, [1.2, 0.32, 0.24], tniAuTex);
   }
 
   return {
