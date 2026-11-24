@@ -78,7 +78,6 @@ function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boo
 export function AircraftModel() {
   const unit = useSelectedUnit();
   const wireframe = useHangarStore((s) => s.wireframe);
-  const cutaway = useHangarStore((s) => s.cutaway);
   const activeHotspot = useHangarStore((s) => s.activeHotspot);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
@@ -89,6 +88,7 @@ export function AircraftModel() {
   const rootRef = useRef<THREE.Group>(null);
   const phaseTime = useRef(0);
   const gearRetract = useRef(0); // 0 = roda turun/keluar, 1 = roda masuk penuh di dalam badan
+  const currentX = useRef(0);
   const currentY = useRef(0);
   const currentZ = useRef(0);
 
@@ -98,6 +98,7 @@ export function AircraftModel() {
   useEffect(() => {
     phaseTime.current = 0;
     gearRetract.current = 0;
+    currentX.current = 0;
     currentY.current = 0;
     currentZ.current = 0;
     if (rootRef.current) {
@@ -116,7 +117,7 @@ export function AircraftModel() {
   useEffect(() => {
     phaseTime.current = 0;
     if (flightMode === 'landing' && currentY.current < 1.2) {
-      // Jika sedang parkir lalu tekan Landing, mulai dari posisi pendekatan di udara
+      currentX.current = 0;
       currentY.current = 3.1;
       currentZ.current = -2.2;
       gearRetract.current = 1;
@@ -126,9 +127,9 @@ export function AircraftModel() {
     }
   }, [flightMode, flightNonce]);
 
-  // Auto-cutaway pintar: jika user klik pin bertipe "Jeroan", kulit pesawat otomatis terbuka transparan!
+  // Auto-cutaway pintar saat pengguna mengklik pin bertipe "Jeroan"
   const activeItem = activeHotspot !== null ? unit.hotspots.find((h) => h.id === activeHotspot) : null;
-  const showCutaway = cutaway || activeItem?.partType === 'Jeroan';
+  const showCutaway = activeItem?.partType === 'Jeroan';
 
   useEffect(() => {
     applyVisualModes(procedural.group, showCutaway, wireframe);
@@ -146,11 +147,14 @@ export function AircraftModel() {
     phaseTime.current += dt;
     const pt = phaseTime.current;
     const isHeli = unit.category === 'Helikopter';
+    const isHeavy = unit.category === 'Angkut & VIP';
 
+    let targetX = 0;
     let targetY = 0;
     let targetZ = 0;
     let targetPitch = 0;
     let targetRoll = 0;
+    let targetYawOffset = 0;
     let targetGear = 0; // 0 = keluar, 1 = masuk
 
     if (flightMode === 'takeoff') {
@@ -214,33 +218,77 @@ export function AircraftModel() {
         setFlightState('parked', null);
       }
     } else if (flightMode === 'engineSim') {
-      // Simulasi Mesin: mengudara + roda pendarat otomatis masuk ke dalam badan!
-      targetY = Math.max(1.55, procedural.hoverHeight + 0.55) + Math.sin(t * 2.1) * 0.14;
-      targetZ = 0;
-      targetPitch = (isHeli ? 0.04 : -0.05) + Math.sin(t * 1.4) * 0.015;
-      targetRoll = Math.cos(t * 1.7) * 0.025;
+      // Simulasi Mesin: manuver udara dinamis (belok kanan, belok kiri, menanjak atas, menukik bawah) + roda masuk!
+      const cycle = pt % 16;
+      const bankAmp = isHeavy ? 0.22 : isHeli ? 0.2 : 0.44;
+      const pitchAmp = isHeavy ? 0.14 : isHeli ? 0.12 : 0.26;
+      const baseH = Math.max(2.1, procedural.hoverHeight + 0.9);
       targetGear = 1;
+
+      if (cycle < 4) {
+        // Fase 1: Manuver Belok Kanan (Right Bank)
+        const s = Math.sin((cycle / 4) * Math.PI);
+        targetX = 1.9 * s;
+        targetY = baseH + 0.25 * s;
+        targetRoll = -bankAmp * s;
+        targetPitch = -0.05 * s;
+        targetYawOffset = -0.18 * s;
+        setFlightLabel('SIMULASI MESIN • MANUVER BELOK KANAN');
+      } else if (cycle < 8) {
+        // Fase 2: Manuver Belok Kiri (Left Bank)
+        const s = Math.sin(((cycle - 4) / 4) * Math.PI);
+        targetX = -1.9 * s;
+        targetY = baseH + 0.25 * s;
+        targetRoll = bankAmp * s;
+        targetPitch = -0.05 * s;
+        targetYawOffset = 0.18 * s;
+        setFlightLabel('SIMULASI MESIN • MANUVER BELOK KIRI');
+      } else if (cycle < 12) {
+        // Fase 3: Manuver Menanjak ke Atas (Climb)
+        const s = Math.sin(((cycle - 8) / 4) * Math.PI);
+        targetX = 0;
+        targetY = baseH + 1.35 * s;
+        targetZ = 0.7 * s;
+        targetPitch = -pitchAmp * s;
+        targetRoll = Math.sin(t * 2) * 0.04;
+        setFlightLabel('SIMULASI MESIN • MANUVER MENANJAK (ATAS)');
+      } else {
+        // Fase 4: Manuver Menukik Halus ke Bawah (Descend)
+        const s = Math.sin(((cycle - 12) / 4) * Math.PI);
+        targetX = 0;
+        targetY = Math.max(1.25, baseH - 0.85 * s);
+        targetZ = -0.6 * s;
+        targetPitch = pitchAmp * 0.72 * s;
+        targetRoll = Math.cos(t * 2) * 0.04;
+        setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
+      }
     } else {
       // Parked di landasan
+      targetX = 0;
       targetY = 0;
       targetZ = 0;
       targetPitch = 0;
       targetRoll = 0;
+      targetYawOffset = 0;
       targetGear = 0;
     }
 
     // Interpolasi posisi & rotasi pesawat
-    const posSpeed = flightMode === 'landing' && pt < 0.15 ? 12 : 4.0;
+    const posSpeed = flightMode === 'landing' && pt < 0.15 ? 12 : 3.4;
+    currentX.current = THREE.MathUtils.lerp(currentX.current, targetX, Math.min(1, dt * posSpeed));
     currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, Math.min(1, dt * posSpeed));
     currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, Math.min(1, dt * posSpeed));
 
+    rootRef.current.position.x = currentX.current;
     rootRef.current.position.y = currentY.current;
     rootRef.current.position.z = currentZ.current;
-    rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 4.2));
-    rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 4.2));
+    rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 3.8));
+    rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 3.8));
 
     if (autoRotate) {
       rootRef.current.rotation.y += dt * 0.42;
+    } else {
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * 3.2));
     }
 
     // Animasi halus roda pendarat masuk/keluar ke dalam badan pesawat

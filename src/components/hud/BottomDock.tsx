@@ -1,5 +1,5 @@
 import {
-  Cpu,
+  FileText,
   Flame,
   Grid3X3,
   Mail,
@@ -14,13 +14,14 @@ import { useHangarStore } from '../../store/useHangarStore';
 
 export function BottomDock() {
   const wireframe = useHangarStore((s) => s.wireframe);
-  const cutaway = useHangarStore((s) => s.cutaway);
+  const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
   const toggle = useHangarStore((s) => s.toggle);
+  const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
   const triggerTakeOff = useHangarStore((s) => s.triggerTakeOff);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
@@ -55,12 +56,12 @@ export function BottomDock() {
       accent: 'amber' as const,
     },
     {
-      id: 'cutaway',
+      id: 'infographic',
       label: 'Spesifikasi',
       short: 'Spek',
-      icon: Cpu,
-      active: cutaway,
-      onClick: () => toggle('cutaway'),
+      icon: FileText,
+      active: showInfographic,
+      onClick: toggleInfographic,
     },
     {
       id: 'wireframe',

@@ -60,7 +60,7 @@ interface HangarState {
   infoTab: InfoTab;
 
   wireframe: boolean;
-  cutaway: boolean;
+  showInfographic: boolean;
   showPins: boolean;
   autoRotate: boolean;
   flightMode: FlightMode;
@@ -73,13 +73,15 @@ interface HangarState {
 
   enterHangar: () => void;
   openWelcome: () => void;
+  toggleInfographic: () => void;
+  closeInfographic: () => void;
   selectAircraft: (id: string) => void;
   setSearch: (v: string) => void;
   setCategory: (c: 'Semua' | AircraftCategory) => void;
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'cutaway' | 'showPins' | 'autoRotate') => void;
+  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate') => void;
 
   triggerTakeOff: () => void;
   triggerLanding: () => void;
@@ -123,7 +125,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   infoTab: 'spec',
 
   wireframe: false,
-  cutaway: false,
+  showInfographic: false,
   showPins: false,
   autoRotate: false,
   flightMode: 'parked',
@@ -135,7 +137,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   quiz: emptyQuiz,
 
   enterHangar: () => set({ showWelcome: false }),
-  openWelcome: () => set({ showWelcome: true }),
+  openWelcome: () => set({ showWelcome: true, showInfographic: false }),
+  toggleInfographic: () => set((s) => ({ showInfographic: !s.showInfographic })),
+  closeInfographic: () => set({ showInfographic: false }),
 
   selectAircraft: (id) => {
     const mobile = isCompactViewport();
@@ -235,7 +239,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       quiz: { ...emptyQuiz, status: 'active', order: shuffle(unit.hotspots.map((h) => h.id)).slice(0, 5) },
       infoTab: 'quiz',
       showPins: true,
-      cutaway: false,
+      showInfographic: false,
       autoRotate: false,
       activeHotspot: null,
       leftOpen: mobile ? false : get().leftOpen,
