@@ -198,11 +198,15 @@ export const FLEET: AircraftUnit[] = [
   },
   {
     id: 'hawk209',
-    name: 'BAE Hawk 209',
-    code: 'Light Fighter Mk.209',
+    name: 'BAE Hawk 100/200',
+    code: 'Hawk 109 / Mk.209',
     origin: 'Britania Raya',
     tailNumber: 'TT-0207',
     category: 'Tempur',
+    liveries: [
+      { id: 'camo-tan', name: 'Loreng Cokelat-Hijau (TT-0207)', swatch: '#b88e5c', accent: '#4a5c3c', tailNumber: 'TT-0207' },
+      { id: 'camo-grey', name: 'Abu-Abu Taktis (TT-0404)', swatch: '#6d7680', accent: '#aeb7c0', tailNumber: 'TT-0404' },
+    ],
     squadron: 'Skadron Udara 1 (Supadio) & Skadron Udara 12 (Roesmin Nurjadin)',
     role: 'Pesawat tempur taktis ringan kursi tunggal berkemampuan serang darat dan pertahanan udara. Menjadi penjaga strategis perbatasan Kalimantan dan Sumatera.',
     specs: {

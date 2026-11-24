@@ -511,43 +511,89 @@ export function buildDetailedT50i(liveryId = 'demo'): BuildResult {
 /* =========================================================================
  * 2. BAE HAWK 209 TNI AU (TT-0207) — KAMUFLASE HIJAU-COKLAT SKADRON 1 & 12
  * ========================================================================= */
-function hawkCamoTexture() {
-  return camoTexture(
-    '#5c6943',
+function hawkTanCamoFuseTexture() {
+  const W = 1024;
+  const H = 1024;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d')!;
+
+  // Base loreng cokelat pasir hangat (Sandy Tan) + hijau zaitun + cokelat tua (persis referensi TT-0207!)
+  const camo = camoTexture(
+    '#b88e5c',
     [
-      { c: '#8b6a48', n: 16, r: 66 },
-      { c: '#3d472c', n: 9, r: 44 },
-      { c: '#75583a', n: 7, r: 36 },
+      { c: '#4a5c3c', n: 18, r: 78 },
+      { c: '#5d4431', n: 10, r: 54 },
+      { c: '#9e7748', n: 8, r: 48 },
     ],
-    209,
-    { noise: 0.035 },
+    207,
+    { noise: 0.03 },
+  );
+  ctx.drawImage(camo.image as HTMLCanvasElement, 0, 0, W, H);
+  camo.dispose();
+
+  // Perut pesawat (u ~ 0.36..0.64) abu-abu terang bersih sesuai Tampak Bawah referensi TT-0207
+  ctx.fillStyle = '#c2c9d0';
+  ctx.fillRect(W * 0.36, 0, W * 0.28, H);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+function hawkTanCamoWingTexture() {
+  return camoTexture(
+    '#b88e5c',
+    [
+      { c: '#4a5c3c', n: 18, r: 74 },
+      { c: '#5d4431', n: 9, r: 52 },
+    ],
+    2071,
+    { noise: 0.03 },
   );
 }
 
-export function buildDetailedHawk209(): BuildResult {
+function hawkGreyCamoTexture() {
+  return camoTexture(
+    '#7c858f',
+    [
+      { c: '#4e5660', n: 16, r: 72 },
+      { c: '#a4adb6', n: 10, r: 50 },
+    ],
+    404,
+    { noise: 0.03 },
+  );
+}
+
+export function buildDetailedHawk209(liveryId = 'camo-tan'): BuildResult {
   const g = new THREE.Group();
   const yC = 1.46;
   const m = commonMats(209);
-  const camo = hawkCamoTexture();
+  const isGrey = liveryId === 'camo-grey';
+  const fuseCamo = isGrey ? hawkGreyCamoTexture() : hawkTanCamoFuseTexture();
+  const wingCamo = isGrey ? hawkGreyCamoTexture() : hawkTanCamoWingTexture();
 
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: cloneRep(camo, 1.8, 3.4),
+    map: isGrey ? cloneRep(fuseCamo, 1.8, 3.4) : fuseCamo,
     bumpMap: cloneRep(m.bump, 2.0, 4.0),
     bumpScale: 0.015,
-    metalness: 0.38,
-    roughness: 0.56,
+    metalness: isGrey ? 0.44 : 0.34,
+    roughness: isGrey ? 0.5 : 0.56,
   });
   const wingMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: cloneRep(camo, 1.3, 1.3),
+    map: cloneRep(wingCamo, 1.25, 1.25),
     bumpMap: cloneRep(m.bump, 1.6, 1.6),
     bumpScale: 0.013,
-    metalness: 0.4,
-    roughness: 0.54,
+    metalness: isGrey ? 0.44 : 0.36,
+    roughness: isGrey ? 0.48 : 0.54,
   });
-  const radomeMat = new THREE.MeshStandardMaterial({ color: '#3b403c', metalness: 0.25, roughness: 0.6 });
-  const tankMat = new THREE.MeshStandardMaterial({ color: '#4c5442', metalness: 0.42, roughness: 0.52 });
+  const radomeMat = new THREE.MeshStandardMaterial({ color: '#3b4046', metalness: 0.25, roughness: 0.58 });
+  const tankMat = new THREE.MeshStandardMaterial({ color: isGrey ? '#8a939c' : '#646c74', metalness: 0.44, roughness: 0.48 });
 
   // Badan Hawk 209 kekar & berisi: hidung radar APG-66 tebal, kokpit kursi tunggal tinggi, saluran udara samping besar
   const cross = (z: number, th: number): [number, number] => {
@@ -696,21 +742,27 @@ export function buildDetailedHawk209(): BuildResult {
   core.position.set(0, yC, -3.6);
   g.add(core);
 
-  // Livery & tulisan TNI AU benar di kedua sisi (depth tipis!)
+  // Livery & identitas resmi TNI AU sesuai referensi BAE Hawk 100/200 (TT-0207 & TT-0404)
   const roundelTex = roundelTexture();
   const flagTex = flagTexture();
   const tniAuTex = textTexture('TNI AU', { color: '#141a21', aspect: 3.8 });
-  const tailCodeTex = textTexture('TT-0207', { color: '#141a21', aspect: 4.2 });
-  const noseNumTex = textTexture('07', { color: '#141a21', aspect: 1.5 });
+  const tailCodeTex = textTexture(isGrey ? 'TT-0404' : 'TT-0207', { color: '#141a21', aspect: 4.2 });
+  const noseNumTex = textTexture(isGrey ? '04' : '07', { color: '#141a21', aspect: 1.5 });
 
+  // Roundel segilima merah-putih di atas & bawah kedua sayap (sesuai Tampak Atas & Tampak Bawah!)
   addDecal(g, wingR, [2.85, 1.34, -0.65], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
   addDecal(g, wingL, [-2.85, 1.34, -0.65], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
+  addDecal(g, wingR, [2.85, 1.18, -0.65], [Math.PI / 2, 0, 0], [0.95, 0.95, 0.4], roundelTex);
+  addDecal(g, wingL, [-2.85, 1.18, -0.65], [Math.PI / 2, 0, 0], [0.95, 0.95, 0.4], roundelTex);
+
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
     addDecal(g, finMesh, [s * 0.05, 3.65, -5.5], rot, [0.78, 0.5, 0.08], flagTex);
-    addDecal(g, finMesh, [s * 0.05, 2.75, -5.05], rot, [1.3, 0.3, 0.08], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.78, 1.58, -2.1], rot, [1.4, 0.36, 0.28], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.68, 1.48, 3.55], rot, [0.56, 0.38, 0.26], noseNumTex);
+    addDecal(g, finMesh, [s * 0.05, 2.75, -5.05], rot, [1.35, 0.32, 0.08], tailCodeTex);
+    // Roundel segilima di samping badan belakang (sesuai TT-0207) + tulisan TNI AU di sampingnya
+    addDecal(g, fuseMesh, [s * 0.78, 1.52, -2.15], rot, [0.64, 0.64, 0.28], roundelTex);
+    addDecal(g, fuseMesh, [s * 0.78, 1.54, -0.95], rot, [1.28, 0.34, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.68, 1.44, 3.65], rot, [0.56, 0.38, 0.26], noseNumTex);
   }
 
   return {
