@@ -83,7 +83,6 @@ function easeInOut(t: number) {
 export function AircraftModel() {
   const unit = useSelectedUnit();
   const wireframe = useHangarStore((s) => s.wireframe);
-  const activeHotspot = useHangarStore((s) => s.activeHotspot);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
@@ -149,13 +148,10 @@ export function AircraftModel() {
     }
   }, [flightMode, flightNonce, unit.category]);
 
-  // Auto-cutaway pintar saat pengguna mengklik pin bertipe "Sistem Internal"
-  const activeItem = activeHotspot !== null ? unit.hotspots.find((h) => h.id === activeHotspot) : null;
-  const showCutaway = activeItem?.partType === 'Sistem Internal';
-
+  // Pesawat selalu tampil utuh (tidak transparan/kerangka saat pin diklik)
   useEffect(() => {
-    applyVisualModes(procedural.group, showCutaway, wireframe);
-  }, [procedural.group, showCutaway, wireframe]);
+    applyVisualModes(procedural.group, false, wireframe);
+  }, [procedural.group, wireframe]);
 
   const isEngineVisualActive =
     flightMode === 'engineSim' ||

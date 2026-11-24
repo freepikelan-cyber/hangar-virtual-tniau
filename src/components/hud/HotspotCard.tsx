@@ -24,8 +24,8 @@ export function HotspotCard() {
   };
 
   return (
-    <div className="pointer-events-none fixed bottom-[114px] left-1/2 z-25 w-[min(440px,calc(100vw-2rem))] -translate-x-1/2">
-      <div className="hud-panel pointer-events-auto rounded-xl border-[#ffb703]/60 p-4 shadow-[0_0_28px_rgba(0,0,0,0.65)] animate-slidein">
+    <div className="pointer-events-none fixed bottom-[132px] sm:bottom-[142px] left-1/2 z-40 w-[min(430px,calc(100vw-1.5rem))] -translate-x-1/2">
+      <div className="pointer-events-auto rounded-xl border border-[#ffb703]/70 bg-[#0a1e3c]/95 backdrop-blur-md p-3.5 sm:p-4 shadow-[0_12px_36px_rgba(2,10,28,0.85)] animate-slidein">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#ffb703] font-display text-base font-bold text-[#0a1e3c]">
@@ -46,7 +46,7 @@ export function HotspotCard() {
                           : 'border border-[#4da6ff]/50 bg-[#4da6ff]/15 text-[#75bcff]'
                     }`}
                   >
-                    {item.partType === 'Sistem Internal' ? 'Sistem Internal • Tampilan Transparan' : item.partType}
+                    {item.partType}
                   </span>
                 )}
               </div>

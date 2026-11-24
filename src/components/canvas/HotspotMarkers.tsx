@@ -79,11 +79,6 @@ function HotspotPin({ item }: HotspotPinProps) {
           >
             {item.id}
           </button>
-          {!isQuizActive && isSelected && (
-            <div className="pointer-events-none mt-1.5 whitespace-nowrap rounded border border-[#ffb703]/70 bg-[#0a1e3c]/90 px-2 py-0.5 font-display text-xs font-semibold tracking-wider text-[#ffb703] uppercase shadow-lg">
-              {item.name}
-            </div>
-          )}
         </div>
       </Html>
     </group>
