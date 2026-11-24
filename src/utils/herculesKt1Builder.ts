@@ -477,8 +477,8 @@ export function buildDetailedKT1B(): BuildResult {
     mkMesh(
       buildLoftGeometry(
         canopyZs.map((z) => {
-          const u = (z - 0.7) / 3.15;
-          const arch = Math.sin(Math.pow(u, 0.74) * Math.PI);
+          const u = Math.max(0, Math.min(1, (z - 0.7) / 3.15));
+          const arch = Math.max(0, Math.sin(Math.pow(u, 0.74) * Math.PI));
           return {
             z,
             point: (th) => {

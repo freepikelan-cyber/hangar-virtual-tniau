@@ -765,8 +765,8 @@ export function buildDetailedF16(): BuildResult {
   for (let i = 0; i <= 28; i++) canopyZs.push(1.65 + (3.25 * i) / 28); // 1.65 .. 4.90
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
-      const u = (z - 1.65) / 3.25; // 0 belakang -> 1 depan
-      const arch = Math.sin(Math.pow(u, 0.78) * Math.PI);
+      const u = Math.max(0, Math.min(1, (z - 1.65) / 3.25)); // 0 belakang -> 1 depan
+      const arch = Math.max(0, Math.sin(Math.pow(u, 0.78) * Math.PI));
       const w = 0.43 * Math.pow(arch, 0.6);
       const h = 0.62 * arch;
       const baseY = 1.88 + 0.06 * (1 - u);

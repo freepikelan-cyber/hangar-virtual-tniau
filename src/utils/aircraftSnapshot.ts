@@ -5,6 +5,10 @@ const snapshotCache = new Map<string, string>();
 let sharedRenderer: THREE.WebGLRenderer | null = null;
 
 function getSharedRenderer(width: number, height: number): THREE.WebGLRenderer {
+  if (sharedRenderer && sharedRenderer.getContext().isContextLost()) {
+    sharedRenderer.dispose();
+    sharedRenderer = null;
+  }
   if (!sharedRenderer) {
     sharedRenderer = new THREE.WebGLRenderer({
       alpha: true,
@@ -79,10 +83,16 @@ export function getAircraftTransparentSnapshot(aircraftId: string): string {
   scene.add(clone);
 
   const box = new THREE.Box3().setFromObject(clone);
-  const center = new THREE.Vector3();
-  const size = new THREE.Vector3();
-  box.getCenter(center);
-  box.getSize(size);
+  const center = new THREE.Vector3(0, 2.0, 0);
+  const size = new THREE.Vector3(12, 4, 14);
+  if (!box.isEmpty()) {
+    const c = new THREE.Vector3();
+    const s = new THREE.Vector3();
+    box.getCenter(c);
+    box.getSize(s);
+    if (Number.isFinite(c.x) && Number.isFinite(c.y) && Number.isFinite(c.z)) center.copy(c);
+    if (Number.isFinite(s.x) && Number.isFinite(s.y) && Number.isFinite(s.z)) size.copy(s);
+  }
 
   const camera = new THREE.PerspectiveCamera(34, width / height, 0.1, 120);
   const maxDim = Math.max(size.x, size.y, size.z, 10);

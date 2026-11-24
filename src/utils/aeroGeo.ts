@@ -53,8 +53,8 @@ export function buildLoftGeometry(
     for (let j = 0; j <= radialSegs; j++) {
       const u = j / radialSegs;
       const theta = u * Math.PI * 2;
-      const [x, y] = st.point(theta);
-      positions.push(x, y, st.z);
+      const [rawX, rawY] = st.point(theta);
+      positions.push(Number.isFinite(rawX) ? rawX : 0, Number.isFinite(rawY) ? rawY : 0, st.z);
       uvs.push(u, v);
     }
   }

@@ -351,8 +351,8 @@ export function buildDetailedT50i(): BuildResult {
   const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(1.3, 4.45, i / 27));
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
-      const u = (z - 1.3) / 3.15;
-      const arch = Math.sin(Math.pow(u, 0.76) * Math.PI);
+      const u = Math.max(0, Math.min(1, (z - 1.3) / 3.15));
+      const arch = Math.max(0, Math.sin(Math.pow(u, 0.76) * Math.PI));
       return {
         z,
         point: (th) => {
@@ -600,8 +600,8 @@ export function buildDetailedHawk209(): BuildResult {
   const canopyZs = Array.from({ length: 26 }, (_, i) => lerp(1.55, 4.15, i / 25));
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
-      const u = (z - 1.55) / 2.6;
-      const arch = Math.sin(Math.pow(u, 0.78) * Math.PI);
+      const u = Math.max(0, Math.min(1, (z - 1.55) / 2.6));
+      const arch = Math.max(0, Math.sin(Math.pow(u, 0.78) * Math.PI));
       return {
         z,
         point: (th) => {
@@ -923,8 +923,8 @@ export function buildDetailedSu27(): BuildResult {
     mkMesh(
       buildLoftGeometry(
         canopyZs.map((z) => {
-          const u = (z - 2.2) / 2.72;
-          const arch = Math.sin(Math.pow(u, 0.76) * Math.PI);
+          const u = Math.max(0, Math.min(1, (z - 2.2) / 2.72));
+          const arch = Math.max(0, Math.sin(Math.pow(u, 0.76) * Math.PI));
           return {
             z,
             point: (th) => {
@@ -1203,8 +1203,8 @@ export function buildDetailedSuperTucano(): BuildResult {
     mkMesh(
       buildLoftGeometry(
         canopyZs.map((z) => {
-          const u = (z - 0.55) / 3.2;
-          const arch = Math.sin(Math.pow(u, 0.74) * Math.PI);
+          const u = Math.max(0, Math.min(1, (z - 0.55) / 3.2));
+          const arch = Math.max(0, Math.sin(Math.pow(u, 0.74) * Math.PI));
           return {
             z,
             point: (th) => {
