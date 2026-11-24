@@ -110,13 +110,30 @@ class AircraftAudioEngine {
     if (this.radioCurve) return this.radioCurve;
     const samples = 512;
     const curve = new Float32Array(samples);
-    const drive = 2.6; // saturasi hangat khas transmisi radio VHF kokpit
+    const drive = 5.8; // saturasi & grit autentik khas transmisi radio AM VHF kokpit
     for (let i = 0; i < samples; i++) {
       const x = (i * 2) / samples - 1;
       curve[i] = Math.tanh(x * drive) / Math.tanh(drive);
     }
     this.radioCurve = curve;
     return curve;
+  }
+
+  /** Membuat buffer noise radio VHF dengan desis + kresek (crackle) autentik khas radio penerbangan. */
+  private createRadioCrackleSource(durationSec: number): AudioBufferSourceNode | null {
+    if (!this.ctx) return null;
+    const len = Math.max(1, Math.floor(this.ctx.sampleRate * durationSec));
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      // Desis dasar VHF + impuls kresek/pop statis acak khas sinyal radio AM udara
+      const base = (Math.random() * 2 - 1) * 0.42;
+      const crackle = Math.random() > 0.992 ? (Math.random() * 2 - 1) * 1.45 : 0;
+      ch[i] = Math.max(-1, Math.min(1, base + crackle));
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = buf;
+    return src;
   }
 
   private stopAtcPlayback() {
@@ -213,33 +230,34 @@ class AircraftAudioEngine {
     this.stopAtcPlayback();
   }
 
-  /** Efek klik squelch statis radio VHF sebelum & sesudah transmisi ATC kokpit. */
+  /** Efek "KRRSSHH" squelch statis radio VHF yang tegas saat saluran ATC dibuka & ditutup. */
   private playRadioSquelch(delaySec = 0) {
     if (!this.ctx) return;
     const ctx = this.ctx;
     const start = ctx.currentTime + delaySec;
-    const src = this.createNoiseSource(0.085);
+    const src = this.createRadioCrackleSource(0.16);
     if (!src) return;
     const bp = ctx.createBiquadFilter();
     bp.type = 'bandpass';
-    bp.frequency.setValueAtTime(1750, start);
-    bp.Q.value = 3.2;
+    bp.frequency.setValueAtTime(1650, start);
+    bp.Q.value = 1.6;
 
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.001, start);
-    g.gain.linearRampToValueAtTime(0.075, start + 0.01);
-    g.gain.exponentialRampToValueAtTime(0.001, start + 0.08);
+    g.gain.linearRampToValueAtTime(0.24, start + 0.012);
+    g.gain.setValueAtTime(0.2, start + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.001, start + 0.155);
 
     src.connect(bp);
     bp.connect(g);
     g.connect(ctx.destination);
     src.start(start);
-    src.stop(start + 0.085);
+    src.stop(start + 0.16);
   }
 
   /**
    * Memutar rekaman suara ATC realistis melalui rantai DSP Radio Kokpit VHF asli:
-   * Highpass 420 Hz -> Lowpass 2650 Hz -> Presence 1550 Hz -> Saturasi Radio -> Kompresor + Carrier Static.
+   * Highpass 520 Hz -> Lowpass 2300 Hz -> Presence 1550 Hz -> Saturasi AM Radio + Kresek Statis VHF nyata!
    */
   private playAtcRadio(key: 'takeoff' | 'landing' | 'vacate') {
     if (!this.ctx) return;
@@ -249,46 +267,63 @@ class AircraftAudioEngine {
       this.stopAtcPlayback();
 
       const now = ctx.currentTime;
-      const dur = buffer.duration;
+      const rate = 1.07; // tempo tegas & cepat khas petugas menara ATC sungguhan
+      const dur = buffer.duration / rate;
 
-      // 1. PTT Squelch click pembuka & penutup
+      // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio
       this.playRadioSquelch(0);
-      this.playRadioSquelch(dur + 0.06);
+      this.playRadioSquelch(dur + 0.08);
 
-      // 2. Sumber suara manusia diproses lewat filter VHF Aviation Radio (380-2650 Hz)
+      // 2. Sumber suara manusia + desis kresek VHF digabung masuk ke filter radio yang sama!
       const src = ctx.createBufferSource();
       src.buffer = buffer;
+      src.playbackRate.value = rate;
 
       const hp = ctx.createBiquadFilter();
       hp.type = 'highpass';
-      hp.frequency.value = 420;
-      hp.Q.value = 0.9;
+      hp.frequency.value = 520;
+      hp.Q.value = 1.1;
 
       const lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = 2650;
-      lp.Q.value = 1.1;
+      lp.frequency.value = 2300;
+      lp.Q.value = 1.25;
 
       const peak = ctx.createBiquadFilter();
       peak.type = 'peaking';
       peak.frequency.value = 1550;
-      peak.Q.value = 1.4;
-      peak.gain.value = 5.5;
+      peak.Q.value = 1.6;
+      peak.gain.value = 7.0;
 
       const shaper = ctx.createWaveShaper();
       shaper.curve = this.getRadioDistortionCurve();
       shaper.oversample = '2x';
 
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -22;
-      comp.ratio.value = 6;
-      comp.attack.value = 0.004;
-      comp.release.value = 0.12;
+      comp.threshold.value = -24;
+      comp.ratio.value = 8;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.1;
 
       const outGain = ctx.createGain();
-      outGain.gain.value = 0.92;
+      outGain.gain.value = 0.88;
 
       src.connect(hp);
+
+      // 3. Latar "ngeresek" statis & crackle VHF masuk langsung ke rantai radio agar menyatu organik dengan suara ATC!
+      const carrier = this.createRadioCrackleSource(dur + 0.16);
+      if (carrier) {
+        const cGain = ctx.createGain();
+        cGain.gain.setValueAtTime(0.14, now + 0.04);
+        cGain.gain.setValueAtTime(0.14, now + dur + 0.06);
+        cGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.16);
+        carrier.connect(cGain);
+        cGain.connect(hp);
+        carrier.start(now + 0.04);
+        carrier.stop(now + dur + 0.17);
+        this.activeAtcCarrier = carrier;
+      }
+
       hp.connect(lp);
       lp.connect(peak);
       peak.connect(shaper);
@@ -296,26 +331,7 @@ class AircraftAudioEngine {
       comp.connect(outGain);
       outGain.connect(ctx.destination);
 
-      // 3. Latar statis tipis carrier VHF hanya selama radio aktif
-      const carrier = this.createNoiseSource(dur + 0.12);
-      if (carrier) {
-        const cBp = ctx.createBiquadFilter();
-        cBp.type = 'bandpass';
-        cBp.frequency.value = 1850;
-        cBp.Q.value = 1.8;
-        const cGain = ctx.createGain();
-        cGain.gain.setValueAtTime(0.022, now);
-        cGain.gain.setValueAtTime(0.022, now + dur);
-        cGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.1);
-        carrier.connect(cBp);
-        cBp.connect(cGain);
-        cGain.connect(ctx.destination);
-        carrier.start(now + 0.03);
-        carrier.stop(now + dur + 0.12);
-        this.activeAtcCarrier = carrier;
-      }
-
-      src.start(now + 0.05);
+      src.start(now + 0.08);
       this.activeAtcSrc = src;
     };
 
