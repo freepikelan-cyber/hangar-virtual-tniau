@@ -275,36 +275,36 @@ export function buildDetailedT50i(): BuildResult {
   // Radome abu-abu terang/putih khas T-50i TNI AU (sesuai foto Antara News!)
   const radomeMat = new THREE.MeshStandardMaterial({ color: '#cfd6de', metalness: 0.22, roughness: 0.45 });
 
-  // Badan blended lofted (panjang 13,14 m -> proporsional 13.1 unit)
+  // Badan blended lofted kekar & proporsional (panjang 13,14 m -> 13.1 unit)
   const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
-    let rx = 0.56;
-    let ryT = 0.5;
-    let ryB = 0.42;
+    let rx = 0.78;
+    let ryT = 0.70;
+    let ryB = 0.62;
     let ys = 0;
-    if (z >= 4.7) {
-      const t = Math.max(0, Math.min(1, (6.7 - z) / (6.7 - 4.7)));
-      const r = Math.pow(t, 0.74) * 0.42;
+    if (z >= 4.55) {
+      const t = Math.max(0, Math.min(1, (6.7 - z) / (6.7 - 4.55)));
+      const r = Math.pow(t, 0.72) * 0.64;
       rx = r;
       ryT = r * 0.94;
       ryB = r * 0.9;
       ys = -0.18 * Math.pow(1 - t, 1.3);
     } else if (z < -3.6) {
       const t = Math.max(0, Math.min(1, (-3.6 - z) / (-3.6 - -6.4)));
-      rx = lerp(0.56, 0.38, smoothstep(0, 1, t));
-      ryT = lerp(0.48, 0.38, smoothstep(0, 1, t));
-      ryB = lerp(0.42, 0.38, smoothstep(0, 1, t));
+      rx = lerp(0.78, 0.48, smoothstep(0, 1, t));
+      ryT = lerp(0.68, 0.48, smoothstep(0, 1, t));
+      ryB = lerp(0.62, 0.46, smoothstep(0, 1, t));
     }
     let lerx = 0;
     if (z < 3.9 && z > -3.5) {
       const env = smoothstep(3.9, 1.0, z) * smoothstep(-3.5, -1.8, z);
-      lerx = 0.6 * env * Math.pow(Math.abs(s), 2.2) * Math.exp(-Math.pow((c + 0.08) * 4.0, 2));
+      lerx = 0.68 * env * Math.pow(Math.abs(s), 2.2) * Math.exp(-Math.pow((c + 0.08) * 4.0, 2));
     }
     let spine = 0;
     if (z < 1.5 && z > -5.5) {
       const env = smoothstep(1.5, 0.8, z) * smoothstep(-5.5, -4.4, z);
-      spine = c > 0 ? 0.2 * env * Math.pow(c, 5.5) : 0;
+      spine = c > 0 ? 0.24 * env * Math.pow(c, 5.0) : 0;
     }
     return [s * (rx + lerx), yC + ys + c * (c >= 0 ? ryT : ryB) + spine];
   };
@@ -321,43 +321,43 @@ export function buildDetailedT50i(): BuildResult {
 
   // Saluran udara samping kembar di bawah LERX + pintu roda kuning di bawah perut
   for (const s of [1, -1]) {
-    const ix = s * 0.62;
+    const ix = s * 0.84;
     const iy = 1.24;
     const duct = mkMesh(
       buildLoftGeometry(
         Array.from({ length: 16 }, (_, i) => {
           const z = lerp(-1.8, 2.08, i / 15);
           const f = smoothstep(-1.8, 0.2, z);
-          return { z, point: (th) => [ix + Math.sin(th) * (0.24 * f + 0.05), iy + Math.cos(th) * (0.3 * f + 0.05)] };
+          return { z, point: (th) => [ix + Math.sin(th) * (0.31 * f + 0.06), iy + Math.cos(th) * (0.36 * f + 0.06)] };
         }),
         28,
       ),
       fuseMat,
     );
-    const lip = mkMesh(new THREE.TorusGeometry(0.25, 0.025, 8, 24), m.darkMetal);
+    const lip = mkMesh(new THREE.TorusGeometry(0.32, 0.028, 8, 24), m.darkMetal);
     lip.scale.set(0.86, 1.08, 1);
     lip.position.set(ix, iy, 2.08);
-    const cav = mkMesh(new THREE.CircleGeometry(0.24, 24), m.intakeInner);
+    const cav = mkMesh(new THREE.CircleGeometry(0.31, 24), m.intakeInner);
     cav.scale.set(0.84, 1.06, 1);
     cav.position.set(ix, iy, 2.05);
     // Pintu roda utama berwarna kuning terbuka di sisi bawah (khas foto T-50i!)
-    const gearDoor = mkMesh(new THREE.BoxGeometry(0.03, 0.42, 0.95), yellowAccentMat);
-    gearDoor.position.set(s * 0.56, 0.66, -1.1);
+    const gearDoor = mkMesh(new THREE.BoxGeometry(0.03, 0.44, 0.98), yellowAccentMat);
+    gearDoor.position.set(s * 0.72, 0.66, -1.1);
     gearDoor.rotation.z = s * 0.28;
     g.add(duct, lip, cav, gearDoor);
   }
 
   // Kanopi tandem 2 kursi & kokpit (Zero-Zero Ejection Seats + OBOGS + HUD)
-  const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(1.3, 4.45, i / 27));
+  const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(1.25, 4.45, i / 27));
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
-      const u = Math.max(0, Math.min(1, (z - 1.3) / 3.15));
+      const u = Math.max(0, Math.min(1, (z - 1.25) / 3.2));
       const arch = Math.max(0, Math.sin(Math.pow(u, 0.76) * Math.PI));
       return {
         z,
         point: (th) => {
           const a = (th / (Math.PI * 2)) * Math.PI - Math.PI / 2;
-          return [Math.sin(a) * 0.4 * Math.pow(arch, 0.58), lerp(1.94, 1.82, u) + Math.cos(a) * 0.56 * arch];
+          return [Math.sin(a) * 0.54 * Math.pow(arch, 0.58), lerp(2.08, 1.94, u) + Math.cos(a) * 0.62 * arch];
         },
       };
     }),
@@ -485,8 +485,8 @@ export function buildDetailedT50i(): BuildResult {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
     addDecal(g, finMesh, [s * 0.05, 3.85, -5.68], rot, [0.76, 0.48, 0.08], flagTex);
     addDecal(g, finMesh, [s * 0.05, 3.1, -5.25], rot, [1.28, 0.3, 0.08], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.58, 1.56, -1.2], rot, [1.35, 0.34, 0.24], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.44, 1.38, 4.35], rot, [0.5, 0.34, 0.22], noseNumTex);
+    addDecal(g, fuseMesh, [s * 0.78, 1.62, -1.2], rot, [1.45, 0.36, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.62, 1.44, 4.35], rot, [0.56, 0.38, 0.26], noseNumTex);
   }
 
   return {
@@ -544,26 +544,26 @@ export function buildDetailedHawk209(): BuildResult {
   const radomeMat = new THREE.MeshStandardMaterial({ color: '#3b403c', metalness: 0.25, roughness: 0.6 });
   const tankMat = new THREE.MeshStandardMaterial({ color: '#4c5442', metalness: 0.42, roughness: 0.52 });
 
-  // Badan Hawk 209: hidung radar APG-66 agak gemuk, kokpit kursi tunggal tinggi, punggung ramping
+  // Badan Hawk 209 kekar & berisi: hidung radar APG-66 tebal, kokpit kursi tunggal tinggi, saluran udara samping besar
   const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
-    let rx = 0.58;
-    let ryT = 0.54;
-    let ryB = 0.46;
+    let rx = 0.80;
+    let ryT = 0.76;
+    let ryB = 0.66;
     let ys = 0;
-    if (z >= 4.2) {
-      const t = Math.max(0, Math.min(1, (6.35 - z) / (6.35 - 4.2)));
-      const r = Math.pow(t, 0.72) * 0.48;
-      rx = r * 0.96;
+    if (z >= 4.15) {
+      const t = Math.max(0, Math.min(1, (6.35 - z) / (6.35 - 4.15)));
+      const r = Math.pow(t, 0.7) * 0.68;
+      rx = r * 0.98;
       ryT = r * 0.96;
       ryB = r * 0.92;
       ys = -0.22 * Math.pow(1 - t, 1.25);
     } else if (z < -3.2) {
       const t = Math.max(0, Math.min(1, (-3.2 - z) / (-3.2 - -6.2)));
-      rx = lerp(0.56, 0.34, smoothstep(0, 1, t));
-      ryT = lerp(0.52, 0.34, smoothstep(0, 1, t));
-      ryB = lerp(0.45, 0.34, smoothstep(0, 1, t));
+      rx = lerp(0.78, 0.46, smoothstep(0, 1, t));
+      ryT = lerp(0.74, 0.46, smoothstep(0, 1, t));
+      ryB = lerp(0.64, 0.44, smoothstep(0, 1, t));
     }
     return [s * rx, yC + ys + c * (c >= 0 ? ryT : ryB)];
   };
@@ -576,37 +576,37 @@ export function buildDetailedHawk209(): BuildResult {
 
   // Twin side semicircular air intakes khas Hawk 209 di belakang kokpit
   for (const s of [1, -1]) {
-    const ix = s * 0.62;
+    const ix = s * 0.84;
     const iy = 1.48;
     const duct = mkMesh(
       buildLoftGeometry(
         Array.from({ length: 16 }, (_, i) => {
           const z = lerp(-2.2, 1.85, i / 15);
           const f = smoothstep(-2.2, 0.2, z);
-          return { z, point: (th) => [ix + Math.sin(th) * (0.24 * f + 0.05), iy + Math.cos(th) * (0.3 * f + 0.05)] };
+          return { z, point: (th) => [ix + Math.sin(th) * (0.31 * f + 0.06), iy + Math.cos(th) * (0.37 * f + 0.06)] };
         }),
         28,
       ),
       fuseMat,
     );
-    const lip = mkMesh(new THREE.TorusGeometry(0.24, 0.024, 8, 24), m.darkMetal);
+    const lip = mkMesh(new THREE.TorusGeometry(0.32, 0.028, 8, 24), m.darkMetal);
     lip.position.set(ix, iy, 1.85);
-    const cav = mkMesh(new THREE.CircleGeometry(0.23, 24), m.intakeInner);
+    const cav = mkMesh(new THREE.CircleGeometry(0.31, 24), m.intakeInner);
     cav.position.set(ix, iy, 1.82);
     g.add(duct, lip, cav);
   }
 
   // Kanopi kursi tunggal khas Hawk 209 + kokpit terlihat langsung
-  const canopyZs = Array.from({ length: 26 }, (_, i) => lerp(1.55, 4.15, i / 25));
+  const canopyZs = Array.from({ length: 26 }, (_, i) => lerp(1.5, 4.15, i / 25));
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
-      const u = Math.max(0, Math.min(1, (z - 1.55) / 2.6));
+      const u = Math.max(0, Math.min(1, (z - 1.5) / 2.65));
       const arch = Math.max(0, Math.sin(Math.pow(u, 0.78) * Math.PI));
       return {
         z,
         point: (th) => {
           const a = (th / (Math.PI * 2)) * Math.PI - Math.PI / 2;
-          return [Math.sin(a) * 0.42 * Math.pow(arch, 0.56), lerp(1.94, 1.84, u) + Math.cos(a) * 0.54 * arch];
+          return [Math.sin(a) * 0.56 * Math.pow(arch, 0.56), lerp(2.12, 2.00, u) + Math.cos(a) * 0.62 * arch];
         },
       };
     }),
@@ -704,8 +704,8 @@ export function buildDetailedHawk209(): BuildResult {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
     addDecal(g, finMesh, [s * 0.05, 3.65, -5.5], rot, [0.78, 0.5, 0.08], flagTex);
     addDecal(g, finMesh, [s * 0.05, 2.75, -5.05], rot, [1.3, 0.3, 0.08], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.58, 1.52, -2.1], rot, [1.3, 0.32, 0.24], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.5, 1.42, 3.55], rot, [0.5, 0.34, 0.22], noseNumTex);
+    addDecal(g, fuseMesh, [s * 0.78, 1.58, -2.1], rot, [1.4, 0.36, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.68, 1.48, 3.55], rot, [0.56, 0.38, 0.26], noseNumTex);
   }
 
   return {
@@ -1127,28 +1127,30 @@ export function buildDetailedSuperTucano(): BuildResult {
   const redSpinnerMat = new THREE.MeshStandardMaterial({ color: '#c8102e', metalness: 0.35, roughness: 0.32 });
   const bladeMat = new THREE.MeshStandardMaterial({ color: '#1b1e22', metalness: 0.45, roughness: 0.45 });
 
-  // Badan Super Tucano kekar & berisi (pesawat serang turboprop berlapis baja)
+  // Badan Super Tucano kekar, dalam & berdinding tegak (pesawat serang turboprop berlapis baja)
   const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
-    let rx = 0.74;
-    let ryT = 0.78;
-    let ryB = 0.72;
+    let rx = 0.90;
+    let ryT = 0.94;
+    let ryB = 0.84;
     let ys = 0;
-    if (z >= 3.85) {
-      const t = Math.max(0, Math.min(1, (6.25 - z) / (6.25 - 3.85)));
-      rx = lerp(0.38, 0.72, Math.pow(t, 0.68));
-      ryT = lerp(0.38, 0.76, Math.pow(t, 0.68));
-      ryB = lerp(0.38, 0.70, Math.pow(t, 0.68));
-      ys = lerp(0.05, 0, t);
-    } else if (z < -1.1) {
-      const t = Math.max(0, Math.min(1, (-1.1 - z) / (-1.1 - -6.4)));
-      rx = lerp(0.74, 0.18, smoothstep(0, 1, t));
-      ryT = lerp(0.78, 0.30, smoothstep(0, 1, t));
-      ryB = lerp(0.72, 0.22, smoothstep(0, 1, t));
-      ys = lerp(0, 0.16, t);
+    if (z >= 3.8) {
+      const t = Math.max(0, Math.min(1, (6.25 - z) / (6.25 - 3.8)));
+      rx = lerp(0.46, 0.88, Math.pow(t, 0.66));
+      ryT = lerp(0.46, 0.92, Math.pow(t, 0.66));
+      ryB = lerp(0.44, 0.82, Math.pow(t, 0.66));
+      ys = lerp(0.06, 0, t);
+    } else if (z < -1.0) {
+      const t = Math.max(0, Math.min(1, (-1.0 - z) / (-1.0 - -6.4)));
+      rx = lerp(0.90, 0.22, smoothstep(0, 1, t));
+      ryT = lerp(0.94, 0.36, smoothstep(0, 1, t));
+      ryB = lerp(0.84, 0.26, smoothstep(0, 1, t));
+      ys = lerp(0, 0.18, t);
     }
-    return [s * rx, yC + ys + c * (c >= 0 ? ryT : ryB)];
+    const px = Math.sign(s) * Math.pow(Math.abs(s), 0.86) * rx;
+    const py = Math.sign(c) * Math.pow(Math.abs(c), 0.86) * (c >= 0 ? ryT : ryB);
+    return [px, yC + ys + py];
   };
 
   const bodyZs = Array.from({ length: 56 }, (_, i) => lerp(-6.4, 6.25, i / 55));
@@ -1157,43 +1159,43 @@ export function buildDetailedSuperTucano(): BuildResult {
 
   // Spinner MERAH menyala + Baling-baling 5 bilah berputar (Hartzell 5-blade khas Super Tucano!)
   const spinnerPts = [
-    new THREE.Vector2(0.39, 6.22),
-    new THREE.Vector2(0.32, 6.52),
-    new THREE.Vector2(0.17, 6.84),
-    new THREE.Vector2(0.015, 7.05),
+    new THREE.Vector2(0.47, 6.22),
+    new THREE.Vector2(0.38, 6.54),
+    new THREE.Vector2(0.20, 6.86),
+    new THREE.Vector2(0.015, 7.08),
   ];
   const spinnerGeo = new THREE.LatheGeometry(spinnerPts, 28);
   spinnerGeo.rotateX(Math.PI / 2);
   const spinnerMesh = mkMesh(spinnerGeo, redSpinnerMat);
-  spinnerMesh.position.y = yC + 0.05;
+  spinnerMesh.position.y = yC + 0.06;
   g.add(spinnerMesh);
 
   // 5 bilah baling-baling + blur disc
   const propPivot = new THREE.Group();
   for (let i = 0; i < 5; i++) {
     const arm = new THREE.Group();
-    const b = mkMesh(new THREE.BoxGeometry(0.17, 1.48, 0.034), bladeMat);
-    b.position.y = 0.86;
+    const b = mkMesh(new THREE.BoxGeometry(0.18, 1.56, 0.036), bladeMat);
+    b.position.y = 0.92;
     b.rotation.y = 0.34;
     arm.add(b);
     arm.rotation.z = (i * Math.PI * 2) / 5;
     propPivot.add(arm);
   }
   const blurMat = new THREE.MeshBasicMaterial({ color: '#d7e4ee', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide });
-  const blur = new THREE.Mesh(new THREE.RingGeometry(0.20, 1.58, 64), blurMat);
+  const blur = new THREE.Mesh(new THREE.RingGeometry(0.24, 1.68, 64), blurMat);
   blur.userData.role = 'blur';
   blur.visible = false;
   const propWrap = new THREE.Group();
-  propWrap.position.set(0, yC + 0.05, 6.48);
+  propWrap.position.set(0, yC + 0.06, 6.48);
   propWrap.add(propPivot, blur);
   g.add(propWrap);
   const spinners: SpinnerFx[] = [{ obj: propPivot, axis: 'z', speed: 40, blur }];
 
   // Pipa knalpot PT6A-68C di kedua sisi hidung
   for (const s of [1, -1]) {
-    const ex = mkMesh(new THREE.CylinderGeometry(0.085, 0.105, 0.34, 10), m.darkMetal);
+    const ex = mkMesh(new THREE.CylinderGeometry(0.095, 0.115, 0.38, 10), m.darkMetal);
     ex.rotation.z = (Math.PI / 2) * s;
-    ex.position.set(s * 0.64, yC + 0.09, 4.95);
+    ex.position.set(s * 0.78, yC + 0.10, 4.95);
     g.add(ex);
   }
 
@@ -1209,7 +1211,7 @@ export function buildDetailedSuperTucano(): BuildResult {
             z,
             point: (th) => {
               const a = (th / (Math.PI * 2)) * Math.PI - Math.PI / 2;
-              return [Math.sin(a) * 0.55 * Math.pow(arch, 0.55), 2.16 + Math.cos(a) * 0.66 * arch];
+              return [Math.sin(a) * 0.64 * Math.pow(arch, 0.55), 2.30 + Math.cos(a) * 0.70 * arch];
             },
           };
         }),
@@ -1302,10 +1304,10 @@ export function buildDetailedSuperTucano(): BuildResult {
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
     // Shark-mouth di kedua sisi hidung
-    addDecal(g, fuseMesh, [s * 0.58, 1.44, 4.95], rot, [2.05, 0.86, 0.30], sharkTex);
+    addDecal(g, fuseMesh, [s * 0.72, 1.48, 4.95], rot, [2.15, 0.96, 0.34], sharkTex);
     addDecal(g, finMesh, [s * 0.05, 3.5, -5.78], rot, [0.72, 0.46, 0.08], flagTex);
-    addDecal(g, fuseMesh, [s * 0.50, 1.66, -3.55], rot, [1.35, 0.36, 0.26], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.66, 1.62, -1.45], rot, [1.35, 0.36, 0.28], tniAuTex);
+    addDecal(g, fuseMesh, [s * 0.60, 1.70, -3.55], rot, [1.45, 0.40, 0.30], tailCodeTex);
+    addDecal(g, fuseMesh, [s * 0.82, 1.66, -1.45], rot, [1.45, 0.40, 0.32], tniAuTex);
   }
 
   return {
