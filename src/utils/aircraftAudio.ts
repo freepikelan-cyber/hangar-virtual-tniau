@@ -29,6 +29,8 @@ export function getSoundProfile(unitId: string): SoundProfile {
       return 'airliner';
     case 'caracal':
       return 'helicopter';
+    case 'colibri':
+      return 'helicopter';
     case 'gsuit':
       return 'gsuit';
     case 'pilot-helmet':

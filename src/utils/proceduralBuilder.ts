@@ -4,7 +4,6 @@ import {
   camoTexture,
   cockpitWindowTexture,
   flagTexture,
-  heliCabinTexture,
   jupiterFuselageTexture,
   jupiterWingTexture,
   roundelTexture,
@@ -24,6 +23,7 @@ import {
 import { buildDetailedC130J, buildDetailedKT1B } from './herculesKt1Builder';
 import { buildDetailedGSuit } from './gsuitBuilder';
 import { buildDetailedPilotHelmet } from './helmetBuilder';
+import { buildDetailedCaracal, buildDetailedColibri } from './helicoptersBuilder';
 
 /* =========================================================================
  * Rakitan geometri 3D prosedural armada TNI AU.
@@ -279,15 +279,6 @@ function fin(group: THREE.Group, pts: Pt[], thick: number, x: number, y: number,
   m.position.set(x, y, 0);
   m.rotation.z = cant;
   group.add(m);
-  return m;
-}
-
-/** Tabung terbuka sepanjang Z (nozzle, saluran). rFront di +Z. */
-function tubeZ(rFront: number, rBack: number, len: number, mat: THREE.Material, open = true) {
-  const g = new THREE.CylinderGeometry(rFront, rBack, len, 32, 1, open);
-  g.rotateX(Math.PI / 2);
-  const m = mk(g, mat);
-  if (open) (mat as THREE.MeshStandardMaterial).side = THREE.DoubleSide;
   return m;
 }
 
@@ -551,105 +542,6 @@ function buildB737(): BuildResult {
   });
 }
 
-/* ------------------------------ Helikopter ------------------------------ */
-
-function buildCaracal(): BuildResult {
-  const g = new THREE.Group();
-  const yC = 1.55;
-  const sx = 0.95;
-  const sy = 1.1;
-  const prof: Pt[] = [[-7.4, 0.16], [-5, 0.24], [-3.4, 0.32], [-2.6, 0.55], [-1.6, 0.88], [0, 0.98], [2.4, 0.98], [3.4, 0.92], [4.3, 0.75], [5.0, 0.5], [5.45, 0.25], [5.6, 0.02]];
-  const k = makeKit('jungle', 13, 2 * Math.PI * 0.9);
-  const { geo, f } = latheZ(prof, 48, 96);
-  upsweep(geo, -2.6, 0.09, 1.0);
-  const fuse = mk(geo, k.fuse);
-  fuse.scale.set(sx, sy, 1);
-  fuse.position.y = yC;
-  g.add(fuse);
-  const sweepY = (z: number) => (z < -2.6 ? 0.09 * (-2.6 - z) * sy : 0);
-
-  // Dek mesin
-  const deck = mk(new THREE.CapsuleGeometry(0.42, 2.4, 6, 16), k.fuse);
-  deck.rotation.x = Math.PI / 2;
-  deck.scale.set(1.35, 1, 1);
-  deck.position.set(0, 2.55, -0.4);
-  g.add(deck);
-  for (const x of [0.42, -0.42]) {
-    const ex = tubeZ(0.13, 0.15, 0.5, k.nozzle);
-    ex.position.set(x, 2.68, -2.0);
-    ex.rotation.y = x > 0 ? -0.35 : 0.35;
-    g.add(ex);
-    engineCore(g, k, x * 0.75, 2.6, -1.6, 0.6, 0.2);
-  }
-  const mast = mk(new THREE.CylinderGeometry(0.12, 0.15, 0.5, 14), k.metal);
-  mast.position.set(0, 3.05, 0.4);
-  g.add(mast);
-  const main = rotor(k, 5, 6.5, 0.34, 'y', 0.32);
-  main.wrap.position.set(0, 3.32, 0.4);
-  g.add(main.wrap);
-
-  // Ekor
-  const tailBaseY = yC + 0.09 * (7.0 - 2.6) * sy;
-  const finM = fin(g, [[-6.3, 0], [-7.0, 1.4], [-7.6, 1.5], [-7.75, 0]], 0.1, 0, tailBaseY - 0.05, k.tail);
-  wingPair(g, [[0.12, -5.7], [1.1, -5.9], [1.1, -6.3], [0.12, -6.3]], 0.06, yC + 0.09 * 3.4 * sy, k.tail);
-  const tr = rotor(k, 4, 0.95, 0.15, 'x', 0.08);
-  tr.wrap.position.set(0.16, 2.85, -7.3);
-  g.add(tr.wrap);
-
-  // Sponson, roda, FLIR, probe
-  for (const x of [1.05, -1.05]) {
-    const sp = mk(new THREE.CapsuleGeometry(0.3, 1.6, 6, 16), k.fuse);
-    sp.rotation.x = Math.PI / 2;
-    sp.scale.set(1.1, 0.9, 1);
-    sp.position.set(x, 0.78, -0.6);
-    g.add(sp);
-    gear(g, k, x * 1.1, -0.6, 0.62, 0.3, { width: 0.2 });
-  }
-  gear(g, k, 0, 3.7, 0.65, 0.2, { twin: true });
-  const flir = mk(new THREE.SphereGeometry(0.2, 20, 14), k.glass, 'glass');
-  flir.position.set(0, 0.62, 4.5);
-  const probe = mk(new THREE.CylinderGeometry(0.035, 0.04, 2.6, 8), k.metal);
-  probe.rotation.x = Math.PI / 2;
-  probe.position.set(0.72, 1.05, 5.3);
-  g.add(flir, probe);
-
-  decal(g, fuse, [0, 1.95, 4.75], [-0.55, 0, 0], [1.9, 1.1, 1.6], cachedTex('win-h', () => cockpitWindowTexture('heli')), { metal: 0.9, rough: 0.08 });
-  decalSides(g, fuse, [0.95, 1.6, 0.7], [3.4, 1.05, 0.7], cachedTex('heli-cabin', heliCabinTexture));
-
-  ribs(g, f, -6.5, 4.8, 0.7, yC, sx, sy, k.internal, sweepY);
-  const floor = mk(new THREE.BoxGeometry(1.4, 0.04, 4.2), k.internal, 'internal');
-  floor.position.set(0, 0.85, 0.6);
-  g.add(floor);
-  for (const x of [0.6, -0.6]) {
-    for (let i = 0; i < 4; i++) seat(g, k, -0.7 + i * 0.75, 0.95, x, 0.65);
-  }
-  const box = mk(new THREE.BoxGeometry(0.6, 0.4, 0.8), k.core, 'internal');
-  box.position.set(0, 2.55, 0.4);
-  g.add(box);
-  seat(g, k, 3.7, 1.15, 0.35, 0.8);
-  seat(g, k, 3.7, 1.15, -0.35, 0.8);
-
-  finMarkings(g, finM, 0, 0.1, [tailBaseY + 0.95, -7.15], 0.6, 'H-7206', [tailBaseY + 0.35, -7.05], 1.0, '#e8e2c8');
-  decalSides(g, fuse, [0.3, tailBaseY - 0.18, -4.6], [1.6, 0.3, 0.5], TEXT('TNI AU', '#e8e2c8'));
-  decalSides(g, fuse, [0.6, 1.3, -1.9], [0.6, 0.6, 0.6], ROUNDEL());
-
-  return result(g, k, {
-    nozzles: [],
-    spinners: [
-      { obj: main.pivot, axis: 'y', speed: 16, blur: main.blur },
-      { obj: tr.pivot, axis: 'x', speed: 55, blur: tr.blur },
-    ],
-    navLights: [
-      { pos: [1.4, 0.82, -0.6], color: '#ff2a2a' },
-      { pos: [-1.4, 0.82, -0.6], color: '#22ff66' },
-      { pos: [0, tailBaseY + 1.5, -7.6], color: '#ffffff', blink: 'strobe' },
-      { pos: [0, 2.98, -1.6], color: '#ff3030', blink: 'beacon' },
-    ],
-    hoverHeight: 2.4,
-    rotorWash: true,
-  });
-}
-
 /* ------------------------------ Registry ------------------------------ */
 
 const builders: Record<string, () => BuildResult> = {
@@ -663,7 +555,8 @@ const builders: Record<string, () => BuildResult> = {
   b737vip: buildB737,
   t50i: buildDetailedT50i,
   kt1b: buildDetailedKT1B,
-  caracal: buildCaracal,
+  caracal: buildDetailedCaracal,
+  colibri: buildDetailedColibri,
   gsuit: buildDetailedGSuit,
   'pilot-helmet': buildDetailedPilotHelmet,
 };
