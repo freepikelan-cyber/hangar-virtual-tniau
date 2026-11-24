@@ -36,14 +36,14 @@ function HotspotPin({ item }: HotspotPinProps) {
   }
 
   const toneClasses = {
-    cyan: 'bg-[#061526]/90 border-[#00d2ff] text-[#00d2ff] shadow-[0_0_16px_rgba(0,210,255,0.65)] hover:bg-[#00d2ff] hover:text-[#060d18]',
-    amber: 'bg-[#ffb703] border-[#fff0c2] text-[#060d18] shadow-[0_0_22px_rgba(255,183,3,0.9)] scale-110',
-    green: 'bg-emerald-400 border-emerald-100 text-[#060d18] shadow-[0_0_22px_rgba(52,211,153,0.9)] scale-110',
+    cyan: 'bg-[#0c2752]/90 border-[#4da6ff] text-[#4da6ff] shadow-[0_0_16px_rgba(77,166,255,0.65)] hover:bg-[#4da6ff] hover:text-[#0a1e3c]',
+    amber: 'bg-[#ffb703] border-[#fff0c2] text-[#0a1e3c] shadow-[0_0_22px_rgba(255,183,3,0.9)] scale-110',
+    green: 'bg-emerald-400 border-emerald-100 text-[#0a1e3c] shadow-[0_0_22px_rgba(52,211,153,0.9)] scale-110',
     red: 'bg-rose-500 border-rose-200 text-white shadow-[0_0_22px_rgba(244,63,94,0.9)]',
   }[tone];
 
   const ringColor = {
-    cyan: 'border-[#00d2ff]/70',
+    cyan: 'border-[#4da6ff]/70',
     amber: 'border-[#ffb703]/80',
     green: 'border-emerald-400/80',
     red: 'border-rose-400/80',
@@ -76,7 +76,7 @@ function HotspotPin({ item }: HotspotPinProps) {
             {item.id}
           </button>
           {!isQuizActive && isSelected && (
-            <div className="pointer-events-none mt-1.5 whitespace-nowrap rounded border border-[#ffb703]/70 bg-[#060d18]/90 px-2 py-0.5 font-display text-xs font-semibold tracking-wider text-[#ffb703] uppercase shadow-lg">
+            <div className="pointer-events-none mt-1.5 whitespace-nowrap rounded border border-[#ffb703]/70 bg-[#0a1e3c]/90 px-2 py-0.5 font-display text-xs font-semibold tracking-wider text-[#ffb703] uppercase shadow-lg">
               {item.name}
             </div>
           )}

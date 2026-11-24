@@ -30,7 +30,7 @@ export function BottomDock() {
           const activeClass =
             b.accent === 'amber'
               ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703] shadow-amber'
-              : 'border-[#00d2ff] bg-[#00d2ff]/20 text-[#00d2ff] shadow-glow';
+              : 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-glow';
           return (
             <button
               key={b.id}
@@ -41,7 +41,7 @@ export function BottomDock() {
               className={`min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border px-2 sm:px-3.5 py-1 transition-all duration-200 cursor-pointer active:scale-95 font-display text-[10px] sm:text-sm font-bold tracking-wider uppercase ${
                 b.active
                   ? activeClass
-                  : 'border-slate-700/80 bg-[#081526]/80 text-slate-200 hover:border-[#00d2ff]/60 hover:text-white'
+                  : 'border-slate-700/80 bg-[#0e2a54]/80 text-slate-200 hover:border-[#4da6ff]/60 hover:text-white'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -51,15 +51,15 @@ export function BottomDock() {
           );
         })}
 
-        <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#00d2ff]/25" />
+        <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#4da6ff]/25" />
 
         <button
           type="button"
           onClick={resetCamera}
           title="Reset Kamera"
-          className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-700/80 bg-[#081526]/80 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#00d2ff]/60 hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
+          className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-700/80 bg-[#0e2a54]/80 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#4da6ff]/60 hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
         >
-          <RotateCcw className="h-4 w-4 shrink-0 text-[#00d2ff]" />
+          <RotateCcw className="h-4 w-4 shrink-0 text-[#4da6ff]" />
           <span className="sm:hidden whitespace-nowrap leading-none">Reset</span>
           <span className="hidden sm:inline whitespace-nowrap">Reset Kamera</span>
         </button>
@@ -77,11 +77,11 @@ export function BottomDock() {
             Created By : <strong className="font-semibold">Abang Elan</strong>
           </span>
         </a>
-        <span className="text-[#00d2ff]/45">•</span>
+        <span className="text-[#4da6ff]/45">•</span>
         <a
           href="tel:+6281314127822"
           title="Hubungi +6281314127822"
-          className="inline-flex items-center gap-1 text-[#00d2ff] hover:text-white hover:underline transition-colors"
+          className="inline-flex items-center gap-1 text-[#4da6ff] hover:text-white hover:underline transition-colors"
         >
           <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
           <span>+6281314127822</span>

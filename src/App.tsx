@@ -23,14 +23,14 @@ function FloatingQuizBanner() {
     <div className="pointer-events-none fixed top-[122px] left-1/2 z-25 w-[min(420px,calc(100vw-1.5rem))] -translate-x-1/2 animate-slidein">
       <div className="hud-panel pointer-events-auto rounded-xl border-[#ffb703]/60 p-3 shadow-xl space-y-2">
         <div className="flex items-center justify-between gap-2 text-[11px] font-display font-bold tracking-wider uppercase">
-          <span className="text-[#00d2ff]">
+          <span className="text-[#4da6ff]">
             KUIS {quiz.index + 1}/{quiz.order.length} • SKOR: {quiz.score}
           </span>
           <button
             type="button"
             onClick={exitQuiz}
             aria-label="Keluar Kuis"
-            className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 bg-[#081526] text-slate-300 hover:text-white cursor-pointer"
+            className="flex h-7 w-7 items-center justify-center rounded-md border border-slate-700 bg-[#0e2a54] text-slate-300 hover:text-white cursor-pointer"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -41,7 +41,7 @@ function FloatingQuizBanner() {
         </p>
 
         {quiz.feedback && (
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#00d2ff]/20">
+          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#4da6ff]/20">
             <span
               className={`flex items-center gap-1.5 font-display text-xs font-bold uppercase ${
                 quiz.feedback.correct ? 'text-emerald-400' : 'text-rose-400'
@@ -60,7 +60,7 @@ function FloatingQuizBanner() {
             <button
               type="button"
               onClick={nextQuestion}
-              className="rounded-lg border border-[#00d2ff] bg-[#00d2ff]/20 px-3 py-1.5 font-display text-xs font-bold tracking-wider text-[#00d2ff] uppercase hover:bg-[#00d2ff] hover:text-[#060d18] cursor-pointer"
+              className="rounded-lg border border-[#4da6ff] bg-[#4da6ff]/20 px-3 py-1.5 font-display text-xs font-bold tracking-wider text-[#4da6ff] uppercase hover:bg-[#4da6ff] hover:text-[#0a1e3c] cursor-pointer"
             >
               {quiz.index + 1 >= quiz.order.length ? 'Skor Akhir' : 'Lanjut'}
             </button>
@@ -73,7 +73,7 @@ function FloatingQuizBanner() {
 
 export function App() {
   return (
-    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#060d18]">
+    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#0a1e3c]">
       {/* Kanvas 3D Interaktif */}
       <HangarScene />
 

@@ -219,7 +219,7 @@ export function EffectsLayer({ nozzles, spinners, navLights, glowMats, engineSim
         <mesh ref={washRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, 0.4]} visible={false}>
           <ringGeometry args={[3.4, 5.2, 48]} />
           <meshBasicMaterial
-            color="#00d2ff"
+            color="#4da6ff"
             transparent
             opacity={0}
             blending={THREE.AdditiveBlending}

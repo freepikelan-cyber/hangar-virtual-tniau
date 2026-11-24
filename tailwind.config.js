@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        navy: { DEFAULT: '#060d18', 800: '#0a1628', 700: '#0f2038', 600: '#16304f' },
-        radar: { DEFAULT: '#00d2ff', dim: 'rgba(0,210,255,0.35)', glow: 'rgba(0,210,255,0.15)' },
+        navy: { DEFAULT: '#0a1e3c', 800: '#0e2850', 700: '#133569', 600: '#1a4585' },
+        radar: { DEFAULT: '#4da6ff', dim: 'rgba(77,166,255,0.42)', glow: 'rgba(77,166,255,0.18)' },
         amber: { tac: '#ffb703' },
       },
       fontFamily: {
@@ -13,7 +13,7 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        glow: '0 0 18px rgba(0,210,255,0.35)',
+        glow: '0 0 18px rgba(77,166,255,0.42)',
         amber: '0 0 18px rgba(255,183,3,0.45)',
       },
       keyframes: {

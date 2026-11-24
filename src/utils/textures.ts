@@ -392,22 +392,22 @@ export function flameTexture(color: string) {
   return toTexture(c);
 }
 
-/** Landasan radar melingkar: cincin konsentris, garis radial, dan skala derajat. */
+/** Landasan radar melingkar tema Biru TNI AU: cincin konsentris, garis radial, dan skala derajat. */
 export function radarFloorTexture() {
   const S = 2048;
   const { c, ctx } = canvas(S, S);
   const cx = S / 2;
   const R = S / 2 - 8;
   const g = ctx.createRadialGradient(cx, cx, 0, cx, cx, R);
-  g.addColorStop(0, '#0d2238');
-  g.addColorStop(0.7, '#081627');
-  g.addColorStop(1, '#050c16');
+  g.addColorStop(0, '#18427d');
+  g.addColorStop(0.68, '#0f2d59');
+  g.addColorStop(1, '#091d3b');
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.arc(cx, cx, R, 0, Math.PI * 2);
   ctx.fill();
   // grid halus
-  ctx.strokeStyle = 'rgba(0,210,255,0.07)';
+  ctx.strokeStyle = 'rgba(77,166,255,0.09)';
   ctx.lineWidth = 2;
   for (let x = 0; x < S; x += 64) {
     ctx.beginPath();
@@ -421,7 +421,7 @@ export function radarFloorTexture() {
   }
   // cincin
   for (let i = 1; i <= 6; i++) {
-    ctx.strokeStyle = i === 6 ? 'rgba(0,210,255,0.9)' : `rgba(0,210,255,${0.18 + i * 0.04})`;
+    ctx.strokeStyle = i === 6 ? 'rgba(77,166,255,0.92)' : `rgba(77,166,255,${0.2 + i * 0.05})`;
     ctx.lineWidth = i === 6 ? 10 : 3;
     ctx.beginPath();
     ctx.arc(cx, cx, (R * i) / 6 - (i === 6 ? 6 : 0), 0, Math.PI * 2);
@@ -430,7 +430,7 @@ export function radarFloorTexture() {
   // garis radial
   for (let a = 0; a < 360; a += 15) {
     const rad = (a * Math.PI) / 180;
-    ctx.strokeStyle = a % 90 === 0 ? 'rgba(0,210,255,0.45)' : 'rgba(0,210,255,0.14)';
+    ctx.strokeStyle = a % 90 === 0 ? 'rgba(77,166,255,0.48)' : 'rgba(77,166,255,0.16)';
     ctx.lineWidth = a % 90 === 0 ? 4 : 2;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(rad) * R * 0.08, cx + Math.sin(rad) * R * 0.08);
@@ -441,14 +441,14 @@ export function radarFloorTexture() {
   for (let a = 0; a < 360; a += 5) {
     const rad = (a * Math.PI) / 180;
     const len = a % 30 === 0 ? 46 : 20;
-    ctx.strokeStyle = 'rgba(0,210,255,0.8)';
+    ctx.strokeStyle = 'rgba(110,185,255,0.85)';
     ctx.lineWidth = a % 30 === 0 ? 5 : 3;
     ctx.beginPath();
     ctx.moveTo(cx + Math.cos(rad) * (R - 20), cx + Math.sin(rad) * (R - 20));
     ctx.lineTo(cx + Math.cos(rad) * (R - 20 - len), cx + Math.sin(rad) * (R - 20 - len));
     ctx.stroke();
   }
-  ctx.fillStyle = 'rgba(0,210,255,0.85)';
+  ctx.fillStyle = 'rgba(130,198,255,0.9)';
   ctx.font = '700 44px Rajdhani, Arial, sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -461,7 +461,7 @@ export function radarFloorTexture() {
     ctx.restore();
   }
   // marka landasan tengah
-  ctx.strokeStyle = 'rgba(255,183,3,0.55)';
+  ctx.strokeStyle = 'rgba(255,183,3,0.6)';
   ctx.lineWidth = 6;
   ctx.setLineDash([40, 30]);
   ctx.beginPath();
@@ -480,7 +480,7 @@ export function sweepTexture() {
   const cx = S / 2;
   for (let i = 0; i < 60; i++) {
     const a0 = (-i * Math.PI) / 180;
-    ctx.fillStyle = `rgba(0,210,255,${0.5 * (1 - i / 60) ** 2})`;
+    ctx.fillStyle = `rgba(77,166,255,${0.5 * (1 - i / 60) ** 2})`;
     ctx.beginPath();
     ctx.moveTo(cx, cx);
     ctx.arc(cx, cx, cx, a0 - Math.PI / 180, a0 + 0.002);

@@ -34,16 +34,16 @@ function RadarPlatform() {
           map={floorTex}
           metalness={0.35}
           roughness={0.55}
-          emissive="#003d59"
+          emissive="#12458a"
           emissiveMap={floorTex}
-          emissiveIntensity={0.45}
+          emissiveIntensity={0.48}
         />
       </mesh>
 
-      {/* Cincin tepi bercahaya cyan */}
+      {/* Cincin tepi bercahaya Biru TNI AU */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
         <ringGeometry args={[11.12, 11.35, 96]} />
-        <meshBasicMaterial color="#00d2ff" transparent opacity={0.85} />
+        <meshBasicMaterial color="#4da6ff" transparent opacity={0.9} />
       </mesh>
 
       {/* Sapuan radar berputar */}
@@ -58,10 +58,10 @@ function RadarPlatform() {
         />
       </mesh>
 
-      {/* Lantai luar hangar */}
+      {/* Lantai luar hangar Biru TNI AU */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
         <ringGeometry args={[11.35, 42, 64]} />
-        <meshStandardMaterial color="#060d18" metalness={0.2} roughness={0.85} />
+        <meshStandardMaterial color="#0a1e3c" metalness={0.22} roughness={0.82} />
       </mesh>
     </group>
   );
@@ -156,7 +156,7 @@ export function HangarScene() {
   const initialCam = useMemo(() => getDefaultCamera(), []);
 
   return (
-    <div className="absolute inset-0 bg-[#060d18] touch-none">
+    <div className="absolute inset-0 bg-[#0a1e3c] touch-none">
       <Canvas
         shadows
         dpr={[1, 2]}
@@ -164,8 +164,8 @@ export function HangarScene() {
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
         onPointerMissed={() => clearHotspot()}
       >
-        <color attach="background" args={['#060d18']} />
-        <fog attach="fog" args={['#060d18', 26, 62]} />
+        <color attach="background" args={['#0a1e3c']} />
+        <fog attach="fog" args={['#0a1e3c', 26, 62]} />
 
         <StudioLighting />
         <RadarPlatform />
@@ -176,7 +176,7 @@ export function HangarScene() {
           blur={1.8}
           far={8}
           resolution={512}
-          color="#020810"
+          color="#041024"
         />
         <AircraftModel />
         <CameraRig />
