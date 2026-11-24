@@ -155,8 +155,8 @@ export function AircraftModel() {
     const isHeli = unit.category === 'Helikopter';
 
     if (flightMode === 'takeoff') {
-      // Posisi ancang-ancang di pangkal landasan (untuk pesawat sayap tetap)
-      const startZ = isHeli ? 0 : -5.4;
+      // Posisi ancang-ancang jauh di pangkal runway 09 (pesawat sayap tetap)
+      const startZ = isHeli ? 0 : -8.5;
       currentX.current = 0;
       currentY.current = 0;
       currentZ.current = startZ;
@@ -166,16 +166,16 @@ export function AircraftModel() {
         rootRef.current.rotation.set(0, 0, 0);
       }
     } else if (flightMode === 'landing') {
-      // Mulai dari pendekatan akhir (Final Approach) di udara belakang-atas
-      const startZ = isHeli ? -3.2 : -7.4;
-      const startY = isHeli ? 4.2 : 4.6;
+      // Mulai dari Long Final Approach jarak jauh di belakang-atas sejajar runway!
+      const startZ = isHeli ? -10.5 : -18.5;
+      const startY = isHeli ? 6.4 : 8.2;
       currentX.current = 0;
       currentY.current = startY;
       currentZ.current = startZ;
       gearRetract.current = 1;
       if (rootRef.current) {
         rootRef.current.position.set(0, startY, startZ);
-        rootRef.current.rotation.set(isHeli ? 0.04 : 0.06, 0, 0);
+        rootRef.current.rotation.set(isHeli ? 0.04 : 0.07, 0, 0);
       }
     }
   }, [flightMode, flightNonce, unit.category]);
@@ -185,12 +185,13 @@ export function AircraftModel() {
     applyVisualModes(activeGroup, false, wireframe);
   }, [activeGroup, wireframe]);
 
+  // Mesin & baling-baling/rotor TETAP berputar penuh selama seluruh fase terbang & landing sampai benar-benar parkir!
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
     flightMode === 'airborne' ||
     flightMode === 'maneuver' ||
-    (flightMode === 'landing' && phaseTime.current < 5.4);
+    flightMode === 'landing';
 
   useFrame((state, delta) => {
     if (!rootRef.current) return;
@@ -240,32 +241,32 @@ export function AircraftModel() {
           setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
-        // TAKE OFF PESAWAT SAYAP TETAP DI RUNWAY (5 FASE NYATA -> AIRBORNE)
-        if (pt < 1.5) {
-          targetZ = -5.4;
+        // TAKE OFF PESAWAT SAYAP TETAP DI RUNWAY (Ancang-ancang panjang & realistis -> Airborne)
+        if (pt < 1.8) {
+          targetZ = -8.5;
           targetY = 0;
           targetPitch = Math.sin(t * 36) * 0.004;
           targetGear = 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • TITIK START RUNWAY 09 & FULL POWER');
-        } else if (pt < 3.8) {
-          const p = (pt - 1.5) / 2.3;
-          targetZ = THREE.MathUtils.lerp(-5.4, 2.0, p * p);
+        } else if (pt < 4.8) {
+          const p = (pt - 1.8) / 3.0;
+          targetZ = THREE.MathUtils.lerp(-8.5, 2.8, p * p);
           targetY = 0;
           targetPitch = -0.02 * p;
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • AKSELERASI DI ASPAL RUNWAY');
-        } else if (pt < 5.2) {
-          const p = (pt - 3.8) / 1.4;
+          setFlightLabel('TAHAP 1 • TAKE OFF • AKSELERASI PANJANG DI ASPAL RUNWAY');
+        } else if (pt < 6.5) {
+          const p = (pt - 4.8) / 1.7;
           const ease = easeInOut(p);
-          targetZ = THREE.MathUtils.lerp(2.0, 4.4, ease);
-          targetY = THREE.MathUtils.lerp(0, 1.55, p * p);
+          targetZ = THREE.MathUtils.lerp(2.8, 5.2, ease);
+          targetY = THREE.MathUtils.lerp(0, 1.75, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • ROTATION & LIFTOFF');
-        } else if (pt < 7.4) {
-          const p = easeInOut((pt - 5.2) / 2.2);
-          targetZ = THREE.MathUtils.lerp(4.4, 0, p);
-          targetY = THREE.MathUtils.lerp(1.55, 3.05, p);
+        } else if (pt < 8.8) {
+          const p = easeInOut((pt - 6.5) / 2.3);
+          targetZ = THREE.MathUtils.lerp(5.2, 0, p);
+          targetY = THREE.MathUtils.lerp(1.75, 3.05, p);
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.18 : -0.26, -0.04, p);
           targetRoll = Math.sin(p * Math.PI) * -0.08;
           targetGear = 1;
@@ -451,68 +452,68 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'landing') {
       if (isHeli) {
-        // LANDING HELIKOPTER: Approach -> Roda keluar -> Flare hover rendah -> Touchdown vertikal
-        if (pt < 2.2) {
-          const p = easeInOut(pt / 2.2);
-          targetZ = THREE.MathUtils.lerp(-3.2, 0, p);
-          targetY = THREE.MathUtils.lerp(4.2, 1.5, p);
+        // LANDING HELIKOPTER: Long Approach dari jauh -> Roda keluar -> Hover rendah -> Touchdown vertikal
+        if (pt < 3.4) {
+          const p = easeInOut(pt / 3.4);
+          targetZ = THREE.MathUtils.lerp(-10.5, 0, p);
+          targetY = THREE.MathUtils.lerp(6.4, 1.8, p);
           targetPitch = 0.06 * (1 - p);
           targetGear = 0;
-          gearSpeed = 2.2;
-          setFlightLabel('LANDING • FINAL APPROACH & RODA KELUAR');
-        } else if (pt < 4.5) {
-          const p = easeInOut((pt - 2.2) / 2.3);
+          gearSpeed = 2.0;
+          setFlightLabel('TAHAP 3 • LANDING • LONG FINAL APPROACH & RODA KELUAR');
+        } else if (pt < 6.0) {
+          const p = easeInOut((pt - 3.4) / 2.6);
           targetZ = 0;
-          targetY = THREE.MathUtils.lerp(1.5, 0, p);
+          targetY = THREE.MathUtils.lerp(1.8, 0, p);
           targetPitch = -0.08 * Math.sin(p * Math.PI);
           targetGear = 0;
-          setFlightLabel('LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 5.6) {
+          setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
+        } else if (pt < 7.2) {
           targetZ = 0;
           targetY = 0;
           targetPitch = 0;
           targetGear = 0;
-          setFlightLabel('LANDING SELESAI • PARKIR');
+          setFlightLabel('LANDING SELESAI • PARKIR DI RUNWAY');
         } else {
           setFlightState('parked', null);
         }
       } else {
-        // LANDING PESAWAT SAYAP TETAP (5 FASE NYATA)
-        if (pt < 2.4) {
-          // Fase 1: Final Approach mengikuti glide slope 3° + Roda otomatis keluar!
-          const p = pt / 2.4;
-          targetZ = THREE.MathUtils.lerp(-7.4, -2.6, p);
-          targetY = THREE.MathUtils.lerp(4.6, 1.45, p);
-          targetPitch = 0.05; // hidung sedikit menukik mengikuti glide slope
+        // LANDING PESAWAT SAYAP TETAP (Long Final Approach dari jarak jauh, baling-baling/mesin tetap aktif!)
+        if (pt < 3.6) {
+          // Fase 1: Long Final Approach dari kejauhan (-18.5) mengikuti glide slope + Roda turun keluar
+          const p = pt / 3.6;
+          targetZ = THREE.MathUtils.lerp(-18.5, -4.6, p);
+          targetY = THREE.MathUtils.lerp(8.2, 1.75, p);
+          targetPitch = 0.06;
           targetGear = 0;
-          gearSpeed = 2.0;
-          setFlightLabel('LANDING • FINAL APPROACH & RODA KELUAR');
-        } else if (pt < 4.1) {
-          // Fase 2: Landing Flare (hidung mendongak naik agar roda utama belakang menyentuh lebih dulu!)
-          const p = (pt - 2.4) / 1.7;
+          gearSpeed = 1.8;
+          setFlightLabel('TAHAP 3 • LANDING • LONG FINAL APPROACH & RODA KELUAR');
+        } else if (pt < 5.4) {
+          // Fase 2: Landing Flare (hidung mendongak halus mendekati aspal runway)
+          const p = (pt - 3.6) / 1.8;
           const ease = easeInOut(p);
-          targetZ = THREE.MathUtils.lerp(-2.6, -0.4, p);
-          targetY = THREE.MathUtils.lerp(1.45, 0.08, ease);
-          targetPitch = THREE.MathUtils.lerp(0.05, isHeavy ? -0.13 : -0.2, ease);
+          targetZ = THREE.MathUtils.lerp(-4.6, -0.8, p);
+          targetY = THREE.MathUtils.lerp(1.75, 0.08, ease);
+          targetPitch = THREE.MathUtils.lerp(0.06, isHeavy ? -0.14 : -0.21, ease);
           targetGear = 0;
-          setFlightLabel('LANDING • FLARE (HIDUNG MENDONGAK)');
-        } else if (pt < 5.1) {
-          // Fase 3: Main Gear Touchdown + suspensi lembut + roda depan masih terangkat sesaat
-          const p = (pt - 4.1) / 1.0;
-          targetZ = THREE.MathUtils.lerp(-0.4, 1.7, p);
-          targetY = Math.sin(p * Math.PI) * 0.045; // sedikit compression suspensi
-          targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.13 : -0.2, -0.09, p);
+          setFlightLabel('TAHAP 3 • LANDING • FLARE (HIDUNG MENDONGAK)');
+        } else if (pt < 6.8) {
+          // Fase 3: Main Gear Touchdown + suspensi lembut
+          const p = (pt - 5.4) / 1.4;
+          targetZ = THREE.MathUtils.lerp(-0.8, 2.6, p);
+          targetY = Math.sin(p * Math.PI) * 0.045;
+          targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.14 : -0.21, -0.09, p);
           targetGear = 0;
-          setFlightLabel('LANDING • TOUCHDOWN RODA UTAMA');
-        } else if (pt < 7.0) {
-          // Fase 4: Nose Gear Down & Pengereman halus ke posisi parkir tengah
-          const p = easeInOut((pt - 5.1) / 1.9);
-          targetZ = THREE.MathUtils.lerp(1.7, 0, p);
+          setFlightLabel('TAHAP 3 • LANDING • TOUCHDOWN RODA UTAMA');
+        } else if (pt < 9.2) {
+          // Fase 4: Nose Gear Down & Pengereman panjang halus di aspal runway
+          const p = easeInOut((pt - 6.8) / 2.4);
+          targetZ = THREE.MathUtils.lerp(2.6, 0, p);
           targetY = 0;
           targetPitch = THREE.MathUtils.lerp(-0.09, 0, Math.min(1, p * 1.8));
           targetGear = 0;
-          setFlightLabel('LANDING • RODA DEPAN TURUN & PENGEREMAN');
-        } else if (pt < 7.8) {
+          setFlightLabel('TAHAP 3 • LANDING • RODA DEPAN TURUN & PENGEREMAN');
+        } else if (pt < 10.2) {
           targetZ = 0;
           targetY = 0;
           targetPitch = 0;

@@ -229,11 +229,11 @@ class AircraftAudioEngine {
     let speedMod = 0;
 
     if (flightMode === 'takeoff') {
-      if (phaseTime < 1.5) {
-        throttle = 0.25 + (phaseTime / 1.5) * 0.72;
-      } else if (phaseTime < 6.8) {
+      if (phaseTime < 1.8) {
+        throttle = 0.28 + (phaseTime / 1.8) * 0.7;
+      } else if (phaseTime < 8.4) {
         throttle = 1.0;
-        if (phaseTime > 4.6 && !this.gearChimePlayed) {
+        if (phaseTime > 6.3 && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
           this.playGearServoSfx();
         }
@@ -242,23 +242,24 @@ class AircraftAudioEngine {
       }
     } else if (flightMode === 'landing') {
       const isHeli = profile === 'helicopter';
-      const touchTime = isHeli ? 5.2 : 4.55;
+      const touchTime = isHeli ? 5.8 : 5.4;
+      const stopTime = isHeli ? 7.0 : 9.2;
       if (phaseTime < touchTime) {
-        throttle = 0.58 - (phaseTime / touchTime) * 0.18;
-        if (phaseTime > 0.6 && !this.gearChimePlayed) {
+        throttle = 0.62 - (phaseTime / touchTime) * 0.16;
+        if (phaseTime > 1.0 && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
           this.playGearServoSfx();
         }
-      } else if (phaseTime < 6.8) {
+      } else if (phaseTime < stopTime) {
         if (!this.touchdownPlayed) {
           this.touchdownPlayed = true;
           this.playTouchdownSfx(isHeli);
         }
-        // Thrust reverser / deselerasi
-        const p = Math.min(1, (phaseTime - touchTime) / 2.2);
-        throttle = isHeli ? 0.35 * (1 - p * 0.75) : 0.68 * (1 - p * 0.82);
+        // Thrust reverser / deselerasi halus sampai berhenti
+        const p = Math.min(1, (phaseTime - touchTime) / (stopTime - touchTime));
+        throttle = isHeli ? 0.42 * (1 - p * 0.72) : 0.66 * (1 - p * 0.8);
       } else {
-        throttle = 0.05;
+        throttle = 0.06;
       }
     } else if (flightMode === 'airborne') {
       throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
