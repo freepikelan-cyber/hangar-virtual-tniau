@@ -157,7 +157,7 @@ function addTricycleGear(
 }
 
 /* =========================================================================
- * 1. KAI T-50i GOLDEN EAGLE TNI AU (TT-5010) — LIVERY BIRU-KUNING
+ * 1. KAI T-50i GOLDEN EAGLE TNI AU (TT-5005) — LIVERY BIRU-KUNING PERSIS FOTO
  * ========================================================================= */
 function t50BlueYellowTexture() {
   const W = 1024;
@@ -167,26 +167,67 @@ function t50BlueYellowTexture() {
   c.height = H;
   const ctx = c.getContext('2d')!;
 
-  // Biru tua Elang Biru TNI AU di atas, perut putih-abu, garis kuning emas melengkung di samping
-  for (let i = 0; i < W; i++) {
-    const u = i / W;
-    const cosT = Math.cos(u * Math.PI * 2); // +1 atas, -1 bawah
-    let col = '#15387a'; // biru royal T-50i TNI AU
-    if (cosT < -0.22) col = '#dce2e8'; // perut abu-putih
-    else if (cosT < 0.06) col = '#f4c20d'; // garis kuning emas menyamping
-    ctx.fillStyle = col;
-    ctx.fillRect(i, 0, 1, H);
+  // Base biru royal TNI AU Skadron Udara 15
+  ctx.fillStyle = '#163b8c';
+  ctx.fillRect(0, 0, W, H);
+
+  // Perut & bagian bawah (u ~ 0.35..0.65) dicat biru gelap & kuning-putih rapi
+  ctx.fillStyle = '#122f73';
+  ctx.fillRect(W * 0.36, 0, W * 0.28, H);
+
+  // Sapuan kuning emas khas Elang Emas di pipi hidung depan (v = 0.72..0.96) & sisi LERX
+  for (const cx of [W * 0.23, W * 0.77]) {
+    // Pipi hidung kuning di depan intake (tempat nomor 05)
+    ctx.fillStyle = '#f5c400';
+    ctx.beginPath();
+    ctx.ellipse(cx, H * 0.84, W * 0.13, H * 0.11, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Pita kuning melengkung sepanjang badan & LERX menuju pangkal ekor
+    ctx.fillStyle = '#f5c400';
+    ctx.beginPath();
+    ctx.moveTo(cx - W * 0.06, H * 0.72);
+    ctx.quadraticCurveTo(cx + W * 0.04, H * 0.45, cx - W * 0.08, H * 0.1);
+    ctx.lineTo(cx + W * 0.03, H * 0.1);
+    ctx.quadraticCurveTo(cx + W * 0.11, H * 0.45, cx + W * 0.04, H * 0.72);
+    ctx.closePath();
+    ctx.fill();
+
+    // Garis aksen putih tipis di tepi pita kuning
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 5;
+    ctx.stroke();
   }
-  // Aksen sayap kuning melengkung ke atas di bagian ekor (v rendah)
-  ctx.fillStyle = '#f4c20d';
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+/** Tekstur sirip ekor tegak T-50i TNI AU: kuning emas lebar di bagian tengah-depan, biru royal di belakang & tepi. */
+function t50TailFinTexture() {
+  const S = 512;
+  const c = document.createElement('canvas');
+  c.width = S;
+  c.height = S;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#163b8c';
+  ctx.fillRect(0, 0, S, S);
+  // Sapuan kuning emas besar naik dari pangkal ekor ke pucuk ekor (persis foto TT-5005)
+  ctx.fillStyle = '#f5c400';
   ctx.beginPath();
-  ctx.moveTo(0, H * 0.72);
-  ctx.quadraticCurveTo(W * 0.25, H * 0.85, W * 0.5, H * 0.72);
-  ctx.quadraticCurveTo(W * 0.75, H * 0.85, W, H * 0.72);
-  ctx.lineTo(W, H * 0.84);
-  ctx.lineTo(0, H * 0.84);
+  ctx.moveTo(S * 0.12, S);
+  ctx.lineTo(S * 0.74, S);
+  ctx.quadraticCurveTo(S * 0.66, S * 0.45, S * 0.56, 0);
+  ctx.lineTo(S * 0.28, 0);
+  ctx.quadraticCurveTo(S * 0.34, S * 0.45, S * 0.12, S);
   ctx.closePath();
   ctx.fill();
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 6;
+  ctx.stroke();
 
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
@@ -198,7 +239,7 @@ function t50BlueYellowTexture() {
 export function buildDetailedT50i(): BuildResult {
   const g = new THREE.Group();
   const yC = 1.48;
-  const m = commonMats(5010);
+  const m = commonMats(5005);
 
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
@@ -206,23 +247,32 @@ export function buildDetailedT50i(): BuildResult {
     bumpMap: cloneRep(m.bump, 2.2, 4.4),
     bumpScale: 0.014,
     metalness: 0.45,
-    roughness: 0.34,
+    roughness: 0.32,
   });
   const blueWingMat = new THREE.MeshStandardMaterial({
-    color: '#15387a',
+    color: '#163b8c',
     bumpMap: cloneRep(m.bump, 1.5, 1.5),
     bumpScale: 0.012,
     metalness: 0.48,
+    roughness: 0.32,
+  });
+  const tailFinMat = new THREE.MeshStandardMaterial({
+    color: '#ffffff',
+    map: t50TailFinTexture(),
+    bumpMap: cloneRep(m.bump, 1.4, 1.4),
+    bumpScale: 0.012,
+    metalness: 0.44,
     roughness: 0.34,
   });
   const yellowAccentMat = new THREE.MeshStandardMaterial({
-    color: '#f4c20d',
+    color: '#f5c400',
     metalness: 0.35,
     roughness: 0.36,
   });
-  const radomeMat = new THREE.MeshStandardMaterial({ color: '#1b3e82', metalness: 0.3, roughness: 0.45 });
+  // Radome abu-abu terang/putih khas T-50i TNI AU (sesuai foto Antara News!)
+  const radomeMat = new THREE.MeshStandardMaterial({ color: '#cfd6de', metalness: 0.22, roughness: 0.45 });
 
-  // Badan blended lofted (mirip F-16 namun lebih ramping & tandem)
+  // Badan blended lofted (panjang 13,14 m -> proporsional 13.1 unit)
   const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
@@ -246,7 +296,7 @@ export function buildDetailedT50i(): BuildResult {
     let lerx = 0;
     if (z < 3.9 && z > -3.5) {
       const env = smoothstep(3.9, 1.0, z) * smoothstep(-3.5, -1.8, z);
-      lerx = 0.58 * env * Math.pow(Math.abs(s), 2.2) * Math.exp(-Math.pow((c + 0.08) * 4.0, 2));
+      lerx = 0.6 * env * Math.pow(Math.abs(s), 2.2) * Math.exp(-Math.pow((c + 0.08) * 4.0, 2));
     }
     let spine = 0;
     if (z < 1.5 && z > -5.5) {
@@ -256,20 +306,24 @@ export function buildDetailedT50i(): BuildResult {
     return [s * (rx + lerx), yC + ys + c * (c >= 0 ? ryT : ryB) + spine];
   };
 
-  const bodyZs = Array.from({ length: 56 }, (_, i) => lerp(-6.4, 4.75, i / 55));
+  const bodyZs = Array.from({ length: 56 }, (_, i) => lerp(-6.4, 5.15, i / 55));
   const fuseMesh = mkMesh(buildLoftGeometry(bodyZs.map((z) => ({ z, point: (th) => cross(z, th) })), 56), fuseMat);
-  const noseZs = Array.from({ length: 20 }, (_, i) => lerp(4.72, 6.7, i / 19));
+  // Radome hidung abu-abu terang mulai z = 5.12 .. 6.70
+  const noseZs = Array.from({ length: 20 }, (_, i) => lerp(5.12, 6.7, i / 19));
   const noseMesh = mkMesh(buildLoftGeometry(noseZs.map((z) => ({ z, point: (th) => cross(z, th) })), 40), radomeMat);
-  g.add(fuseMesh, noseMesh);
+  const pitot = mkMesh(new THREE.CylinderGeometry(0.008, 0.016, 0.62, 8), m.darkMetal);
+  pitot.rotation.x = Math.PI / 2;
+  pitot.position.set(0, yC - 0.18, 6.98);
+  g.add(fuseMesh, noseMesh, pitot);
 
-  // Saluran udara samping kembar di bawah LERX (khas T-50i)
+  // Saluran udara samping kembar di bawah LERX + pintu roda kuning di bawah perut
   for (const s of [1, -1]) {
     const ix = s * 0.62;
     const iy = 1.24;
     const duct = mkMesh(
       buildLoftGeometry(
         Array.from({ length: 16 }, (_, i) => {
-          const z = lerp(-1.8, 2.05, i / 15);
+          const z = lerp(-1.8, 2.08, i / 15);
           const f = smoothstep(-1.8, 0.2, z);
           return { z, point: (th) => [ix + Math.sin(th) * (0.24 * f + 0.05), iy + Math.cos(th) * (0.3 * f + 0.05)] };
         }),
@@ -279,14 +333,18 @@ export function buildDetailedT50i(): BuildResult {
     );
     const lip = mkMesh(new THREE.TorusGeometry(0.25, 0.025, 8, 24), m.darkMetal);
     lip.scale.set(0.86, 1.08, 1);
-    lip.position.set(ix, iy, 2.05);
+    lip.position.set(ix, iy, 2.08);
     const cav = mkMesh(new THREE.CircleGeometry(0.24, 24), m.intakeInner);
     cav.scale.set(0.84, 1.06, 1);
-    cav.position.set(ix, iy, 2.02);
-    g.add(duct, lip, cav);
+    cav.position.set(ix, iy, 2.05);
+    // Pintu roda utama berwarna kuning terbuka di sisi bawah (khas foto T-50i!)
+    const gearDoor = mkMesh(new THREE.BoxGeometry(0.03, 0.42, 0.95), yellowAccentMat);
+    gearDoor.position.set(s * 0.56, 0.66, -1.1);
+    gearDoor.rotation.z = s * 0.28;
+    g.add(duct, lip, cav, gearDoor);
   }
 
-  // Kanopi tandem 2 kursi & kokpit terlihat langsung
+  // Kanopi tandem 2 kursi & kokpit (Zero-Zero Ejection Seats + OBOGS + HUD)
   const canopyZs = Array.from({ length: 28 }, (_, i) => lerp(1.3, 4.45, i / 27));
   const canopyGeo = buildLoftGeometry(
     canopyZs.map((z) => {
@@ -303,7 +361,7 @@ export function buildDetailedT50i(): BuildResult {
     32,
   );
   g.add(mkMesh(canopyGeo, m.glass, 'glass'));
-  const bow = mkMesh(new THREE.TorusGeometry(0.38, 0.022, 8, 20, Math.PI), m.frame);
+  const bow = mkMesh(new THREE.TorusGeometry(0.38, 0.024, 8, 20, Math.PI), m.frame);
   bow.position.set(0, 1.9, 2.95);
   g.add(bow);
   const hud = mkMesh(new THREE.PlaneGeometry(0.17, 0.2), m.hud, 'cockpit');
@@ -313,13 +371,13 @@ export function buildDetailedT50i(): BuildResult {
   addSeat(g, 3.38, 1.86, m.frame, m.darkMetal, 0.95);
   addSeat(g, 2.38, 1.98, m.frame, m.darkMetal, 0.95);
 
-  // Sayap utama airfoil, stabilator, ekor tegak (biru + strip kuning)
+  // Sayap utama airfoil (rentang 9,45 m -> ±4.45), stabilator, ekor tegak kuning-biru
   const wingR = mkMesh(
     buildAirfoilSurface(
       [
         { spanPos: 0.65, leZ: 1.3, teZ: -2.8, offset: 1.4, thick: 0.19 },
-        { spanPos: 2.35, leZ: 0.05, teZ: -2.45, offset: 1.38, thick: 0.12 },
-        { spanPos: 4.25, leZ: -1.35, teZ: -2.25, offset: 1.35, thick: 0.06 },
+        { spanPos: 2.4, leZ: 0.05, teZ: -2.45, offset: 1.38, thick: 0.12 },
+        { spanPos: 4.35, leZ: -1.35, teZ: -2.25, offset: 1.35, thick: 0.06 },
       ],
       'horizontal',
       1,
@@ -331,8 +389,8 @@ export function buildDetailedT50i(): BuildResult {
     buildAirfoilSurface(
       [
         { spanPos: 0.65, leZ: 1.3, teZ: -2.8, offset: 1.4, thick: 0.19 },
-        { spanPos: 2.35, leZ: 0.05, teZ: -2.45, offset: 1.38, thick: 0.12 },
-        { spanPos: 4.25, leZ: -1.35, teZ: -2.25, offset: 1.35, thick: 0.06 },
+        { spanPos: 2.4, leZ: 0.05, teZ: -2.45, offset: 1.38, thick: 0.12 },
+        { spanPos: 4.35, leZ: -1.35, teZ: -2.25, offset: 1.35, thick: 0.06 },
       ],
       'horizontal',
       -1,
@@ -344,33 +402,30 @@ export function buildDetailedT50i(): BuildResult {
 
   const stabSecs: AirfoilSection[] = [
     { spanPos: 0.48, leZ: -4.2, teZ: -6.1, offset: 1.38, thick: 0.09 },
-    { spanPos: 2.35, leZ: -5.45, teZ: -6.32, offset: 1.28, thick: 0.045 },
+    { spanPos: 2.38, leZ: -5.45, teZ: -6.32, offset: 1.28, thick: 0.045 },
   ];
   g.add(
     mkMesh(buildAirfoilSurface(stabSecs, 'horizontal', 1, 0), blueWingMat),
     mkMesh(buildAirfoilSurface(stabSecs, 'horizontal', -1, 0), blueWingMat),
   );
 
-  // Ekor tegak biru + strip kuning emas
+  // Ekor tegak biru-kuning dengan tekstur sapuan emas mulus (persis foto TT-5005!)
   const finMesh = mkMesh(
     buildAirfoilSurface(
       [
         { spanPos: 1.88, leZ: -2.85, teZ: -6.28, offset: 0, thick: 0.14 },
         { spanPos: 3.15, leZ: -4.3, teZ: -6.32, offset: 0, thick: 0.1 },
-        { spanPos: 4.45, leZ: -5.48, teZ: -6.36, offset: 0, thick: 0.06 },
+        { spanPos: 4.48, leZ: -5.48, teZ: -6.36, offset: 0, thick: 0.06 },
       ],
       'vertical',
       1,
       0,
     ),
-    blueWingMat,
+    tailFinMat,
   );
-  const finStripe = mkMesh(new THREE.BoxGeometry(0.115, 2.1, 0.55), yellowAccentMat);
-  finStripe.position.set(0, 3.1, -5.65);
-  finStripe.rotation.x = 0.52;
-  g.add(finMesh, finStripe);
+  g.add(finMesh);
 
-  // Nozzle GE F404
+  // Nozzle GE F404-102 (14 kelopak logam)
   const nozInner = mkMesh(new THREE.CylinderGeometry(0.36, 0.31, 0.72, 28, 1, true), m.darkMetal);
   nozInner.rotation.x = Math.PI / 2;
   nozInner.position.set(0, yC, -6.72);
@@ -388,14 +443,18 @@ export function buildDetailedT50i(): BuildResult {
   ff.position.set(0, yC, -6.52);
   g.add(ff);
 
-  // Wingtip rails + AIM-9 + centerline drop tank putih seperti pada foto
+  // Sepasang tangki bahan bakar eksternal putih di bawah sayap (persis foto terbang!) + wingtip rails AIM-9
   for (const s of [1, -1]) {
     const rail = mkMesh(new THREE.BoxGeometry(0.065, 0.075, 1.9), m.darkMetal);
-    rail.position.set(s * 4.3, 1.35, -1.78);
+    rail.position.set(s * 4.4, 1.35, -1.78);
     g.add(rail);
-    addSimpleMissile(g, [s * 4.37, 1.35, -1.55], 2.25, 0.056, m.missileWhite, m.darkMetal, m.missileYellow);
+    addSimpleMissile(g, [s * 4.47, 1.35, -1.55], 2.25, 0.056, m.missileWhite, m.darkMetal, m.missileYellow);
+
+    const pylon = mkMesh(new THREE.BoxGeometry(0.075, 0.28, 1.35), m.missileWhite);
+    pylon.position.set(s * 2.05, 1.2, -1.15);
+    g.add(pylon);
+    addPodTank(g, [s * 2.05, 0.9, -1.05], 3.25, 0.22, m.missileWhite);
   }
-  addPodTank(g, [0, 0.88, -0.8], 3.3, 0.24, m.missileWhite);
 
   addTricycleGear(g, { nz: 3.4, nr: 0.21, mz: -1.1, mx: 1.05, mr: 0.29, topY: 1.05 }, { strut: m.strut, tire: m.tire, light: m.taxiLight });
 
@@ -414,17 +473,17 @@ export function buildDetailedT50i(): BuildResult {
   const roundelTex = roundelTexture();
   const flagTex = flagTexture();
   const tniAuTex = textTexture('TNI AU', { color: '#ffffff', aspect: 3.8 });
-  const tailCodeTex = textTexture('TT-5010', { color: '#ffffff', aspect: 4.2 });
-  const noseNumTex = textTexture('10', { color: '#141a21', aspect: 1.5 });
+  const tailCodeTex = textTexture('TT-5005', { color: '#14264d', aspect: 4.2 });
+  const noseNumTex = textTexture('05', { color: '#14264d', aspect: 1.5 });
 
-  addDecal(g, wingR, [2.55, 1.44, -1.2], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
-  addDecal(g, wingL, [-2.55, 1.44, -1.2], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
+  addDecal(g, wingR, [2.6, 1.44, -1.2], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
+  addDecal(g, wingL, [-2.6, 1.44, -1.2], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
-    addDecal(g, finMesh, [s * 0.05, 3.82, -5.68], rot, [0.78, 0.5, 0.08], flagTex);
-    addDecal(g, finMesh, [s * 0.05, 2.75, -5.05], rot, [1.35, 0.32, 0.08], tailCodeTex);
+    addDecal(g, finMesh, [s * 0.05, 3.85, -5.68], rot, [0.76, 0.48, 0.08], flagTex);
+    addDecal(g, finMesh, [s * 0.05, 3.1, -5.25], rot, [1.28, 0.3, 0.08], tailCodeTex);
     addDecal(g, fuseMesh, [s * 0.58, 1.56, -1.2], rot, [1.35, 0.34, 0.24], tniAuTex);
-    addDecal(g, fuseMesh, [s * 0.44, 1.38, 4.3], rot, [0.5, 0.34, 0.22], noseNumTex);
+    addDecal(g, fuseMesh, [s * 0.44, 1.38, 4.35], rot, [0.5, 0.34, 0.22], noseNumTex);
   }
 
   return {
@@ -432,9 +491,9 @@ export function buildDetailedT50i(): BuildResult {
     nozzles: [{ pos: [0, yC, -7.12], r: 0.3, kind: 'ab' }],
     spinners: [],
     navLights: [
-      { pos: [4.37, 1.35, -0.4], color: '#ff2a2a' },
-      { pos: [-4.37, 1.35, -0.4], color: '#22ff66' },
-      { pos: [0, 4.5, -6.28], color: '#ffffff', blink: 'strobe' },
+      { pos: [4.47, 1.35, -0.4], color: '#ff2a2a' },
+      { pos: [-4.47, 1.35, -0.4], color: '#22ff66' },
+      { pos: [0, 4.54, -6.28], color: '#ffffff', blink: 'strobe' },
     ],
     glowMats: [m.glow],
     hoverHeight: 0.9,
