@@ -56,8 +56,8 @@ export function BottomDock() {
     },
     {
       id: 'cutaway',
-      label: 'Bedah Jeroan',
-      short: 'Jeroan',
+      label: 'Spesifikasi',
+      short: 'Spek',
       icon: Cpu,
       active: cutaway,
       onClick: () => toggle('cutaway'),

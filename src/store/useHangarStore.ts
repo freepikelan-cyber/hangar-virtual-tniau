@@ -51,6 +51,7 @@ interface CamRequest {
 }
 
 interface HangarState {
+  showWelcome: boolean;
   selectedId: string;
   search: string;
   category: 'Semua' | AircraftCategory;
@@ -70,6 +71,8 @@ interface HangarState {
   camRequest: CamRequest | null;
   quiz: QuizState;
 
+  enterHangar: () => void;
+  openWelcome: () => void;
   selectAircraft: (id: string) => void;
   setSearch: (v: string) => void;
   setCategory: (c: 'Semua' | AircraftCategory) => void;
@@ -111,6 +114,7 @@ const tmp = new THREE.Vector3();
 const initialDesktop = !isCompactViewport();
 
 export const useHangarStore = create<HangarState>((set, get) => ({
+  showWelcome: true,
   selectedId: 'f16id',
   search: '',
   category: 'Semua',
@@ -120,7 +124,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
 
   wireframe: false,
   cutaway: false,
-  showPins: true,
+  showPins: false,
   autoRotate: false,
   flightMode: 'parked',
   flightNonce: 0,
@@ -129,6 +133,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   activeHotspot: null,
   camRequest: null,
   quiz: emptyQuiz,
+
+  enterHangar: () => set({ showWelcome: false }),
+  openWelcome: () => set({ showWelcome: true }),
 
   selectAircraft: (id) => {
     const mobile = isCompactViewport();
@@ -212,6 +219,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const pos: Vec3 = [tmp.x + h.camOffset[0] * scale, tmp.y + h.camOffset[1] * scale, tmp.z + h.camOffset[2] * scale];
     set({
       activeHotspot: id,
+      showPins: true,
       autoRotate: false,
       leftOpen: isCompactViewport() ? false : get().leftOpen,
       rightOpen: isCompactViewport() ? false : get().rightOpen,

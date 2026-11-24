@@ -5,6 +5,7 @@ import { FleetSidebar } from './components/hud/FleetSidebar';
 import { InfoPanel } from './components/hud/InfoPanel';
 import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
+import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
@@ -84,6 +85,7 @@ export function App() {
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />
+      <WelcomeScreen />
     </main>
   );
 }
