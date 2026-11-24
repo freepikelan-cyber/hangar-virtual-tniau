@@ -1,6 +1,7 @@
 import { ArrowRight, Mail, Phone, Plane, Sparkles } from 'lucide-react';
 import { FLEET } from '../../data/fleetData';
 import { useHangarStore } from '../../store/useHangarStore';
+import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function WelcomeScreen() {
   const showWelcome = useHangarStore((s) => s.showWelcome);
@@ -23,13 +24,9 @@ export function WelcomeScreen() {
           EDUKASI DIRGANTARA 3D INTERAKTIF
         </div>
 
-        {/* Logo Resmi TNI AU */}
-        <div className="mt-5 flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-2xl border border-[#ffb703]/50 bg-[#0b2347]/90 p-2.5 shadow-[0_0_28px_rgba(255,183,3,0.28)]">
-          <img
-            src="/logo-tniau.png"
-            alt="Logo Resmi TNI AU Swa Bhuwana Paksa"
-            className="h-full w-full object-contain drop-shadow-[0_0_10px_rgba(255,183,3,0.4)]"
-          />
+        {/* Logo 3D Resmi TNI AU */}
+        <div className="mt-5 flex h-28 w-28 sm:h-32 sm:w-32 items-center justify-center">
+          <TniAuLogo3D className="h-full w-full" animated />
         </div>
 
         {/* Judul Selamat Datang */}

@@ -1,6 +1,7 @@
 import { Radio } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function TopHeader() {
   const unit = useSelectedUnit();
@@ -8,19 +9,15 @@ export function TopHeader() {
 
   return (
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
-      {/* Header Kiri Atas: Logo Resmi TNI AU (Swa Bhuwana Paksa) + Judul */}
+      {/* Header Kiri Atas: Logo 3D Resmi TNI AU (Swa Bhuwana Paksa) + Judul */}
       <div className="hud-panel pointer-events-auto flex w-full md:w-auto md:max-w-[62vw] items-center gap-2.5 sm:gap-3 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2">
         <button
           type="button"
           onClick={openWelcome}
           title="Kembali ke Halaman Awal"
-          className="relative flex h-10 w-10 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/40 bg-[#0c264d]/85 p-1 shadow-[0_0_16px_rgba(255,183,3,0.22)] hover:border-[#ffb703] transition-colors cursor-pointer"
+          className="relative flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/35 bg-[#0c264d]/60 p-1 hover:border-[#ffb703] transition-colors cursor-pointer"
         >
-          <img
-            src="/logo-tniau.png"
-            alt="Logo Resmi TNI AU Swa Bhuwana Paksa"
-            className="h-full w-full object-contain drop-shadow-[0_0_6px_rgba(255,183,3,0.35)]"
-          />
+          <TniAuLogo3D className="h-full w-full" />
         </button>
         <div className="min-w-0 flex-1">
           <p className="font-display text-[10px] sm:text-xs font-semibold tracking-[0.16em] sm:tracking-[0.2em] text-[#4da6ff] uppercase truncate">

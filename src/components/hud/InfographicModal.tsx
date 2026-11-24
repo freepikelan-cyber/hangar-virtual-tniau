@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import {
   Compass,
   Crosshair,
@@ -10,12 +11,23 @@ import {
 } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { getAircraftTransparentSnapshot } from '../../utils/aircraftSnapshot';
+import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function InfographicModal() {
   const unit = useSelectedUnit();
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const closeInfographic = useHangarStore((s) => s.closeInfographic);
   const focusHotspot = useHangarStore((s) => s.focusHotspot);
+
+  const previewUrl = useMemo(() => {
+    if (!showInfographic) return '';
+    try {
+      return getAircraftTransparentSnapshot(unit.id);
+    } catch {
+      return '';
+    }
+  }, [showInfographic, unit.id]);
 
   if (!showInfographic) return null;
 
@@ -31,8 +43,8 @@ export function InfographicModal() {
         {/* Header Poster Infografis */}
         <div className="flex items-start justify-between gap-3 border-b border-[#4da6ff]/30 bg-[#0b2349]/90 px-4 py-3.5 sm:px-6 sm:py-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-xl border border-[#ffb703]/50 bg-[#081a38] p-1.5">
-              <img src="/logo-tniau.png" alt="Logo TNI AU" className="h-full w-full object-contain" />
+            <div className="flex h-12 w-12 sm:h-14 sm:w-14 shrink-0 items-center justify-center">
+              <TniAuLogo3D className="h-full w-full" />
             </div>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -64,6 +76,29 @@ export function InfographicModal() {
 
         {/* Isi Infografis Scrollable */}
         <div className="hud-scroll flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+          {/* Gambar Pesawat Berlatar Transparan (Render langsung dari Model 3D) */}
+          {previewUrl && (
+            <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-[#4da6ff]/35 bg-gradient-to-b from-[#0f2e5e]/60 via-[#0a2145]/40 to-transparent px-4 py-3 sm:py-5">
+              {/* Garis grid teknis halus di belakang pesawat transparan */}
+              <div
+                className="pointer-events-none absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgba(77,166,255,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(77,166,255,0.35) 1px, transparent 1px)',
+                  backgroundSize: '36px 36px',
+                }}
+                aria-hidden
+              />
+              <img
+                src={previewUrl}
+                alt={`Gambar 3D ${unit.name}`}
+                className="relative z-10 max-h-[210px] sm:max-h-[270px] w-auto object-contain drop-shadow-[0_14px_24px_rgba(0,0,0,0.65)]"
+              />
+              <span className="relative z-10 mt-1 rounded-full border border-[#4da6ff]/40 bg-[#0a1e3c]/70 px-3 py-0.5 font-display text-[10px] font-semibold tracking-[0.2em] text-[#75bcff] uppercase">
+                {unit.name} • {unit.tailNumber} • {unit.origin}
+              </span>
+            </div>
+          )}
           {/* Peran & 4 Kartu Performa */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
             <div className="lg:col-span-5 rounded-xl border border-[#4da6ff]/30 bg-[#0a2145]/80 p-4 flex flex-col justify-between">
