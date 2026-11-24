@@ -450,7 +450,7 @@ export const FLEET: AircraftUnit[] = [
     name: 'EC120B Colibri',
     code: 'Airbus / Eurocopter EC120B',
     origin: 'Prancis-Eropa',
-    tailNumber: 'HL-1208',
+    tailNumber: 'HL-1211',
     category: 'Helikopter',
     squadron: 'Skadron Udara 7 (Lanud Suryadarma, Kalijati) & Dynamic Pegasus',
     role: 'Helikopter latih dasar dan angkut ringan bermesin turbin tunggal yang sangat lincah dan senyap. Digunakan untuk mencetak penerbang helikopter TNI AU serta tampil memukau sebagai armada Tim Aerobatik Helikopter Dynamic Pegasus.',

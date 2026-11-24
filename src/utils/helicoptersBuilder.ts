@@ -445,215 +445,386 @@ export function buildDetailedCaracal(): BuildResult {
 }
 
 /* ============================================================================
- * 2. EUROCOPTER / AIRBUS EC120B COLIBRI TNI AU
- *    (SKADRON UDARA 7 LANUD SURYADARMA & TIM AEROBATIK DYNAMIC PEGASUS)
+ * 2. EUROCOPTER / AIRBUS EC120B COLIBRI TNI AU (HL-1211)
+ *    Sesuai foto asli: Livery Putih-Abu Elegan, Ujung Sirip Ekor & Ventral Oranye-Kuning,
+ *    Marking "TNI-AU" hitam di tail boom, "HL-1211" + Merah Putih di sirip atas,
+ *    Roundel Segilima di samping kabin, Fairing Skid belakang, & Fenestron terbuka.
  * ============================================================================ */
+function makeColibriFuseTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d')!;
+  // Dasar putih bersih glossy
+  ctx.fillStyle = '#eef2f6';
+  ctx.fillRect(0, 0, 512, 512);
+  // Zona abu-abu elegan di bagian samping-tengah badan (sesuai foto HL-1211)
+  ctx.fillStyle = '#9aa4ae';
+  ctx.fillRect(0, 145, 512, 220);
+  // Garis pemisah putih & abu-abu tipis diagonal/aerodinamis
+  ctx.fillStyle = '#eef2f6';
+  ctx.fillRect(0, 134, 512, 12);
+  ctx.fillStyle = '#6f7a85';
+  ctx.fillRect(0, 362, 512, 6);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 export function buildDetailedColibri(): BuildResult {
   const g = new THREE.Group();
   const m = makeHeliMaterials('colibri');
   const glowMats: THREE.MeshStandardMaterial[] = [m.glow];
 
+  // Material khusus livery asli HL-1211 TNI AU (Putih, Abu-Abu, Oranye-Kuning, Skid Hitam)
+  const colWhite = new THREE.MeshPhysicalMaterial({
+    color: '#eef2f6',
+    roughness: 0.24,
+    metalness: 0.14,
+    clearcoat: 0.65,
+    clearcoatRoughness: 0.18,
+  });
+  const colGrey = new THREE.MeshPhysicalMaterial({
+    color: '#9aa4ae',
+    roughness: 0.30,
+    metalness: 0.20,
+    clearcoat: 0.45,
+  });
+  const colFuseMat = new THREE.MeshPhysicalMaterial({
+    map: makeColibriFuseTexture(),
+    roughness: 0.26,
+    metalness: 0.16,
+    clearcoat: 0.6,
+    clearcoatRoughness: 0.18,
+  });
+  const colOrange = new THREE.MeshPhysicalMaterial({
+    color: '#e89310', // Oranye-kuning khas ujung sirip & ventral fin HL-1211
+    roughness: 0.28,
+    metalness: 0.15,
+    clearcoat: 0.55,
+  });
+  const colBlack = new THREE.MeshStandardMaterial({
+    color: '#1b2026',
+    roughness: 0.45,
+    metalness: 0.45,
+  });
+  const colSkidFairing = new THREE.MeshStandardMaterial({
+    color: '#5b636b',
+    roughness: 0.42,
+    metalness: 0.32,
+  });
+  const colBlade = new THREE.MeshStandardMaterial({
+    color: '#2c333b',
+    roughness: 0.38,
+    metalness: 0.42,
+  });
+  const colExhaust = new THREE.MeshStandardMaterial({
+    color: '#5c5247', // Perunggu-abu knalpot panas Arrius 2F
+    roughness: 0.35,
+    metalness: 0.78,
+  });
+
   // ---- 1. FUSELAGE TEARDROP RAMPING KHAS EC120B COLIBRI (z = -1.35 .. +4.15) ----
-  const fuseZs = Array.from({ length: 30 }, (_, i) => lerp(-1.35, 4.15, i / 29));
+  const fuseZs = Array.from({ length: 32 }, (_, i) => lerp(-1.35, 4.18, i / 31));
   const fuseGeo = buildLoftGeometry(
     fuseZs.map((z) => {
-      let rx = 0.92;
+      let rx = 0.94;
       let ryTop = 0.96;
-      let ryBot = 0.64;
-      let cy = 1.56;
-      if (z > 1.45) {
-        // Moncong membulat aerodinamis khas Colibri
-        const t = smoothstep(1.45, 4.15, z);
-        rx = lerp(0.92, 0.14, Math.pow(t, 1.35));
-        ryTop = lerp(0.96, 0.12, Math.pow(t, 1.25));
-        ryBot = lerp(0.64, 0.12, Math.pow(t, 1.5));
-        cy = lerp(1.56, 1.24, Math.pow(t, 1.15));
+      let ryBot = 0.68;
+      let cy = 1.62;
+      if (z > 1.35) {
+        // Hidung membulat penuh & landai khas EC120B
+        const t = smoothstep(1.35, 4.18, z);
+        rx = lerp(0.94, 0.12, Math.pow(t, 1.35));
+        ryTop = lerp(0.96, 0.10, Math.pow(t, 1.22));
+        ryBot = lerp(0.68, 0.10, Math.pow(t, 1.48));
+        cy = lerp(1.62, 1.34, Math.pow(t, 1.15));
       } else if (z < -0.15) {
-        // Menyempit ramping ke batang ekor
+        // Transisi punggung mesin & perut kabin miring naik ke tail boom
         const t = smoothstep(-0.15, -1.35, z);
-        rx = lerp(0.92, 0.34, t);
-        ryTop = lerp(0.96, 0.42, t);
-        ryBot = lerp(0.64, 0.24, t);
-        cy = lerp(1.56, 1.78, t);
+        rx = lerp(0.94, 0.32, t);
+        ryTop = lerp(0.96, 0.40, t);
+        ryBot = lerp(0.68, 0.24, t);
+        cy = lerp(1.62, 1.94, t);
       }
       return {
         z,
         point: (th) => {
           const s = Math.sin(th);
           const c = Math.cos(th);
-          const px = Math.sign(s) * Math.pow(Math.abs(s), 0.85) * rx;
+          const px = Math.sign(s) * Math.pow(Math.abs(s), 0.84) * rx;
           const ry = c >= 0 ? ryTop : ryBot;
-          const py = cy + Math.sign(c) * Math.pow(Math.abs(c), 0.85) * ry;
+          const py = cy + Math.sign(c) * Math.pow(Math.abs(c), 0.84) * ry;
           return [px, py];
         },
       };
     }),
-    42,
+    44,
     true,
     true,
   );
-  const fuseMesh = mkMesh(fuseGeo, m.skin);
+  const fuseMesh = mkMesh(fuseGeo, colFuseMat);
   g.add(fuseMesh);
 
-  // Garis aksen putih-merah elegan di sisi kabin Colibri TNI AU
+  // Garis pemisah diagonal putih-abu elegan di sisi badan (sesuai foto HL-1211)
   for (const s of [1, -1] as const) {
-    const stripe = mkMesh(new THREE.BoxGeometry(0.04, 0.08, 3.1), m.whiteAccent);
-    stripe.position.set(s * 0.91, 1.28, 0.95);
-    g.add(stripe);
+    const diagStripe = mkMesh(new THREE.BoxGeometry(0.03, 0.09, 2.75), colWhite);
+    diagStripe.position.set(s * 0.93, 1.68, 1.15);
+    diagStripe.rotation.x = 0.42;
+    g.add(diagStripe);
   }
 
-  // ---- 2. KOKPIT GELEMBUNG PANORAMIK BESAR (SIGNATURE EC120B COLIBRI) ----
+  // ---- 2. KOKPIT GELEMBUNG PANORAMIK HITAM-GELAP & JENDELA SAMPING BESAR ----
   const bubble = mkMesh(
-    new THREE.SphereGeometry(0.95, 32, 22, -Math.PI * 0.46, Math.PI * 0.92, Math.PI * 0.14, Math.PI * 0.40),
+    new THREE.SphereGeometry(0.96, 36, 24, -Math.PI * 0.46, Math.PI * 0.92, Math.PI * 0.14, Math.PI * 0.42),
     m.glass,
     'glass',
   );
   bubble.rotation.y = Math.PI / 2;
-  bubble.scale.set(1.02, 0.96, 1.65);
-  bubble.position.set(0, 1.68, 2.15);
+  bubble.scale.set(1.03, 0.98, 1.72);
+  bubble.position.set(0, 1.72, 2.22);
   g.add(bubble);
 
-  // Jendela pintu samping besar
+  // Bingkai kaca depan & jendela pintu samping gelap khas Colibri
   for (const s of [1, -1] as const) {
-    const sideWin = mkMesh(new THREE.BoxGeometry(0.05, 0.56, 1.35), m.glass, 'glass');
-    sideWin.position.set(s * 0.92, 1.72, 1.45);
-    g.add(sideWin);
+    const frontWin = mkMesh(new THREE.BoxGeometry(0.05, 0.64, 1.18), m.glass, 'glass');
+    frontWin.position.set(s * 0.92, 1.82, 2.05);
+    g.add(frontWin);
+
+    const rearWin = mkMesh(new THREE.BoxGeometry(0.05, 0.56, 0.62), m.glass, 'glass');
+    rearWin.position.set(s * 0.93, 1.86, 1.02);
+    g.add(rearWin);
+
+    // Pilar pemisah jendela hitam
+    const pillar = mkMesh(new THREE.BoxGeometry(0.06, 0.68, 0.08), colBlack);
+    pillar.position.set(s * 0.94, 1.84, 1.42);
+    g.add(pillar);
+
+    // Ventilasi udara persegi hitam di belakang atas jendela (sesuai foto!)
+    const vent = mkMesh(new THREE.BoxGeometry(0.08, 0.22, 0.28), colBlack);
+    vent.position.set(s * 0.72, 2.48, 0.35);
+    g.add(vent);
   }
 
-  // Kursi pilot & kopilot berdampingan di dalam kokpit
-  for (const sx of [-0.36, 0.36]) {
-    const seatBack = mkMesh(new THREE.BoxGeometry(0.38, 0.62, 0.12), m.seat, 'cockpit');
-    seatBack.position.set(sx, 1.62, 1.85);
+  // Kursi pilot & kopilot di dalam kokpit
+  for (const sx of [-0.35, 0.35]) {
+    const seatBack = mkMesh(new THREE.BoxGeometry(0.36, 0.62, 0.12), m.seat, 'cockpit');
+    seatBack.position.set(sx, 1.66, 1.92);
     g.add(seatBack);
   }
 
-  // ---- 3. FAIRING MESIN TURBOMECA ARRIUS 2F & KNAPOT TUNGGAL ATAS ----
-  const engineFairing = mkMesh(new THREE.CapsuleGeometry(0.42, 1.65, 14, 24), m.skin);
-  engineFairing.rotation.x = Math.PI / 2;
-  engineFairing.scale.set(1.05, 1.0, 0.72);
-  engineFairing.position.set(0, 2.48, 0.15);
-  g.add(engineFairing);
-
-  const exhaustPipe = mkMesh(new THREE.CylinderGeometry(0.14, 0.16, 0.65, 18), m.exhaust);
-  exhaustPipe.rotation.x = Math.PI / 2 - 0.15;
-  exhaustPipe.position.set(0, 2.42, -1.08);
-  g.add(exhaustPipe);
-
-  // ---- 4. ROTOR UTAMA 3 BILAH SPHERIFLEX (KHAS EC120B COLIBRI) ----
-  const mast = mkMesh(new THREE.CylinderGeometry(0.11, 0.14, 0.52, 16), m.metal);
-  mast.position.set(0, 2.95, 0.72);
-  g.add(mast);
-
-  const mainRotor = buildMainRotor(3, 5.45, 0.26, m);
-  mainRotor.pivot.position.set(0, 3.20, 0.72);
-  g.add(mainRotor.pivot);
-
-  // ---- 5. SKID PENDARAT TUBULAR (LANDING SKIDS) ----
-  for (const s of [1, -1] as const) {
-    // Rel skid panjang di tanah (y = 0.08)
-    const skidCurve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(s * 1.15, 0.09, -0.75),
-      new THREE.Vector3(s * 1.15, 0.09, 2.45),
-      new THREE.Vector3(s * 1.15, 0.34, 3.05),
-    ]);
-    g.add(mkMesh(new THREE.TubeGeometry(skidCurve, 24, 0.068, 12, false), m.darkMetal));
-
-    // Pijakan kaki (boarding step) di samping skid
-    const step = mkMesh(new THREE.BoxGeometry(0.18, 0.04, 1.25), m.metal);
-    step.position.set(s * 1.18, 0.42, 1.35);
-    g.add(step);
-
-    // 2 Penyangga miring (cross-tubes) menghubungkan skid ke perut kabin
-    for (const cz of [0.15, 2.05]) {
-      const strutCurve = new THREE.CatmullRomCurve3([
-        new THREE.Vector3(s * 1.15, 0.12, cz),
-        new THREE.Vector3(s * 0.96, 0.58, cz),
-        new THREE.Vector3(s * 0.62, 1.02, cz),
-      ]);
-      g.add(mkMesh(new THREE.TubeGeometry(strutCurve, 14, 0.055, 10, false), m.darkMetal));
-    }
-  }
-
-  // ---- 6. TAIL BOOM RAMPING + STABILIZER HORIZONTAL + FENESTRON TAIL ROTOR ----
-  const boomGeo = buildLoftGeometry(
-    Array.from({ length: 14 }, (_, i) => {
-      const z = lerp(-5.55, -1.25, i / 13);
-      const t = (z + 5.55) / 4.3;
-      const rx = lerp(0.18, 0.35, t);
-      const ry = lerp(0.22, 0.40, t);
-      const cy = lerp(1.88, 1.78, t);
-      return { z, point: (th) => [Math.sin(th) * rx, cy + Math.cos(th) * ry] };
+  // ---- 3. COWLING MESIN ARRIUS 2F KOTAK-MEMBULAT DI PUNGGUNG + KNALPOT BELAKANG ----
+  const cowlGeo = buildLoftGeometry(
+    Array.from({ length: 16 }, (_, i) => {
+      const z = lerp(-1.28, 1.35, i / 15);
+      const frontT = smoothstep(0.65, 1.35, z);
+      const backT = smoothstep(-0.65, -1.28, z);
+      const rx = lerp(0.68, 0.34, Math.max(frontT, backT));
+      const ry = lerp(0.56, 0.26, Math.max(frontT, backT));
+      return {
+        z,
+        point: (th) => {
+          const s = Math.sin(th);
+          const c = Math.cos(th);
+          return [Math.sign(s) * Math.pow(Math.abs(s), 0.72) * rx, 2.46 + Math.sign(c) * Math.pow(Math.abs(c), 0.72) * ry];
+        },
+      };
     }),
-    24,
+    28,
     true,
     true,
   );
-  const boomMesh = mkMesh(boomGeo, m.skin);
+  g.add(mkMesh(cowlGeo, colWhite));
+
+  // Pipa knalpot perunggu-abu keluar di belakang punggung cowling (persis seperti di foto!)
+  const exhaustPipe = mkMesh(new THREE.CylinderGeometry(0.14, 0.18, 0.56, 20), colExhaust);
+  exhaustPipe.rotation.x = Math.PI / 2 - 0.28;
+  exhaustPipe.position.set(0, 2.54, -1.32);
+  g.add(exhaustPipe);
+
+  // Antena VHF miring di atas kokpit & di bawah tail boom
+  const topAnt = mkMesh(new THREE.CylinderGeometry(0.012, 0.018, 0.75, 8), colBlack);
+  topAnt.position.set(0, 2.62, 2.15);
+  topAnt.rotation.x = -0.55;
+  g.add(topAnt);
+
+  // ---- 4. ROTOR UTAMA 3 BILAH SPHERIFLEX RAMPING (TANPA TIP KUNING, SESUAI FOTO) ----
+  const mast = mkMesh(new THREE.CylinderGeometry(0.11, 0.14, 0.42, 16), m.metal);
+  mast.position.set(0, 3.04, 0.62);
+  g.add(mast);
+
+  const mainPivot = new THREE.Group();
+  mainPivot.position.set(0, 3.24, 0.62);
+  const hubCap = mkMesh(new THREE.CylinderGeometry(0.24, 0.32, 0.16, 24), colBlack);
+  mainPivot.add(hubCap);
+  const hubDome = mkMesh(new THREE.SphereGeometry(0.26, 20, 12, 0, Math.PI * 2, 0, Math.PI * 0.5), colGrey);
+  hubDome.scale.set(1, 0.42, 1);
+  hubDome.position.y = 0.08;
+  mainPivot.add(hubDome);
+  for (let i = 0; i < 3; i++) {
+    const a = (i / 3) * Math.PI * 2;
+    const arm = new THREE.Group();
+    arm.rotation.y = a;
+    const grip = mkMesh(new THREE.CylinderGeometry(0.05, 0.06, 0.50, 10), m.metal);
+    grip.rotation.z = Math.PI / 2;
+    grip.position.set(0.35, 0.02, 0);
+    arm.add(grip);
+    const bMesh = mkMesh(new THREE.BoxGeometry(5.15, 0.028, 0.25), colBlade);
+    bMesh.position.set(0.50 + 5.15 / 2, 0.02, 0);
+    bMesh.rotation.x = 0.06;
+    arm.add(bMesh);
+    mainPivot.add(arm);
+  }
+  const mainBlur = mkMesh(
+    new THREE.CylinderGeometry(5.65, 5.65, 0.02, 48),
+    new THREE.MeshStandardMaterial({ color: '#cfd8e3', transparent: true, opacity: 0.2, depthWrite: false }),
+  );
+  mainBlur.userData.role = 'blur';
+  mainBlur.visible = false;
+  mainPivot.add(mainBlur);
+  g.add(mainPivot);
+
+  // ---- 5. SKID PENDARAT HITAM + FAIRING KAKI BELAKANG ABU-ABU (PERSIS FOTO!) ----
+  for (const s of [1, -1] as const) {
+    // Rel skid hitam panjang di tanah
+    const skidCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(s * 1.12, 0.08, -0.58),
+      new THREE.Vector3(s * 1.12, 0.08, 2.38),
+      new THREE.Vector3(s * 1.12, 0.36, 2.98),
+    ]);
+    g.add(mkMesh(new THREE.TubeGeometry(skidCurve, 24, 0.062, 12, false), colBlack));
+
+    // Batang pijakan sejajar di atas skid (khas Colibri pada foto)
+    const stepBar = mkMesh(new THREE.CylinderGeometry(0.036, 0.036, 2.35, 12), colBlack);
+    stepBar.rotation.x = Math.PI / 2;
+    stepBar.position.set(s * 1.12, 0.36, 1.05);
+    g.add(stepBar);
+
+    // Kaki penyangga depan miring ke depan
+    const frontStrut = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(s * 1.12, 0.12, 2.15),
+      new THREE.Vector3(s * 0.92, 0.62, 2.42),
+      new THREE.Vector3(s * 0.58, 1.06, 2.65),
+    ]);
+    g.add(mkMesh(new THREE.TubeGeometry(frontStrut, 14, 0.052, 10, false), colBlack));
+
+    // Kaki penyangga belakang dengan FAIRING LEBAR ABU-ABU GELAP (sangat khas di foto HL-1211!)
+    const rearFairing = mkMesh(new THREE.BoxGeometry(0.14, 0.96, 0.52), colSkidFairing);
+    rearFairing.position.set(s * 0.92, 0.58, -0.22);
+    rearFairing.rotation.z = s * 0.24;
+    g.add(rearFairing);
+  }
+
+  // ---- 6. TAIL BOOM PUTIH-ABU + STABILIZER HORIZONTAL UJUNG ORANYE + FENESTRON ----
+  const boomGeo = buildLoftGeometry(
+    Array.from({ length: 16 }, (_, i) => {
+      const z = lerp(-5.45, -1.25, i / 15);
+      const t = (z + 5.45) / 4.2;
+      const rx = lerp(0.18, 0.34, t);
+      const ry = lerp(0.22, 0.40, t);
+      const cy = lerp(1.98, 1.94, t);
+      return { z, point: (th) => [Math.sin(th) * rx, cy + Math.cos(th) * ry] };
+    }),
+    26,
+    true,
+    true,
+  );
+  const boomMesh = mkMesh(boomGeo, colWhite);
   g.add(boomMesh);
 
-  // Stabilizer horizontal simetris + winglet ujung di tail boom
+  // Antena miring di bawah tail boom
+  const tailAnt = mkMesh(new THREE.CylinderGeometry(0.012, 0.016, 0.72, 8), colBlack);
+  tailAnt.position.set(0, 1.56, -4.15);
+  tailAnt.rotation.x = 0.65;
+  g.add(tailAnt);
+
+  // Stabilizer horizontal ramping tepat di depan Fenestron + ujung oranye
   for (const s of [1, -1] as const) {
     const hStab = buildAirfoilSurface(
       [
-        { spanPos: 0.16, leZ: -4.15, teZ: -4.72, offset: 1.88, thick: 0.09 },
-        { spanPos: 1.22, leZ: -4.22, teZ: -4.70, offset: 1.88, thick: 0.07 },
+        { spanPos: 0.16, leZ: -4.55, teZ: -5.12, offset: 2.02, thick: 0.09 },
+        { spanPos: 1.05, leZ: -4.64, teZ: -5.10, offset: 2.02, thick: 0.07 },
       ],
       'horizontal',
       s,
       0.02,
     );
-    g.add(mkMesh(hStab, m.skin));
+    g.add(mkMesh(hStab, colGrey));
 
-    const endplate = mkMesh(new THREE.BoxGeometry(0.05, 0.44, 0.48), m.skin);
-    endplate.position.set(s * 1.22, 1.94, -4.46);
-    g.add(endplate);
+    const stabTip = mkMesh(new THREE.BoxGeometry(0.18, 0.06, 0.44), colOrange);
+    stabTip.position.set(s * 1.12, 2.02, -4.87);
+    g.add(stabTip);
   }
 
-  // ---- FENESTRON (SHROUDED DUCTED TAIL FAN KHAS EC120B COLIBRI!) ----
+  // ---- FENESTRON TERBUKA KHAS EC120B COLIBRI (PUTIH-ABU + UJUNG SIRIP & VENTRAL ORANYE-KUNING!) ----
   const fenCenterZ = -6.05;
-  const fenCenterY = 2.02;
+  const fenCenterY = 2.08;
 
-  // Cincin pelindung Fenestron aerodinamis (Torus tebal menyatu ke sirip tegak)
-  const fenShroud = mkMesh(new THREE.TorusGeometry(0.68, 0.14, 16, 36), m.skin);
+  // Cincin pelindung Fenestron putih-abu
+  const fenShroud = mkMesh(new THREE.TorusGeometry(0.68, 0.14, 16, 40), colWhite);
   fenShroud.rotation.y = Math.PI / 2;
   fenShroud.position.set(0, fenCenterY, fenCenterZ);
   g.add(fenShroud);
 
-  // Sirip tegak atas menyapu ke belakang di atas Fenestron
+  // Sirip tegak atas (bagian putih untuk bendera + HL-1211)
   const upperFinGeo = buildAirfoilSurface(
     [
-      { spanPos: 2.52, leZ: -5.45, teZ: -6.58, offset: 0, thick: 0.20 },
-      { spanPos: 3.42, leZ: -6.05, teZ: -6.88, offset: 0, thick: 0.14 },
+      { spanPos: 2.60, leZ: -5.45, teZ: -6.58, offset: 0, thick: 0.19 },
+      { spanPos: 3.42, leZ: -5.88, teZ: -6.78, offset: 0, thick: 0.14 },
     ],
     'vertical',
     1,
     0,
   );
-  const upperFinMesh = mkMesh(upperFinGeo, m.skin);
+  const upperFinMesh = mkMesh(upperFinGeo, colWhite);
   g.add(upperFinMesh);
 
-  // Sirip pelindung bawah (ventral bumper fin)
-  const lowerFin = mkMesh(new THREE.BoxGeometry(0.10, 0.65, 0.45), m.skin);
-  lowerFin.position.set(0, 1.24, -5.85);
-  lowerFin.rotation.x = 0.25;
-  g.add(lowerFin);
+  // Ujung atas sirip tegak warna ORANYE-KUNING menyala (persis foto HL-1211!)
+  const finOrangeTip = buildAirfoilSurface(
+    [
+      { spanPos: 3.42, leZ: -5.88, teZ: -6.78, offset: 0, thick: 0.14 },
+      { spanPos: 3.82, leZ: -6.05, teZ: -6.88, offset: 0, thick: 0.11 },
+    ],
+    'vertical',
+    1,
+    0,
+  );
+  g.add(mkMesh(finOrangeTip, colOrange));
 
-  // Kipas Fenestron 8 Bilah berputar di dalam cincin
+  // Sirip bawah (Ventral Fin) warna ORANYE-KUNING + kawat tail bumper stinger
+  const ventralFinGeo = buildAirfoilSurface(
+    [
+      { spanPos: 1.48, leZ: -5.58, teZ: -6.42, offset: 0, thick: 0.14 },
+      { spanPos: 1.02, leZ: -5.92, teZ: -6.62, offset: 0, thick: 0.09 },
+    ],
+    'vertical',
+    1,
+    0,
+  );
+  g.add(mkMesh(ventralFinGeo, colOrange));
+
+  const bumperWire = mkMesh(new THREE.CylinderGeometry(0.018, 0.018, 0.72, 8), colBlack);
+  bumperWire.position.set(0, 0.92, -6.28);
+  bumperWire.rotation.x = 0.78;
+  g.add(bumperWire);
+
+  // Kipas Fenestron 8 bilah + stator di dalam cincin
   const fenPivot = new THREE.Group();
   fenPivot.position.set(0, fenCenterY, fenCenterZ);
-  const fenHub = mkMesh(new THREE.CylinderGeometry(0.16, 0.16, 0.22, 16), m.darkMetal);
+  const fenHub = mkMesh(new THREE.CylinderGeometry(0.15, 0.15, 0.22, 16), colBlack);
   fenHub.rotation.z = Math.PI / 2;
   fenPivot.add(fenHub);
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
-    const fb = mkMesh(new THREE.BoxGeometry(0.04, 0.46, 0.10), m.blade);
+    const fb = mkMesh(new THREE.BoxGeometry(0.035, 0.48, 0.09), colBlade);
     fb.rotation.x = a;
     fb.position.set(0, Math.cos(a) * 0.30, Math.sin(a) * 0.30);
     fenPivot.add(fb);
   }
   const fenBlur = mkMesh(
     new THREE.CylinderGeometry(0.55, 0.55, 0.02, 28),
-    new THREE.MeshStandardMaterial({ color: '#cfd8e3', transparent: true, opacity: 0.26, depthWrite: false }),
+    new THREE.MeshStandardMaterial({ color: '#cfd8e3', transparent: true, opacity: 0.24, depthWrite: false }),
   );
   fenBlur.rotation.z = Math.PI / 2;
   fenBlur.userData.role = 'blur';
@@ -661,23 +832,24 @@ export function buildDetailedColibri(): BuildResult {
   fenPivot.add(fenBlur);
   g.add(fenPivot);
 
-  // ---- 7. MARKING RESMI TNI AU ----
-  addDecal(g, upperFinMesh, [0.10, 3.05, -6.28], [0, Math.PI / 2, 0], [0.56, 0.36, 0.18], flagTexture());
-  addDecal(g, upperFinMesh, [-0.10, 3.05, -6.28], [0, -Math.PI / 2, 0], [0.56, 0.36, 0.18], flagTexture());
-  addDecal(g, boomMesh, [0.28, 1.84, -3.25], [0, Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI AU', { color: '#eef2f6', aspect: 4.5 }));
-  addDecal(g, boomMesh, [-0.28, 1.84, -3.25], [0, -Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI AU', { color: '#eef2f6', aspect: 4.5 }));
-  addDecal(g, fuseMesh, [0.92, 1.48, 0.15], [0, Math.PI / 2, 0], [0.54, 0.54, 0.25], roundelTexture());
-  addDecal(g, fuseMesh, [-0.92, 1.48, 0.15], [0, -Math.PI / 2, 0], [0.54, 0.54, 0.25], roundelTexture());
+  // ---- 7. MARKING PERSIS FOTO ASLI: Bendera + "HL-1211", "TNI-AU" hitam, & Roundel ----
+  addDecal(g, upperFinMesh, [0.10, 3.24, -6.28], [0, Math.PI / 2, 0], [0.42, 0.28, 0.18], flagTexture());
+  addDecal(g, upperFinMesh, [-0.10, 3.24, -6.28], [0, -Math.PI / 2, 0], [0.42, 0.28, 0.18], flagTexture());
+  addDecal(g, upperFinMesh, [0.10, 2.94, -6.18], [0, Math.PI / 2, 0], [0.85, 0.22, 0.18], textTexture('HL-1211', { color: '#111827', aspect: 3.8 }));
+  addDecal(g, upperFinMesh, [-0.10, 2.94, -6.18], [0, -Math.PI / 2, 0], [0.85, 0.22, 0.18], textTexture('HL-1211', { color: '#111827', aspect: 3.8 }));
+  addDecal(g, boomMesh, [0.28, 1.94, -3.55], [0, Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI-AU', { color: '#111827', aspect: 4.5 }));
+  addDecal(g, boomMesh, [-0.28, 1.94, -3.55], [0, -Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI-AU', { color: '#111827', aspect: 4.5 }));
+  addDecal(g, fuseMesh, [0.94, 1.44, 0.22], [0, Math.PI / 2, 0], [0.56, 0.56, 0.25], roundelTexture());
+  addDecal(g, fuseMesh, [-0.94, 1.44, 0.22], [0, -Math.PI / 2, 0], [0.56, 0.56, 0.25], roundelTexture());
 
   const spinners: SpinnerFx[] = [
-    { obj: mainRotor.pivot, axis: 'y', speed: 18, blur: mainRotor.blur },
+    { obj: mainPivot, axis: 'y', speed: 18, blur: mainBlur },
     { obj: fenPivot, axis: 'x', speed: 75, blur: fenBlur },
   ];
   const navLights: NavLightFx[] = [
-    { pos: [1.22, 1.94, -4.46], color: '#ff2a2a' },
-    { pos: [-1.22, 1.94, -4.46], color: '#22ff66' },
-    { pos: [0, 3.48, -6.45], color: '#ffffff', blink: 'strobe' },
-    { pos: [0, 2.74, -0.75], color: '#ff3030', blink: 'beacon' },
+    { pos: [1.18, 2.02, -4.87], color: '#ff2a2a' },
+    { pos: [-1.18, 2.02, -4.87], color: '#22ff66' },
+    { pos: [0, 3.88, -6.45], color: '#ff3030', blink: 'beacon' },
   ];
 
   return { group: g, nozzles: [], spinners, navLights, glowMats, hoverHeight: 2.3, rotorWash: true };
