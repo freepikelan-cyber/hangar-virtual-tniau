@@ -240,8 +240,12 @@ export const FLEET: AircraftUnit[] = [
     name: 'EMB-314 Super Tucano',
     code: 'A-29 Light Attack • COIN',
     origin: 'Brasil',
-    tailNumber: 'TT-3108',
+    tailNumber: 'TT-3102',
     category: 'Tempur',
+    liveries: [
+      { id: 'tactical-grey', name: 'Abu Taktis • Spinner Merah (02)', swatch: '#939ca6', accent: '#d61f26', tailNumber: 'TT-3102' },
+      { id: 'camo-grey', name: 'Camo Abu 3-Tone • Spinner Hitam (10)', swatch: '#6d7680', accent: '#1c2026', tailNumber: 'TT-3110' },
+    ],
     squadron: 'Skadron Udara 21 (Lanud Abdulrachman Saleh, Malang)',
     role: 'Pesawat serang taktis ringan (Close Air Support) dan pengintaian bermesin turboprop. Sangat efektif untuk dukungan udara jarak dekat, patroli perbatasan, dan operasi anti-gerilya.',
     specs: {

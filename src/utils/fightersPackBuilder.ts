@@ -1160,29 +1160,77 @@ function sharkMouthTexture() {
   return t;
 }
 
-export function buildDetailedSuperTucano(): BuildResult {
+function tucanoTacticalGreyFuseTexture() {
+  const W = 1024;
+  const H = 1024;
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d')!;
+
+  // Abu-abu taktis bersih khas EMB-314 Super Tucano TNI AU (sesuai referensi!)
+  const base = solidNoiseTexture('#939ca6', 3102, 0.025);
+  ctx.drawImage(base.image as HTMLCanvasElement, 0, 0, W, H);
+  base.dispose();
+
+  // Panel anti-silau abu gelap di punggung hidung depan kokpit (u ~ 0/1, v > 0.62)
+  ctx.fillStyle = '#363d45';
+  ctx.fillRect(0, H * 0.62, W * 0.13, H * 0.38);
+  ctx.fillRect(W * 0.87, H * 0.62, W * 0.13, H * 0.38);
+
+  // Perut sedikit lebih terang (u ~ 0.38..0.62)
+  ctx.fillStyle = '#adb6bf';
+  ctx.fillRect(W * 0.38, 0, W * 0.24, H);
+
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  t.needsUpdate = true;
+  return t;
+}
+
+function tucanoCamoGreyTexture() {
+  return camoTexture(
+    '#7c858f',
+    [
+      { c: '#4d5560', n: 16, r: 70 },
+      { c: '#a8b1ba', n: 10, r: 48 },
+    ],
+    3110,
+    { noise: 0.03 },
+  );
+}
+
+export function buildDetailedSuperTucano(liveryId = 'tactical-grey'): BuildResult {
   const g = new THREE.Group();
   const yC = 1.48;
   const m = commonMats(3108);
+  const isCamo = liveryId === 'camo-grey';
+  const camoTex = isCamo ? tucanoCamoGreyTexture() : null;
 
-  const darkGreyTex = solidNoiseTexture('#565c58', 3108, 0.032);
   const fuseMat = new THREE.MeshStandardMaterial({
     color: '#ffffff',
-    map: cloneRep(darkGreyTex, 2, 4),
+    map: isCamo ? cloneRep(camoTex!, 1.8, 3.6) : tucanoTacticalGreyFuseTexture(),
     bumpMap: cloneRep(m.bump, 2.2, 4.4),
-    bumpScale: 0.015,
-    metalness: 0.42,
-    roughness: 0.54,
+    bumpScale: 0.014,
+    metalness: 0.38,
+    roughness: 0.48,
   });
   const wingMat = new THREE.MeshStandardMaterial({
-    color: '#5a605c',
+    color: isCamo ? '#ffffff' : '#959ea8',
+    map: isCamo ? cloneRep(camoTex!, 1.4, 1.4) : null,
     bumpMap: cloneRep(m.bump, 1.6, 1.6),
-    bumpScale: 0.013,
-    metalness: 0.44,
-    roughness: 0.52,
+    bumpScale: 0.012,
+    metalness: 0.4,
+    roughness: 0.46,
   });
-  const redSpinnerMat = new THREE.MeshStandardMaterial({ color: '#c8102e', metalness: 0.35, roughness: 0.32 });
+  const redSpinnerMat = new THREE.MeshStandardMaterial({
+    color: isCamo ? '#1c2026' : '#d61f26',
+    metalness: 0.34,
+    roughness: 0.3,
+  });
   const bladeMat = new THREE.MeshStandardMaterial({ color: '#1b1e22', metalness: 0.45, roughness: 0.45 });
+  const bombMat = new THREE.MeshStandardMaterial({ color: '#4f5e39', metalness: 0.32, roughness: 0.56 });
 
   // Badan Super Tucano kekar, dalam & berdinding tegak (pesawat serang turboprop berlapis baja)
   const cross = (z: number, th: number): [number, number] => {
@@ -1324,16 +1372,21 @@ export function buildDetailedSuperTucano(): BuildResult {
   );
   g.add(finMesh);
 
-  // Turret kamera FLIR di bawah perut + tangki bahan bakar centerline + pod roket bawah sayap
+  // Turret kamera FLIR + tangki eksternal abu muda + bom Mk-82 hijau zaitun & pod roket bawah sayap
   const flir = mkMesh(new THREE.SphereGeometry(0.18, 16, 12), m.darkMetal);
   flir.position.set(0, 0.9, -0.45);
   g.add(flir);
   addPodTank(g, [0, 0.72, 1.35], 2.55, 0.2, wingMat);
   for (const s of [1, -1]) {
-    const p = mkMesh(new THREE.BoxGeometry(0.065, 0.22, 0.95), m.darkMetal);
-    p.position.set(s * 2.35, 1.0, 1.0);
-    g.add(p);
-    addPodTank(g, [s * 2.35, 0.8, 1.05], 1.85, 0.14, m.darkMetal);
+    const p1 = mkMesh(new THREE.BoxGeometry(0.065, 0.24, 0.95), m.darkMetal);
+    p1.position.set(s * 2.15, 1.0, 1.0);
+    g.add(p1);
+    addPodTank(g, [s * 2.15, 0.78, 1.05], 2.35, 0.18, wingMat);
+
+    const p2 = mkMesh(new THREE.BoxGeometry(0.06, 0.22, 0.85), m.darkMetal);
+    p2.position.set(s * 3.25, 1.1, 0.95);
+    g.add(p2);
+    addPodTank(g, [s * 3.25, 0.9, 1.0], 1.75, 0.13, bombMat);
   }
 
   addTricycleGear(g, { nz: 4.75, nr: 0.21, mz: 0.85, mx: 1.65, mr: 0.28, topY: 1.06 }, { strut: m.strut, tire: m.tire, light: m.taxiLight });
@@ -1349,22 +1402,31 @@ export function buildDetailedSuperTucano(): BuildResult {
   engine.position.set(0, yC + 0.04, 4.9);
   g.add(engine);
 
-  // Decal Shark-Mouth + Roundel + TNI AU + TT-3108 (depth tipis agar tidak tembus!)
+  // Decal Shark-Mouth + Roundel atas/bawah sayap & badan + TNI AU hitam tegas + Nomor ekor & hidung
   const sharkTex = sharkMouthTexture();
   const roundelTex = roundelTexture();
   const flagTex = flagTexture();
-  const tniAuTex = textTexture('TNI AU', { color: '#e6ece8', aspect: 3.8 });
-  const tailCodeTex = textTexture('TT-3108', { color: '#e6ece8', aspect: 4.2 });
+  const tniAuTex = textTexture('TNI AU', { color: '#141a21', aspect: 3.8 });
+  const tailCodeTex = textTexture(isCamo ? 'TT-3110' : 'TT-3102', { color: '#141a21', aspect: 4.2 });
+  const noseNumTex = textTexture(isCamo ? '10' : '02', { color: '#141a21', aspect: 1.5 });
 
+  // Roundel segilima merah-putih di atas & bawah kedua sayap (sesuai Tampak Atas & Tampak Bawah!)
   addDecal(g, wingR, [4.2, 1.46, 0.9], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
   addDecal(g, wingL, [-4.2, 1.46, 0.9], [-Math.PI / 2, 0, 0], [1.0, 1.0, 0.4], roundelTex);
+  addDecal(g, wingR, [4.2, 1.24, 0.9], [Math.PI / 2, 0, 0], [0.95, 0.95, 0.4], roundelTex);
+  addDecal(g, wingL, [-4.2, 1.24, 0.9], [Math.PI / 2, 0, 0], [0.95, 0.95, 0.4], roundelTex);
+
   for (const s of [1, -1]) {
     const rot: V3 = [0, (s * Math.PI) / 2, 0];
-    // Shark-mouth di kedua sisi hidung
-    addDecal(g, fuseMesh, [s * 0.72, 1.48, 4.95], rot, [2.15, 0.96, 0.34], sharkTex);
-    addDecal(g, finMesh, [s * 0.05, 3.5, -5.78], rot, [0.72, 0.46, 0.08], flagTex);
-    addDecal(g, fuseMesh, [s * 0.60, 1.70, -3.55], rot, [1.45, 0.40, 0.30], tailCodeTex);
-    addDecal(g, fuseMesh, [s * 0.82, 1.66, -1.45], rot, [1.45, 0.40, 0.32], tniAuTex);
+    // Shark-mouth di kedua sisi hidung + nomor 02/10 di atas belakangnya
+    addDecal(g, fuseMesh, [s * 0.78, 1.42, 4.95], rot, [2.15, 0.96, 0.34], sharkTex);
+    addDecal(g, fuseMesh, [s * 0.78, 1.88, 4.15], rot, [0.56, 0.38, 0.3], noseNumTex);
+    // Bendera Merah Putih & TT-3102/TT-3110 di sirip ekor
+    addDecal(g, finMesh, [s * 0.05, 3.48, -5.75], rot, [0.72, 0.46, 0.08], flagTex);
+    addDecal(g, finMesh, [s * 0.05, 2.72, -5.55], rot, [1.28, 0.3, 0.08], tailCodeTex);
+    // Roundel segilima + tulisan TNI AU di samping badan belakang (persis referensi!)
+    addDecal(g, fuseMesh, [s * 0.76, 1.62, -1.65], rot, [0.64, 0.64, 0.32], roundelTex);
+    addDecal(g, fuseMesh, [s * 0.66, 1.64, -2.95], rot, [1.35, 0.38, 0.32], tniAuTex);
   }
 
   return {
