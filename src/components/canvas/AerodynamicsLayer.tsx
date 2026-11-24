@@ -48,16 +48,16 @@ function ForceArrow3D({ dir, origin, color, label, sublabel, lengthRef }: ForceA
         <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.95} roughness={0.2} />
       </mesh>
       <group ref={labelRef} position={[0, 2.95, 0]}>
-        <Html center zIndexRange={[18, 0]} style={{ pointerEvents: 'none' }}>
+        <Html center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
           <div
-            className="whitespace-nowrap rounded-md border px-2 py-0.5 font-display text-[10px] font-bold tracking-wider uppercase shadow-lg backdrop-blur-sm"
+            className="whitespace-nowrap rounded border px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wider uppercase shadow-md backdrop-blur-sm"
             style={{
-              backgroundColor: 'rgba(10, 30, 60, 0.88)',
+              backgroundColor: 'rgba(10, 30, 60, 0.9)',
               borderColor: color,
               color,
             }}
           >
-            {label} <span className="text-slate-200 font-normal">• {sublabel}</span>
+            {label} {sublabel}
           </div>
         </Html>
       </group>
@@ -164,37 +164,37 @@ export function AerodynamicsLayer() {
 
   return (
     <group name="aerodynamics-3d-layer">
-      {/* 4 Vektor Gaya Utama Terbang */}
+      {/* 4 Vektor Gaya Utama Terbang (jarak diperlebar agar label tidak saling bertumpuk) */}
       <ForceArrow3D
         dir={[0, 1, 0]}
-        origin={[0, isHeli ? 3.55 : 2.55, 0.2]}
+        origin={[0, isHeli ? 3.85 : 2.95, 0.2]}
         color="#10b981"
         label="LIFT"
-        sublabel="Gaya Angkat"
+        sublabel="↑"
         lengthRef={liftLen}
       />
       <ForceArrow3D
         dir={[0, -1, 0]}
-        origin={[0, 0.9, 0.2]}
+        origin={[0, 0.65, 0.2]}
         color="#f59e0b"
         label="WEIGHT"
-        sublabel="Gaya Berat"
+        sublabel="↓"
         lengthRef={weightLen}
       />
       <ForceArrow3D
         dir={[0, 0, 1]}
-        origin={[0, 1.8, 5.8]}
+        origin={[0, 1.85, 6.5]}
         color="#38bdf8"
         label="THRUST"
-        sublabel="Gaya Dorong"
+        sublabel="→"
         lengthRef={thrustLen}
       />
       <ForceArrow3D
         dir={[0, 0, -1]}
-        origin={[0, 1.9, -6.8]}
+        origin={[0, 1.95, -7.6]}
         color="#fb7185"
         label="DRAG"
-        sublabel="Gaya Hambat"
+        sublabel="←"
         lengthRef={dragLen}
       />
 
@@ -227,8 +227,8 @@ export function AerodynamicsLayer() {
               <boxGeometry args={[2.1, 0.08, 0.85]} />
               <meshStandardMaterial color="#ffb703" emissive="#ffb703" emissiveIntensity={0.65} transparent opacity={0.88} />
             </mesh>
-            <Html position={[0, 0.35, -0.5]} center zIndexRange={[15, 0]} style={{ pointerEvents: 'none' }}>
-              <span className="rounded bg-[#ffb703] px-1.5 py-0.5 font-display text-[9px] font-bold text-[#0a1e3c] uppercase shadow">
+            <Html position={[-1.1, 0.42, -0.5]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+              <span className="whitespace-nowrap rounded bg-[#ffb703] px-1.5 py-0.5 font-display text-[9px] font-bold text-[#0a1e3c] uppercase shadow">
                 FLAP {flapAngle}°
               </span>
             </Html>
@@ -252,8 +252,8 @@ export function AerodynamicsLayer() {
               <boxGeometry args={[1.65, 0.07, 0.65]} />
               <meshStandardMaterial color="#22d3ee" emissive="#22d3ee" emissiveIntensity={0.7} transparent opacity={0.88} />
             </mesh>
-            <Html position={[0, 0.45, -0.45]} center zIndexRange={[15, 0]} style={{ pointerEvents: 'none' }}>
-              <span className="rounded bg-cyan-400 px-1.5 py-0.5 font-display text-[9px] font-bold text-[#0a1e3c] uppercase shadow">
+            <Html position={[1.95, 0.55, -0.45]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+              <span className="whitespace-nowrap rounded bg-cyan-400 px-1.5 py-0.5 font-display text-[9px] font-bold text-[#0a1e3c] uppercase shadow">
                 TRIM {trimAngle > 0 ? `+${trimAngle}°` : `${trimAngle}°`}
               </span>
             </Html>
