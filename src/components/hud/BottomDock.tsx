@@ -34,28 +34,28 @@ export function BottomDock() {
 
   const flightButtons = isGSuit
     ? [
+      {
+        id: 'sim9g',
+        label: 'Simulasi 9G',
+        short: 'Sim 9G',
+        icon: Activity,
+        active: flightMode === 'engineSim',
+        onClick: toggleEngineSim,
+        accent: 'amber' as const,
+      },
+    ]
+    : isHelmet
+      ? [
         {
-          id: 'sim9g',
-          label: 'Simulasi 9G',
-          short: 'Sim 9G',
+          id: 'simhmds',
+          label: 'Simulasi HMDS',
+          short: 'HMDS',
           icon: Activity,
           active: flightMode === 'engineSim',
           onClick: toggleEngineSim,
-          accent: 'amber' as const,
+          accent: 'emerald' as const,
         },
       ]
-    : isHelmet
-      ? [
-          {
-            id: 'simhmds',
-            label: 'Simulasi HMDS',
-            short: 'HMDS',
-            icon: Activity,
-            active: flightMode === 'engineSim',
-            onClick: toggleEngineSim,
-            accent: 'emerald' as const,
-          },
-        ]
       : [
         {
           id: 'takeoff',
@@ -95,40 +95,40 @@ export function BottomDock() {
     onClick: () => void;
     accent?: 'amber' | 'emerald';
   }[] = [
-    ...flightButtons,
-    {
-      id: 'infographic',
-      label: 'Spesifikasi',
-      short: 'Spek',
-      icon: FileText,
-      active: showInfographic,
-      onClick: toggleInfographic,
-    },
-    {
-      id: 'wireframe',
-      label: 'Wireframe',
-      short: 'Wire',
-      icon: Grid3X3,
-      active: wireframe,
-      onClick: () => toggle('wireframe'),
-    },
-    {
-      id: 'pins',
-      label: 'Pin Hotspot',
-      short: 'Pin',
-      icon: MapPin,
-      active: showPins,
-      onClick: () => toggle('showPins'),
-    },
-    {
-      id: 'rotate',
-      label: 'Putar 360°',
-      short: '360°',
-      icon: Rotate3d,
-      active: autoRotate,
-      onClick: () => toggle('autoRotate'),
-    },
-  ];
+      ...flightButtons,
+      {
+        id: 'infographic',
+        label: 'Spesifikasi',
+        short: 'Spek',
+        icon: FileText,
+        active: showInfographic,
+        onClick: toggleInfographic,
+      },
+      {
+        id: 'wireframe',
+        label: 'Wireframe',
+        short: 'Wire',
+        icon: Grid3X3,
+        active: wireframe,
+        onClick: () => toggle('wireframe'),
+      },
+      {
+        id: 'pins',
+        label: 'Pin Hotspot',
+        short: 'Pin',
+        icon: MapPin,
+        active: showPins,
+        onClick: () => toggle('showPins'),
+      },
+      {
+        id: 'rotate',
+        label: 'Putar 360°',
+        short: '360°',
+        icon: Rotate3d,
+        active: autoRotate,
+        onClick: () => toggle('autoRotate'),
+      },
+    ];
 
   return (
     <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
@@ -158,11 +158,10 @@ export function BottomDock() {
               onClick={b.onClick}
               aria-pressed={b.active}
               title={b.label}
-              className={`min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border px-2 sm:px-3.5 py-1 transition-all duration-200 cursor-pointer active:scale-95 font-display text-[10px] sm:text-sm font-bold tracking-wider uppercase ${
-                b.active
-                  ? activeClass
-                  : 'border-slate-700/80 bg-[#0e2a54]/80 text-slate-200 hover:border-[#4da6ff]/60 hover:text-white'
-              }`}
+              className={`min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border px-2 sm:px-3.5 py-1 transition-all duration-200 cursor-pointer active:scale-95 font-display text-[10px] sm:text-sm font-bold tracking-wider uppercase ${b.active
+                ? activeClass
+                : 'border-slate-700/80 bg-[#0e2a54]/80 text-slate-200 hover:border-[#4da6ff]/60 hover:text-white'
+                }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
               <span className="sm:hidden whitespace-nowrap leading-none">{b.short}</span>

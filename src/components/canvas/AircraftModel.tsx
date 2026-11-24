@@ -465,7 +465,7 @@ export function AircraftModel() {
       }
     }
 
-    // Animasi khusus Simulasi HMDS pada Helm Pilot (visor geser turun & proyeksi HUD hijau menyala)
+    // Animasi khusus Simulasi HMDS pada Helm Pilot (visor geser turun, NVG turun, & proyeksi HUD hijau menyala)
     if (unit.id === 'pilot-helmet') {
       const simActive = flightMode === 'engineSim';
       const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
@@ -474,13 +474,18 @@ export function AircraftModel() {
         const targetRotX = simActive ? 0.16 : -0.18;
         visorPivot.rotation.x = THREE.MathUtils.lerp(visorPivot.rotation.x, targetRotX, Math.min(1, dt * 4.5));
       }
+      const nvgPivot = procedural.group.getObjectByName('helmet-nvg-pivot');
+      if (nvgPivot) {
+        const targetNvgX = simActive ? 0.12 : -0.58;
+        nvgPivot.rotation.x = THREE.MathUtils.lerp(nvgPivot.rotation.x, targetNvgX, Math.min(1, dt * 4.2));
+      }
       const visorObj = procedural.group.getObjectByName('gsuit-visor') as THREE.Mesh | undefined;
       if (visorObj && visorObj.material) {
         const vMat = visorObj.material as THREE.MeshPhysicalMaterial;
         vMat.emissive.set('#00ffaa');
         vMat.emissiveIntensity = THREE.MathUtils.lerp(
           vMat.emissiveIntensity,
-          simActive ? 0.42 + pulse * 0.28 : 0.04,
+          simActive ? 0.42 + pulse * 0.28 : 0.05,
           Math.min(1, dt * 5),
         );
       }
