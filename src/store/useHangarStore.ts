@@ -199,11 +199,23 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   toggleRight: () =>
     set((s) => {
       const next = !s.rightOpen;
-      return { rightOpen: next, leftOpen: next && isCompactViewport() ? false : s.leftOpen };
+      return {
+        rightOpen: next,
+        aeroMode: next ? false : s.aeroMode,
+        leftOpen: next && isCompactViewport() ? false : s.leftOpen,
+      };
     }),
   setInfoTab: (infoTab) => set({ infoTab }),
   toggle: (key) => {
     const next = !get()[key];
+    if (key === 'aeroMode') {
+      set({
+        aeroMode: next,
+        rightOpen: next ? false : get().rightOpen,
+        leftOpen: next && isCompactViewport() ? false : get().leftOpen,
+      });
+      return;
+    }
     set({ [key]: next } as Partial<HangarState>);
     if (key === 'autoRotate' && next) set({ activeHotspot: null });
   },

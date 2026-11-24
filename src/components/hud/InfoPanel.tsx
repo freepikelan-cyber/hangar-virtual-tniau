@@ -20,6 +20,7 @@ import { useHangarStore, useSelectedUnit, type InfoTab } from '../../store/useHa
 export function InfoPanel() {
   const unit = useSelectedUnit();
   const rightOpen = useHangarStore((s) => s.rightOpen);
+  const aeroMode = useHangarStore((s) => s.aeroMode);
   const toggleRight = useHangarStore((s) => s.toggleRight);
   const infoTab = useHangarStore((s) => s.infoTab);
   const setInfoTab = useHangarStore((s) => s.setInfoTab);
@@ -40,6 +41,9 @@ export function InfoPanel() {
     quiz.status === 'active'
       ? unit.hotspots.find((h) => h.id === quiz.order[quiz.index])
       : null;
+
+  const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
+  if (aeroMode && !isEquipment) return null;
 
   return (
     <aside
