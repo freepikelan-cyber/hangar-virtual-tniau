@@ -6,7 +6,6 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
-import { CockpitView } from './CockpitView';
 
 function RadarPlatform() {
   const sweepRef = useRef<THREE.Mesh>(null);
@@ -95,32 +94,22 @@ function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
-  const cockpitMode = useHangarStore((s) => s.cockpitMode);
 
   const initial = useMemo(() => getDefaultCamera(), []);
   const desiredPos = useRef(new THREE.Vector3(...initial.pos));
   const desiredTarget = useRef(new THREE.Vector3(...initial.target));
   const animating = useRef(false);
 
-  // Sesuaikan FOV otomatis: lebih lebar di dalam kokpit (64°) agar seluruh panel instrumen terlihat
+  // Sesuaikan FOV otomatis saat layar portrait (smartphone) agar sayap pesawat tidak terpotong
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     if (!cam.isPerspectiveCamera) return;
-    const nextFov = cockpitMode ? (size.width < size.height ? 72 : 64) : size.width < size.height ? 52 : 42;
+    const nextFov = size.width < size.height ? 52 : 42;
     if (cam.fov !== nextFov) {
       cam.fov = nextFov;
       cam.updateProjectionMatrix();
     }
-  }, [camera, size.width, size.height, cockpitMode]);
-
-  // Saat masuk mode kokpit, posisikan kamera tepat di mata pilot untuk menoleh bebas 360°
-  useEffect(() => {
-    if (!cockpitMode || !controlsRef.current) return;
-    camera.position.set(0, 1.38, 0.08);
-    controlsRef.current.target.set(0, 1.34, 0.16);
-    controlsRef.current.update();
-    animating.current = false;
-  }, [cockpitMode, camera]);
+  }, [camera, size.width, size.height]);
 
   useEffect(() => {
     if (!camRequest) return;
@@ -150,11 +139,10 @@ function CameraRig() {
       makeDefault
       enableDamping
       dampingFactor={0.07}
-      enablePan={!cockpitMode}
-      minDistance={cockpitMode ? 0.05 : 3.2}
-      maxDistance={cockpitMode ? 0.25 : 40}
-      maxPolarAngle={cockpitMode ? Math.PI * 0.82 : Math.PI / 2 - 0.03}
-      rotateSpeed={cockpitMode ? -0.55 : 1}
+      enablePan
+      minDistance={3.2}
+      maxDistance={40}
+      maxPolarAngle={Math.PI / 2 - 0.03}
       target={initial.target}
       onStart={() => {
         animating.current = false;
@@ -165,7 +153,6 @@ function CameraRig() {
 
 export function HangarScene() {
   const clearHotspot = useHangarStore((s) => s.clearHotspot);
-  const cockpitMode = useHangarStore((s) => s.cockpitMode);
   const initialCam = useMemo(() => getDefaultCamera(), []);
 
   return (
@@ -173,31 +160,25 @@ export function HangarScene() {
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: initialCam.pos, fov: 42, near: 0.05, far: 160 }}
+        camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 160 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
         onPointerMissed={() => clearHotspot()}
       >
-        <color attach="background" args={[cockpitMode ? '#0c2752' : '#0a1e3c']} />
-        <fog attach="fog" args={[cockpitMode ? '#0c2752' : '#0a1e3c', cockpitMode ? 35 : 26, cockpitMode ? 110 : 62]} />
+        <color attach="background" args={['#0a1e3c']} />
+        <fog attach="fog" args={['#0a1e3c', 26, 62]} />
 
         <StudioLighting />
-        {cockpitMode ? (
-          <CockpitView />
-        ) : (
-          <>
-            <RadarPlatform />
-            <ContactShadows
-              position={[0, 0.01, 0]}
-              opacity={0.62}
-              scale={22}
-              blur={1.8}
-              far={8}
-              resolution={512}
-              color="#041024"
-            />
-            <AircraftModel />
-          </>
-        )}
+        <RadarPlatform />
+        <ContactShadows
+          position={[0, 0.01, 0]}
+          opacity={0.62}
+          scale={22}
+          blur={1.8}
+          far={8}
+          resolution={512}
+          color="#041024"
+        />
+        <AircraftModel />
         <CameraRig />
       </Canvas>
     </div>
