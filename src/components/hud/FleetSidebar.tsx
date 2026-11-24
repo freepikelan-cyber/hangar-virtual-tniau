@@ -51,9 +51,13 @@ export function FleetSidebar() {
   const items = filterFleet(search, category);
 
   return (
-    <aside className="pointer-events-none fixed top-[84px] bottom-[112px] left-4 z-20 flex items-start gap-2">
+    <aside
+      className={`pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] left-2.5 sm:left-4 flex items-start gap-2 ${
+        leftOpen ? 'z-30 lg:z-20' : 'z-20'
+      }`}
+    >
       {leftOpen && (
-        <div className="hud-panel pointer-events-auto flex h-full w-[290px] xl:w-[320px] flex-col rounded-xl overflow-hidden animate-slidein">
+        <div className="hud-panel pointer-events-auto flex h-full w-[min(320px,calc(100vw-1.25rem))] lg:w-[290px] xl:w-[320px] flex-col rounded-xl overflow-hidden animate-slidein">
           {/* Header Katalog */}
           <div className="flex items-center justify-between border-b border-[#00d2ff]/25 px-3.5 py-2.5">
             <div>

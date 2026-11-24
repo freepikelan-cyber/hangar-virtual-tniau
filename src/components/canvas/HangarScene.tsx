@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { DEFAULT_CAMERA, useHangarStore } from '../../store/useHangarStore';
+import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
 
@@ -92,12 +92,24 @@ function StudioLighting() {
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const { camera } = useThree();
+  const { camera, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
 
-  const desiredPos = useRef(new THREE.Vector3(...DEFAULT_CAMERA.pos));
-  const desiredTarget = useRef(new THREE.Vector3(...DEFAULT_CAMERA.target));
+  const initial = useMemo(() => getDefaultCamera(), []);
+  const desiredPos = useRef(new THREE.Vector3(...initial.pos));
+  const desiredTarget = useRef(new THREE.Vector3(...initial.target));
   const animating = useRef(false);
+
+  // Sesuaikan FOV otomatis saat layar portrait (smartphone) agar sayap pesawat tidak terpotong
+  useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
+    if (!cam.isPerspectiveCamera) return;
+    const nextFov = size.width < size.height ? 52 : 42;
+    if (cam.fov !== nextFov) {
+      cam.fov = nextFov;
+      cam.updateProjectionMatrix();
+    }
+  }, [camera, size.width, size.height]);
 
   useEffect(() => {
     if (!camRequest) return;
@@ -129,9 +141,9 @@ function CameraRig() {
       dampingFactor={0.07}
       enablePan
       minDistance={3.2}
-      maxDistance={32}
+      maxDistance={40}
       maxPolarAngle={Math.PI / 2 - 0.03}
-      target={DEFAULT_CAMERA.target}
+      target={initial.target}
       onStart={() => {
         animating.current = false;
       }}
@@ -141,13 +153,14 @@ function CameraRig() {
 
 export function HangarScene() {
   const clearHotspot = useHangarStore((s) => s.clearHotspot);
+  const initialCam = useMemo(() => getDefaultCamera(), []);
 
   return (
     <div className="absolute inset-0 bg-[#060d18] touch-none">
       <Canvas
         shadows
         dpr={[1, 2]}
-        camera={{ position: DEFAULT_CAMERA.pos, fov: 42, near: 0.1, far: 160 }}
+        camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 160 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
         onPointerMissed={() => clearHotspot()}
       >

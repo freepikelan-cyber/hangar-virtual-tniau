@@ -5,6 +5,21 @@ import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
 export type InfoTab = 'spec' | 'ops' | 'quiz';
 export type Vec3 = [number, number, number];
 
+export function isCompactViewport() {
+  return typeof window !== 'undefined' && window.innerWidth < 1024;
+}
+
+export function isPortraitMobile() {
+  return typeof window !== 'undefined' && window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+}
+
+export function getDefaultCamera(): { pos: Vec3; target: Vec3 } {
+  if (isPortraitMobile()) {
+    return { pos: [17.5, 7.6, 20.5], target: [0, 1.4, 0] };
+  }
+  return { pos: [12.5, 5.4, 14.5], target: [0, 1.5, 0] };
+}
+
 export const DEFAULT_CAMERA: { pos: Vec3; target: Vec3 } = {
   pos: [12.5, 5.4, 14.5],
   target: [0, 1.5, 0],
@@ -84,13 +99,14 @@ const shuffle = <T,>(arr: T[]) => {
 
 let nonce = 1;
 const tmp = new THREE.Vector3();
+const initialDesktop = !isCompactViewport();
 
 export const useHangarStore = create<HangarState>((set, get) => ({
   selectedId: 'f16id',
   search: '',
   category: 'Semua',
-  leftOpen: true,
-  rightOpen: true,
+  leftOpen: initialDesktop,
+  rightOpen: initialDesktop,
   infoTab: 'spec',
 
   xray: false,
@@ -104,20 +120,33 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   quiz: emptyQuiz,
 
   selectAircraft: (id) => {
-    if (id === get().selectedId) return;
+    const mobile = isCompactViewport();
+    if (id === get().selectedId) {
+      if (mobile) set({ leftOpen: false });
+      return;
+    }
     pinRegistry.clear();
     set({
       selectedId: id,
       activeHotspot: null,
       quiz: emptyQuiz,
+      leftOpen: mobile ? false : get().leftOpen,
       infoTab: get().infoTab === 'quiz' ? 'quiz' : get().infoTab,
-      camRequest: { ...DEFAULT_CAMERA, nonce: nonce++ },
+      camRequest: { ...getDefaultCamera(), nonce: nonce++ },
     });
   },
   setSearch: (search) => set({ search }),
   setCategory: (category) => set({ category }),
-  toggleLeft: () => set((s) => ({ leftOpen: !s.leftOpen })),
-  toggleRight: () => set((s) => ({ rightOpen: !s.rightOpen })),
+  toggleLeft: () =>
+    set((s) => {
+      const next = !s.leftOpen;
+      return { leftOpen: next, rightOpen: next && isCompactViewport() ? false : s.rightOpen };
+    }),
+  toggleRight: () =>
+    set((s) => {
+      const next = !s.rightOpen;
+      return { rightOpen: next, leftOpen: next && isCompactViewport() ? false : s.leftOpen };
+    }),
   setInfoTab: (infoTab) => set({ infoTab }),
   toggle: (key) => {
     const next = !get()[key];
@@ -126,7 +155,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
 
   requestCamera: (pos, target) => set({ camRequest: { pos, target, nonce: nonce++ } }),
-  resetCamera: () => set({ camRequest: { ...DEFAULT_CAMERA, nonce: nonce++ }, activeHotspot: null }),
+  resetCamera: () => set({ camRequest: { ...getDefaultCamera(), nonce: nonce++ }, activeHotspot: null }),
   focusHotspot: (id) => {
     const unit = getUnit(get().selectedId);
     const h = unit.hotspots.find((x) => x.id === id);
@@ -134,21 +163,31 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const obj = pinRegistry.get(id);
     if (obj) obj.getWorldPosition(tmp);
     else tmp.set(...h.pos);
+    const scale = isPortraitMobile() ? 1.35 : 1;
     const target: Vec3 = [tmp.x, tmp.y, tmp.z];
-    const pos: Vec3 = [tmp.x + h.camOffset[0], tmp.y + h.camOffset[1], tmp.z + h.camOffset[2]];
-    set({ activeHotspot: id, autoRotate: false, camRequest: { pos, target, nonce: nonce++ } });
+    const pos: Vec3 = [tmp.x + h.camOffset[0] * scale, tmp.y + h.camOffset[1] * scale, tmp.z + h.camOffset[2] * scale];
+    set({
+      activeHotspot: id,
+      autoRotate: false,
+      leftOpen: isCompactViewport() ? false : get().leftOpen,
+      rightOpen: isCompactViewport() ? false : get().rightOpen,
+      camRequest: { pos, target, nonce: nonce++ },
+    });
   },
   clearHotspot: () => set({ activeHotspot: null }),
 
   startQuiz: () => {
     const unit = getUnit(get().selectedId);
+    const mobile = isCompactViewport();
     set({
       quiz: { ...emptyQuiz, status: 'active', order: shuffle(unit.hotspots.map((h) => h.id)) },
       infoTab: 'quiz',
       showPins: true,
       autoRotate: false,
       activeHotspot: null,
-      camRequest: { ...DEFAULT_CAMERA, nonce: nonce++ },
+      leftOpen: mobile ? false : get().leftOpen,
+      rightOpen: mobile ? false : get().rightOpen,
+      camRequest: { ...getDefaultCamera(), nonce: nonce++ },
     });
   },
   answerQuiz: (pickedId) => {
@@ -163,8 +202,14 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   nextQuestion: () => {
     const q = get().quiz;
     if (q.status !== 'active') return;
-    if (q.index + 1 >= q.order.length) set({ quiz: { ...q, status: 'finished', feedback: null } });
-    else set({ quiz: { ...q, index: q.index + 1, feedback: null } });
+    if (q.index + 1 >= q.order.length) {
+      set({
+        quiz: { ...q, status: 'finished', feedback: null },
+        rightOpen: true,
+      });
+    } else {
+      set({ quiz: { ...q, index: q.index + 1, feedback: null } });
+    }
   },
   exitQuiz: () => set({ quiz: emptyQuiz }),
 }));

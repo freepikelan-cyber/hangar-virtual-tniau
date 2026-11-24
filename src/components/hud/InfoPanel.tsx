@@ -42,14 +42,18 @@ export function InfoPanel() {
       : null;
 
   return (
-    <aside className="pointer-events-none fixed top-[84px] bottom-[112px] right-4 z-20 flex items-start gap-2">
+    <aside
+      className={`pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] right-2.5 sm:right-4 flex items-start gap-2 ${
+        rightOpen ? 'z-30 lg:z-20' : 'z-20'
+      }`}
+    >
       {!rightOpen && (
         <button
           type="button"
           onClick={toggleRight}
           aria-label="Tampilkan Informasi Teknis"
           title="Buka Panel Informasi"
-          className="hud-panel hud-btn pointer-events-auto h-12 px-3 gap-1.5 text-[#00d2ff] hover:bg-[#00d2ff]/20"
+          className="hud-panel hud-btn pointer-events-auto h-11 sm:h-12 px-2.5 sm:px-3 gap-1.5 text-[#00d2ff] hover:bg-[#00d2ff]/20"
         >
           <span className="font-display text-xs font-bold tracking-widest uppercase">Info</span>
           <ChevronLeft className="h-5 w-5" />
@@ -57,7 +61,7 @@ export function InfoPanel() {
       )}
 
       {rightOpen && (
-        <div className="hud-panel pointer-events-auto flex h-full w-[320px] xl:w-[360px] flex-col rounded-xl overflow-hidden animate-slidein">
+        <div className="hud-panel pointer-events-auto flex h-full w-[min(340px,calc(100vw-1.25rem))] lg:w-[320px] xl:w-[360px] flex-col rounded-xl overflow-hidden animate-slidein">
           {/* Header Unit */}
           <div className="flex items-start justify-between gap-2 border-b border-[#00d2ff]/25 px-4 py-3">
             <div className="min-w-0">

@@ -12,16 +12,19 @@ export function BottomDock() {
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const buttons = [
-    { id: 'xray', label: 'X-Ray', icon: ScanEye, active: xray, onClick: () => toggle('xray') },
-    { id: 'wireframe', label: 'Wireframe', icon: Grid3X3, active: wireframe, onClick: () => toggle('wireframe') },
-    { id: 'pins', label: 'Pin Hotspot', icon: MapPin, active: showPins, onClick: () => toggle('showPins') },
-    { id: 'rotate', label: 'Putar 360°', icon: Rotate3d, active: autoRotate, onClick: () => toggle('autoRotate') },
-    { id: 'engine', label: 'Simulasi Mesin', icon: Flame, active: engineSim, onClick: () => toggle('engineSim'), accent: 'amber' as const },
+    { id: 'xray', label: 'X-Ray', short: 'X-Ray', icon: ScanEye, active: xray, onClick: () => toggle('xray') },
+    { id: 'wireframe', label: 'Wireframe', short: 'Wire', icon: Grid3X3, active: wireframe, onClick: () => toggle('wireframe') },
+    { id: 'pins', label: 'Pin Hotspot', short: 'Pin', icon: MapPin, active: showPins, onClick: () => toggle('showPins') },
+    { id: 'rotate', label: 'Putar 360°', short: '360°', icon: Rotate3d, active: autoRotate, onClick: () => toggle('autoRotate') },
+    { id: 'engine', label: 'Simulasi Mesin', short: 'Mesin', icon: Flame, active: engineSim, onClick: () => toggle('engineSim'), accent: 'amber' as const },
   ];
 
   return (
-    <div className="pointer-events-none fixed bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1.5 px-3">
-      <nav aria-label="Kontrol Hangar 3D" className="hud-panel pointer-events-auto flex max-w-full items-center gap-2 overflow-x-auto rounded-2xl px-3 py-2">
+    <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
+      <nav
+        aria-label="Kontrol Hangar 3D"
+        className="hud-panel pointer-events-auto flex max-w-full items-center gap-1 sm:gap-2 overflow-x-auto rounded-2xl px-1.5 sm:px-3 py-1.5 sm:py-2"
+      >
         {buttons.map((b) => {
           const Icon = b.icon;
           const activeClass =
@@ -34,38 +37,42 @@ export function BottomDock() {
               type="button"
               onClick={b.onClick}
               aria-pressed={b.active}
-              className={`hud-btn shrink-0 gap-2 px-3.5 font-display text-xs sm:text-sm font-bold tracking-wider uppercase ${
+              title={b.label}
+              className={`min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border px-2 sm:px-3.5 py-1 transition-all duration-200 cursor-pointer active:scale-95 font-display text-[10px] sm:text-sm font-bold tracking-wider uppercase ${
                 b.active
                   ? activeClass
                   : 'border-slate-700/80 bg-[#081526]/80 text-slate-200 hover:border-[#00d2ff]/60 hover:text-white'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="whitespace-nowrap">{b.label}</span>
+              <span className="sm:hidden whitespace-nowrap leading-none">{b.short}</span>
+              <span className="hidden sm:inline whitespace-nowrap">{b.label}</span>
             </button>
           );
         })}
 
-        <div className="mx-0.5 h-8 w-px shrink-0 bg-[#00d2ff]/25" />
+        <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#00d2ff]/25" />
 
         <button
           type="button"
           onClick={resetCamera}
-          className="hud-btn shrink-0 gap-2 border-slate-700/80 bg-[#081526]/80 px-3.5 font-display text-xs sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#00d2ff]/60 hover:text-white"
+          title="Reset Kamera"
+          className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-700/80 bg-[#081526]/80 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#00d2ff]/60 hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
         >
           <RotateCcw className="h-4 w-4 shrink-0 text-[#00d2ff]" />
-          <span className="whitespace-nowrap">Reset Kamera</span>
+          <span className="sm:hidden whitespace-nowrap leading-none">Reset</span>
+          <span className="hidden sm:inline whitespace-nowrap">Reset Kamera</span>
         </button>
       </nav>
 
       {/* Footer Kredit & Kontak di Bagian Bawah Aplikasi */}
-      <footer className="hud-panel pointer-events-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 rounded-full px-4 py-1 text-[11px] sm:text-xs text-slate-300">
+      <footer className="hud-panel pointer-events-auto flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-0.5 rounded-full px-3 sm:px-4 py-1 text-[10px] sm:text-xs text-slate-300">
         <a
           href="mailto:bangelan@gmail.com"
           title="Kirim email ke bangelan@gmail.com"
-          className="inline-flex items-center gap-1.5 text-[#ffb703] hover:text-[#ffd166] hover:underline transition-colors"
+          className="inline-flex items-center gap-1 text-[#ffb703] hover:text-[#ffd166] hover:underline transition-colors"
         >
-          <Mail className="h-3.5 w-3.5 shrink-0" />
+          <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
           <span>
             Created By : <strong className="font-semibold">Abang Elan</strong>
           </span>
@@ -74,9 +81,9 @@ export function BottomDock() {
         <a
           href="tel:+6281314127822"
           title="Hubungi +6281314127822"
-          className="inline-flex items-center gap-1.5 text-[#00d2ff] hover:text-white hover:underline transition-colors"
+          className="inline-flex items-center gap-1 text-[#00d2ff] hover:text-white hover:underline transition-colors"
         >
-          <Phone className="h-3.5 w-3.5 shrink-0" />
+          <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
           <span>+6281314127822</span>
         </a>
       </footer>
