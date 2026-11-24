@@ -1,0 +1,57 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/rajdhani/500.css';
+@import '@fontsource/rajdhani/600.css';
+@import '@fontsource/rajdhani/700.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #060d18;
+    color: #e6f2ff;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    user-select: none;
+  }
+}
+
+@layer components {
+  .hud-panel {
+    background: rgba(8, 18, 34, 0.78);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(0, 210, 255, 0.35);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(0, 210, 255, 0.14);
+  }
+
+  .hud-btn {
+    @apply min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg border transition-all duration-200 cursor-pointer active:scale-95;
+  }
+}
+
+/* Custom scrollbar untuk panel HUD */
+.hud-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.hud-scroll::-webkit-scrollbar-track {
+  background: rgba(6, 13, 24, 0.45);
+}
+.hud-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 210, 255, 0.35);
+  border-radius: 9999px;
+}
+.hud-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 210, 255, 0.65);
+}

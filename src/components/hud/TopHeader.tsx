@@ -1,0 +1,60 @@
+import { Radio } from 'lucide-react';
+import { CATEGORY_LABEL } from '../../data/fleetData';
+import { useSelectedUnit } from '../../store/useHangarStore';
+
+export function TopHeader() {
+  const unit = useSelectedUnit();
+
+  return (
+    <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-3 px-4 pt-3">
+      {/* Header Kiri Atas: Logo Resmi TNI AU (Swa Bhuwana Paksa) + Judul */}
+      <div className="hud-panel pointer-events-auto flex items-center gap-3 rounded-xl px-4 py-2 max-w-[62vw]">
+        <div className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/40 bg-[#071529]/85 p-1 shadow-[0_0_16px_rgba(255,183,3,0.22)]">
+          <img
+            src="/logo-tniau.png"
+            alt="Logo Resmi TNI AU Swa Bhuwana Paksa"
+            className="h-full w-full object-contain drop-shadow-[0_0_6px_rgba(255,183,3,0.35)]"
+          />
+        </div>
+        <div className="min-w-0">
+          <p className="font-display text-[11px] sm:text-xs font-semibold tracking-[0.2em] text-[#00d2ff] uppercase truncate">
+            TNI ANGKATAN UDARA • EDUKASI DIRGANTARA 3D
+          </p>
+          <h1 className="font-display text-lg sm:text-xl lg:text-2xl font-bold tracking-[0.08em] text-white uppercase leading-tight truncate">
+            HANGAR VIRTUAL PESAWAT TNI AU 3D
+          </h1>
+        </div>
+      </div>
+
+      {/* Header Kanan Atas: Telemetri Unit Aktif & Kategori */}
+      <div className="hud-panel pointer-events-auto hidden md:flex items-center gap-4 rounded-xl px-4 py-2.5">
+        <div className="flex flex-col items-end">
+          <span className="flex items-center gap-1.5 font-display text-[11px] font-semibold tracking-[0.18em] text-[#00d2ff]/85 uppercase">
+            <Radio className="h-3.5 w-3.5 text-[#00d2ff] animate-pulse" />
+            UNIT AKTIF
+          </span>
+          <span className="font-display text-lg font-bold tracking-wider text-white uppercase leading-tight">
+            {unit.name}
+          </span>
+          <span className="text-[11px] text-slate-300/90 max-w-[240px] truncate">
+            {unit.code} • {unit.origin}
+          </span>
+        </div>
+
+        <div className="h-10 w-px bg-[#00d2ff]/30" />
+
+        <div className="flex flex-col items-end">
+          <span className="font-display text-[11px] font-semibold tracking-[0.18em] text-slate-400 uppercase">
+            KATEGORI
+          </span>
+          <span className="mt-0.5 rounded-md border border-[#ffb703]/60 bg-[#ffb703]/15 px-2.5 py-0.5 font-display text-sm font-bold tracking-[0.14em] text-[#ffb703] uppercase">
+            {CATEGORY_LABEL[unit.category]}
+          </span>
+          <span className="mt-0.5 font-display text-xs tracking-widest text-[#00d2ff]/90">
+            {unit.tailNumber}
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}

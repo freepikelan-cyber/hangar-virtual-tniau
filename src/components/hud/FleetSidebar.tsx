@@ -1,0 +1,189 @@
+import { ChevronLeft, ChevronRight, MapPin, Search, X } from 'lucide-react';
+import { CATEGORIES, type AircraftCategory } from '../../data/fleetData';
+import { filterFleet, useHangarStore } from '../../store/useHangarStore';
+
+function CategorySilhouette({ category, active }: { category: AircraftCategory; active: boolean }) {
+  const color = active ? '#00d2ff' : '#94a3b8';
+  if (category === 'Helikopter') {
+    return (
+      <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="6" y1="5" x2="32" y2="5" />
+        <line x1="19" y1="5" x2="19" y2="9" />
+        <path d="M12 10 h13 c4 0 7 2 7 5 c0 2-2 3-5 3 H13 c-2 0-3-1-3-3 v-2 c0-2 1-3 2-3 z" fill={active ? 'rgba(0,210,255,0.2)' : 'none'} />
+        <line x1="10" y1="13" x2="3" y2="11" />
+        <line x1="3" y1="8" x2="3" y2="14" />
+        <line x1="14" y1="20" x2="28" y2="20" />
+      </svg>
+    );
+  }
+  if (category === 'Angkut & VIP') {
+    return (
+      <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 13 L11 11 L17 4 L21 4 L19 11 L32 11 L37 13 L32 15 L19 15 L21 21 L17 21 L11 15 Z" fill={active ? 'rgba(0,210,255,0.2)' : 'none'} />
+      </svg>
+    );
+  }
+  if (category === 'Latih') {
+    return (
+      <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M4 12 L10 11 L19 5 L22 5 L21 11 L34 12 L21 13 L22 19 L19 19 L10 13 Z" fill={active ? 'rgba(0,210,255,0.2)' : 'none'} />
+        <line x1="36" y1="8" x2="36" y2="16" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12 L9 10 L18 3 L23 10 L37 12 L23 14 L18 21 L9 14 Z" fill={active ? 'rgba(0,210,255,0.22)' : 'none'} />
+    </svg>
+  );
+}
+
+export function FleetSidebar() {
+  const leftOpen = useHangarStore((s) => s.leftOpen);
+  const toggleLeft = useHangarStore((s) => s.toggleLeft);
+  const selectedId = useHangarStore((s) => s.selectedId);
+  const selectAircraft = useHangarStore((s) => s.selectAircraft);
+  const search = useHangarStore((s) => s.search);
+  const setSearch = useHangarStore((s) => s.setSearch);
+  const category = useHangarStore((s) => s.category);
+  const setCategory = useHangarStore((s) => s.setCategory);
+
+  const items = filterFleet(search, category);
+
+  return (
+    <aside className="pointer-events-none fixed top-[84px] bottom-[92px] left-4 z-20 flex items-start gap-2">
+      {leftOpen && (
+        <div className="hud-panel pointer-events-auto flex h-full w-[290px] xl:w-[320px] flex-col rounded-xl overflow-hidden animate-slidein">
+          {/* Header Katalog */}
+          <div className="flex items-center justify-between border-b border-[#00d2ff]/25 px-3.5 py-2.5">
+            <div>
+              <h2 className="font-display text-sm font-bold tracking-[0.16em] text-[#00d2ff] uppercase">
+                KATALOG ARMADA
+              </h2>
+              <p className="text-[11px] text-slate-400">{items.length} dari 8 unit Alutsista</p>
+            </div>
+            <button
+              type="button"
+              onClick={toggleLeft}
+              aria-label="Sembunyikan Katalog Armada"
+              title="Sembunyikan Panel Kiri"
+              className="hud-btn h-12 w-12 border-[#00d2ff]/30 bg-[#0a1a30]/70 text-[#00d2ff] hover:bg-[#00d2ff]/20"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Pencarian Real-time */}
+          <div className="px-3 pt-3">
+            <div className="relative flex items-center">
+              <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#00d2ff]/70" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari pesawat, kode, peran..."
+                className="h-12 w-full rounded-lg border border-[#00d2ff]/30 bg-[#050c17]/80 pl-9 pr-10 text-sm text-white placeholder-slate-400 outline-none focus:border-[#00d2ff] focus:shadow-glow"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => setSearch('')}
+                  aria-label="Hapus pencarian"
+                  className="absolute right-1.5 flex h-9 w-9 items-center justify-center rounded-md text-slate-400 hover:text-white"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tab Kategori */}
+          <div className="flex flex-wrap gap-2 px-3 py-2.5 border-b border-[#00d2ff]/20">
+            {CATEGORIES.map((cat) => {
+              const active = category === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategory(cat)}
+                  className={`min-h-[36px] rounded-md border px-2.5 py-1 font-display text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
+                    active
+                      ? 'border-[#00d2ff] bg-[#00d2ff]/20 text-[#00d2ff] shadow-[0_0_12px_rgba(0,210,255,0.28)]'
+                      : 'border-slate-700/80 bg-[#081526]/70 text-slate-300 hover:border-[#00d2ff]/50 hover:text-white'
+                  }`}
+                >
+                  {cat}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Daftar Kartu Armada */}
+          <div className="hud-scroll flex-1 space-y-2 overflow-y-auto p-3">
+            {items.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-slate-700 p-5 text-center text-xs text-slate-400">
+                Tidak ada armada yang cocok dengan pencarian Anda.
+              </div>
+            ) : (
+              items.map((unit) => {
+                const active = unit.id === selectedId;
+                return (
+                  <button
+                    key={unit.id}
+                    type="button"
+                    onClick={() => selectAircraft(unit.id)}
+                    className={`w-full min-h-[68px] flex items-center gap-3 rounded-xl border p-3 text-left transition-all cursor-pointer ${
+                      active
+                        ? 'border-[#00d2ff] bg-[#00d2ff]/15 shadow-[0_0_18px_rgba(0,210,255,0.22)]'
+                        : 'border-slate-700/60 bg-[#081526]/60 hover:border-[#00d2ff]/50 hover:bg-[#0c1f38]/80'
+                    }`}
+                  >
+                    <div
+                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${
+                        active ? 'border-[#00d2ff]/60 bg-[#00d2ff]/15' : 'border-slate-700/80 bg-[#060f1d]'
+                      }`}
+                    >
+                      <CategorySilhouette category={unit.category} active={active} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <span className={`font-display text-sm font-bold tracking-wide truncate ${active ? 'text-white' : 'text-slate-100'}`}>
+                          {unit.name}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 truncate">
+                        {unit.code} • {unit.origin}
+                      </p>
+                      <div className="mt-1 flex items-center justify-between gap-2">
+                        <span className="font-display text-[10px] font-semibold tracking-widest text-[#ffb703] uppercase">
+                          {unit.tailNumber}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded border border-[#00d2ff]/40 bg-[#00d2ff]/10 px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wider text-[#00d2ff]">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {unit.hotspots.length} PIN
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      )}
+
+      {!leftOpen && (
+        <button
+          type="button"
+          onClick={toggleLeft}
+          aria-label="Tampilkan Katalog Armada"
+          title="Buka Katalog Armada"
+          className="hud-panel hud-btn pointer-events-auto h-12 px-3 gap-1.5 text-[#00d2ff] hover:bg-[#00d2ff]/20"
+        >
+          <ChevronRight className="h-5 w-5" />
+          <span className="font-display text-xs font-bold tracking-widest uppercase">Armada</span>
+        </button>
+      )}
+    </aside>
+  );
+}
