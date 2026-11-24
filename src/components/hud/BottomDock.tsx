@@ -10,6 +10,7 @@ import {
   PlaneTakeoff,
   Rotate3d,
   RotateCcw,
+  ShieldAlert,
   Wind,
 } from 'lucide-react';
 import { useHangarStore } from '../../store/useHangarStore';
@@ -21,6 +22,7 @@ export function BottomDock() {
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const aeroMode = useHangarStore((s) => s.aeroMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
 
@@ -107,6 +109,15 @@ export function BottomDock() {
               icon: Wind,
               active: aeroMode,
               onClick: () => toggle('aeroMode'),
+            },
+            {
+              id: 'safety',
+              label: 'Safety 3D',
+              short: 'Safety',
+              icon: ShieldAlert,
+              active: safetyMode,
+              onClick: () => toggle('safetyMode'),
+              accent: 'amber' as const,
             },
           ]
         : []),

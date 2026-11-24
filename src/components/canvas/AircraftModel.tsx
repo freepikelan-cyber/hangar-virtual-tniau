@@ -9,6 +9,7 @@ import { aircraftAudio } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
+import { SafetySystemLayer } from './SafetySystemLayer';
 
 interface SavedMatProps {
   transparent: boolean;
@@ -537,6 +538,7 @@ export function AircraftModel() {
         rotorWash={procedural.rotorWash}
       />
       <AerodynamicsLayer />
+      <SafetySystemLayer />
       <HotspotMarkers hotspots={unit.hotspots} />
     </group>
   );
