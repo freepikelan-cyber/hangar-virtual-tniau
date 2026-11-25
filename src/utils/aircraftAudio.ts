@@ -1112,8 +1112,8 @@ class AircraftAudioEngine {
         const p = Math.min(1, (phaseTime - touchTime) / Math.max(0.5, stopTime - touchTime));
         throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.76 * (1 - p * 0.78);
       } else {
-        // Berhenti sejenak -> taxi pelan menyusuri jalur panjang masuk hanggar -> idle mati
-        const taxiEnd = isHeli ? 30.2 : ld.taxiEnd;
+        // Helikopter langsung spool-down di Helipad H tanpa taxi; sayap tetap taxi masuk hanggar
+        const taxiEnd = isHeli ? 25.5 : ld.taxiEnd;
         if (phaseTime < taxiEnd) {
           throttle = 0.21;
         } else {

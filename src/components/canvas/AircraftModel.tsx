@@ -840,22 +840,15 @@ export function AircraftModel() {
           targetPitch = -0.08 * Math.sin(p * Math.PI);
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 30.2) {
-          // Helikopter taxi pelan dari tengah Helipad Selatan H masuk ke Hanggar Helikopter (x = -19)
-          const p = easeInOut((pt - 25.0) / 5.2);
-          targetX = THREE.MathUtils.lerp(0, -19.0, p);
+        } else if (pt < 27.6) {
+          // Tetap berhenti mantap tepat di tengah Helipad Selatan H sambil rotor melambat (idle) — tidak masuk hanggar!
+          targetX = 0;
           targetZ = 0;
           targetY = 0;
-          targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, Math.min(1, p * 2.4));
+          targetPitch = 0;
+          targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('📡 HALIM TOWER • TAXI PERLAHAN DARI HELIPAD H MENUJU HANGGAR');
-        } else if (pt < 31.6) {
-          targetX = -19.0;
-          targetZ = 0;
-          targetY = 0;
-          targetYawOffset = -Math.PI / 2;
-          targetGear = 0;
-          setFlightLabel('PARKIR DI HANGGAR HELIKOPTER • ROTOR IDLE — MISI SELESAI');
+          setFlightLabel('HELIPAD SELATAN H // TOUCHDOWN AMAN — ROTOR IDLE & MISI SELESAI');
         } else {
           setFlightState('parked', null);
         }
