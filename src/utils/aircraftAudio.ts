@@ -206,6 +206,7 @@ class AircraftAudioEngine {
     void this.preloadAtc('vvip-reply');
     void this.preloadAtc('vvip-landing');
     void this.preloadAtc('heli-takeoff');
+    void this.preloadAtc('heli-cruise');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -356,7 +357,8 @@ class AircraftAudioEngine {
       | 'vvip-welcome'
       | 'vvip-reply'
       | 'vvip-landing'
-      | 'heli-takeoff',
+      | 'heli-takeoff'
+      | 'heli-cruise',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -393,7 +395,9 @@ class AircraftAudioEngine {
                                   ? '/audio/vvip-voice-landing.wav'
                                   : key === 'heli-takeoff'
                                     ? '/audio/heli-voice-takeoff.wav'
-                                    : `/audio/atc-${key}.mp3`;
+                                    : key === 'heli-cruise'
+                                      ? '/audio/heli-voice-cruise.wav'
+                                      : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -583,7 +587,8 @@ class AircraftAudioEngine {
       | 'vvip-welcome'
       | 'vvip-reply'
       | 'vvip-landing'
-      | 'heli-takeoff',
+      | 'heli-takeoff'
+      | 'heli-cruise',
   ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
@@ -1125,6 +1130,9 @@ class AircraftAudioEngine {
       if (flightMode === 'airborne' && isCargoTransport && phaseTime > 1.2 && !this.transportCruisePlayed) {
         this.transportCruisePlayed = true;
         this.playAtcRadio('transport-cruise');
+      } else if (flightMode === 'airborne' && profile === 'helicopter' && phaseTime > 1.2 && !this.transportCruisePlayed) {
+        this.transportCruisePlayed = true;
+        this.playAtcRadio('heli-cruise');
       } else if (flightMode === 'mission' && isCargoTransport && phaseTime > 0.2 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio('transport-airdrop');
