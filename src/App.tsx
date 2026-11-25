@@ -99,6 +99,7 @@ function FloatingQuizBanner() {
 const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16id', 'kt1b', 'c130j', 'b737vip', 'caracal'];
 
 export function App() {
+  const showWelcome = useHangarStore((s) => s.showWelcome);
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
 
   useEffect(() => {
@@ -111,6 +112,14 @@ export function App() {
     }, 12000);
     return () => window.clearInterval(timer);
   }, [showcaseMode]);
+
+  if (showWelcome) {
+    return (
+      <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#061226]">
+        <WelcomeScreen />
+      </main>
+    );
+  }
 
   return (
     <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#07152c]">
@@ -133,7 +142,6 @@ export function App() {
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />
-      <WelcomeScreen />
     </main>
   );
 }

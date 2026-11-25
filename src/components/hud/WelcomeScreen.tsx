@@ -11,7 +11,7 @@ export function WelcomeScreen() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#061226]/92 px-4 py-6 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#061226] px-4 py-6 overflow-y-auto"
       style={{
         backgroundImage:
           'linear-gradient(rgba(77,166,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(77,166,255,0.05) 1px, transparent 1px)',
