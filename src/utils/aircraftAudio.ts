@@ -45,9 +45,17 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'c212' ||
     unitId === 'a330mrtt';
 
+  const isBasicTrainer =
+    unitId === 'g120tp' || unitId === 'c182' || unitId === 't41' || unitId === 'sgs233' || unitId === 'dg1000';
+
   if (profile === 'helicopter') {
     // heli-voice-takeoff.wav (15.76s): 4.2..19.96s suara selesai -> 20.8..25.4s naik vertikal perlahan & hover di tempat -> 25.4..29.8s baru maju perlahan & menanjak!
     return { voiceStart: 4.2, rollStart: 20.8, rotStart: 25.4, climbStart: 26.8, airborneStart: 29.8 };
+  }
+  if (isBasicTrainer) {
+    // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
+    // trainer-voice-takeoff.wav (12.35s): 6.0s..18.35s Budiarto Tower selesai penuh + jeda -> 19.0s baru mulai Take Off roll!
+    return { voiceStart: 6.0, rollStart: 19.0, rotStart: 22.6, climbStart: 24.4, airborneStart: 26.8 };
   }
   if (unitId === 'rafale') {
     // Khusus Dassault Rafale: fighter-voice-takeoff.wav (6.0..24.08s) + audio khusus rafale-takeoff.mp3 (~17s)
@@ -358,7 +366,8 @@ class AircraftAudioEngine {
       | 'vvip-landing'
       | 'heli-takeoff'
       | 'heli-cruise'
-      | 'heli-landing',
+      | 'heli-landing'
+      | 'trainer-takeoff',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -592,7 +601,8 @@ class AircraftAudioEngine {
       | 'vvip-landing'
       | 'heli-takeoff'
       | 'heli-cruise'
-      | 'heli-landing',
+      | 'heli-landing'
+      | 'trainer-takeoff',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -606,7 +616,8 @@ class AircraftAudioEngine {
         key.startsWith('vvip-') ||
         key.startsWith('fighter-') ||
         key.startsWith('transport-') ||
-        key.startsWith('heli-');
+        key.startsWith('heli-') ||
+        key.startsWith('trainer-');
       const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli kokpit!
       const dur = buffer.duration / rate;
 
@@ -1050,6 +1061,9 @@ class AircraftAudioEngine {
       unitId === 'c212' ||
       unitId === 'a330mrtt';
 
+    const isBasicTrainer =
+      unitId === 'g120tp' || unitId === 'c182' || unitId === 't41' || unitId === 'sgs233' || unitId === 'dg1000';
+
     const toTiming = getTakeOffTiming(unitId);
 
     if (flightMode === 'takeoff') {
@@ -1068,13 +1082,15 @@ class AircraftAudioEngine {
         this.playAtcRadio(
           isHeli
             ? 'heli-takeoff'
-            : isFighter
-              ? 'fighter-takeoff'
-              : isCargoTransport
-                ? 'transport-takeoff'
-                : isVvip
-                  ? 'vvip-takeoff'
-                  : 'takeoff',
+            : isBasicTrainer
+              ? 'trainer-takeoff'
+              : isFighter
+                ? 'fighter-takeoff'
+                : isCargoTransport
+                  ? 'transport-takeoff'
+                  : isVvip
+                    ? 'vvip-takeoff'
+                    : 'takeoff',
         );
       }
       if (phaseTime < atcTime) {
