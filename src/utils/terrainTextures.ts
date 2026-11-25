@@ -68,16 +68,16 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
     const zEdge = Math.min(1, Math.min(z + length / 2, length / 2 - z) / 28);
     const zFade = zEdge * zEdge * (3 - 2 * zEdge);
 
-    // Lembah sungai berkelok di tengah (x ≈ sin(z*0.032)*14)
-    const riverCenter = Math.sin(z * 0.032) * 14;
+    // Lembah sungai lebar di jalur terbang tengah (x ∈ [-18..18] tetap terbuka aman anti-tabrak!)
+    const riverCenter = Math.sin(z * 0.028) * 10;
     const distFromRiver = Math.abs(x - riverCenter);
-    const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 7, 34);
+    const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 18, 48);
 
-    // Punggungan gunung organik multi-oktaf + mikro-erosi
+    // Punggungan gunung organik multi-oktaf + mikro-erosi (dibatasi aman agar pesawat tidak pernah menabrak gunung!)
     const ridge = ridgedFbm(x * 0.021 + 4.3, z * 0.021 + 1.7);
-    const erosion = ridgedFbm(x * 0.055 + 9.1, z * 0.055 + 3.4) * 0.28;
-    const detail = valueNoise2D(x * 0.11, z * 0.11) * 0.24;
-    const rawH = Math.pow(ridge, 1.32) * 35 + erosion * 6.5 + detail * 3.5;
+    const erosion = ridgedFbm(x * 0.055 + 9.1, z * 0.055 + 3.4) * 0.25;
+    const detail = valueNoise2D(x * 0.11, z * 0.11) * 0.2;
+    const rawH = Math.min(22.5, Math.pow(ridge, 1.32) * 20 + erosion * 4.5 + detail * 2.5);
     const h = rawH * valleyMask * zFade;
 
     pos.setY(i, h - 0.15);

@@ -270,6 +270,8 @@ export function SkyCloudsEnvironment() {
   const oceanTextures = useMemo(() => makeOceanTextures(), []);
   const sunHaloTex = useMemo(() => makeSunHaloTexture(), []);
   const atcRadarRef = useRef<THREE.Group>(null);
+  const fishRefs = useRef<(THREE.Group | null)[]>([]);
+  const boatRefs = useRef<(THREE.Group | null)[]>([]);
 
   // Geometri Pegunungan 3D Heightmap + 4 Pulau Tropis Organik
   const mountainGeo = useMemo(() => buildMountainRangeGeometry(280, CHUNK_LEN), []);
@@ -490,7 +492,7 @@ export function SkyCloudsEnvironment() {
     return arr;
   }, []);
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
     phaseTime.current += dt;
     const pt = phaseTime.current;
@@ -574,10 +576,10 @@ export function SkyCloudsEnvironment() {
           scrollZ.current = 0;
         } else if (pt < airborneStart) {
           const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-          targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
+          targetWorldY = THREE.MathUtils.lerp(-0.02, -26.5, p * p);
           groundSpeed = 46 * p * p;
         } else {
-          targetWorldY = -19.5;
+          targetWorldY = -26.5;
           groundSpeed = 46;
         }
       } else if (pt < rollStart) {
@@ -591,14 +593,14 @@ export function SkyCloudsEnvironment() {
         groundSpeed = 52 * p * p;
       } else if (pt < airborneStart) {
         const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-        targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
+        targetWorldY = THREE.MathUtils.lerp(-0.02, -28.0, p * p);
         groundSpeed = 52;
       } else {
-        targetWorldY = -19.5;
+        targetWorldY = -28.0;
         groundSpeed = 46;
       }
     } else if (flightMode === 'airborne' || flightMode === 'aar') {
-      targetWorldY = -19.5;
+      targetWorldY = -28.0;
       groundSpeed = 46;
     } else if (flightMode === 'mission') {
       if (isHeli) {
@@ -607,11 +609,11 @@ export function SkyCloudsEnvironment() {
         targetWorldY = -0.02;
         groundSpeed = 0;
       } else {
-        targetWorldY = -19.5;
+        targetWorldY = -28.0;
         groundSpeed = 48;
       }
     } else if (flightMode === 'maneuver') {
-      targetWorldY = -19.5;
+      targetWorldY = -29.5;
       groundSpeed = 58;
     } else if (flightMode === 'landing') {
       // Menyelaraskan Hanggar Landing (local z = +145) tepat di world z = +3.5 saat berhenti!
@@ -669,15 +671,56 @@ export function SkyCloudsEnvironment() {
     }
 
     if (isOutdoorSim) {
-      scrollZ.current = (scrollZ.current + groundSpeed * dt) % LOOP_LEN;
-      const wrapZ = (offset: number) => {
-        let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
-        if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
-        return z;
-      };
-      if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
-      if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
-      if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
+      // Runway HANYA tampil saat Take Off & Landing! Saat mengudara/manuver/AAR/Misi, hanya melintasi Gunung & Laut!
+      const showRunwayBiome = flightMode === 'takeoff' || flightMode === 'landing';
+      if (runwayChunkRef.current) {
+        runwayChunkRef.current.visible = showRunwayBiome;
+      }
+
+      if (showRunwayBiome || safetyMode || (flightMode === 'mission' && isHeli)) {
+        scrollZ.current = (scrollZ.current + groundSpeed * dt) % LOOP_LEN;
+        const wrapZ = (offset: number) => {
+          let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
+          if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
+          return z;
+        };
+        if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
+        if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
+        if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
+      } else {
+        // Mode Mengudara & Manuver: loop mulus 2 zona saja (Pegunungan <-> Laut Hidup) tanpa pernah memunculkan Runway!
+        const airLoopLen = CHUNK_LEN * 2;
+        scrollZ.current = (scrollZ.current + groundSpeed * dt) % airLoopLen;
+        const wrapAirZ = (offset: number) => {
+          let z = ((offset - scrollZ.current) % airLoopLen + airLoopLen) % airLoopLen;
+          if (z > CHUNK_LEN) z -= airLoopLen;
+          return z;
+        };
+        if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapAirZ(0);
+        if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapAirZ(CHUNK_LEN);
+      }
+
+      // Animasi perahu nelayan mengayun lembut & kawanan ikan/lumba-lumba melompat di atas laut!
+      const et = state.clock.elapsedTime;
+      boatRefs.current.forEach((b, i) => {
+        if (!b) return;
+        b.position.y = 0.08 + Math.sin(et * 1.8 + i * 1.4) * 0.14;
+        b.rotation.z = Math.sin(et * 1.5 + i) * 0.08;
+        b.rotation.x = Math.cos(et * 1.2 + i * 0.7) * 0.05;
+      });
+      fishRefs.current.forEach((f, i) => {
+        if (!f) return;
+        const cycle = (et * 0.85 + i * 0.37) % 2.4;
+        if (cycle < 1.1) {
+          const p = cycle / 1.1; // 0..1 busur lompatan di atas permukaan laut
+          f.visible = true;
+          f.position.y = -0.35 + Math.sin(p * Math.PI) * 2.15;
+          f.position.z = (p - 0.5) * 5.2;
+          f.rotation.x = -(0.5 - p) * 1.35;
+        } else {
+          f.visible = false;
+        }
+      });
     }
 
     if (atcRadarRef.current) {
@@ -1142,37 +1185,160 @@ export function SkyCloudsEnvironment() {
             </mesh>
           ))}
 
-          {/* Kapal Patroli KRI / Fregat 3D lengkap dengan haluan lancip, anjungan, radar & jejak buih V-wake */}
+          {/* Kapal Perang KRI TNI AL (Fregat & Korvet lengkap dengan meriam haluan, helideck H, radar & V-wake) */}
           {[
-            { x: -14, z: -26 },
-            { x: 24, z: 34 },
-            { x: -56, z: 16 },
+            { x: -16, z: -34, scale: 1.25 },
+            { x: 26, z: 36, scale: 1.15 },
+            { x: -58, z: 22, scale: 1.05 },
           ].map((ship, sIdx) => (
-            <group key={sIdx} position={[ship.x, 0.3, ship.z]}>
-              {/* Lambung kapal abu-abu TNI AL */}
+            <group key={sIdx} position={[ship.x, 0.35, ship.z]} scale={ship.scale}>
+              {/* Lambung kapal perang abu-abu TNI AL */}
               <mesh>
-                <boxGeometry args={[2.1, 0.9, 7.6]} />
-                <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.3} />
+                <boxGeometry args={[2.3, 1.0, 9.2]} />
+                <meshStandardMaterial color="#58677a" roughness={0.48} metalness={0.35} />
+              </mesh>
+              {/* Dek utama gelap & garis helipad belakang */}
+              <mesh position={[0, 0.52, -2.8]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[1.9, 2.8]} />
+                <meshStandardMaterial color="#334155" roughness={0.85} />
+              </mesh>
+              <mesh position={[0, 0.54, -2.8]} rotation={[-Math.PI / 2, 0, 0]}>
+                <ringGeometry args={[0.55, 0.72, 16]} />
+                <meshBasicMaterial color="#fbbf24" />
               </mesh>
               {/* Haluan lancip */}
-              <mesh position={[0, 0.05, 4.9]} rotation={[Math.PI / 2, 0, 0]}>
-                <coneGeometry args={[1.1, 2.4, 4]} />
-                <meshStandardMaterial color="#64748b" roughness={0.5} metalness={0.3} />
+              <mesh position={[0, 0.05, 5.8]} rotation={[Math.PI / 2, 0, 0]}>
+                <coneGeometry args={[1.2, 2.7, 4]} />
+                <meshStandardMaterial color="#58677a" roughness={0.48} metalness={0.35} />
+              </mesh>
+              {/* Turret Meriam Haluan */}
+              <mesh position={[0, 0.75, 3.3]}>
+                <boxGeometry args={[0.65, 0.45, 0.85]} />
+                <meshStandardMaterial color="#94a3b8" roughness={0.45} metalness={0.4} />
+              </mesh>
+              <mesh position={[0, 0.82, 4.05]} rotation={[Math.PI / 2 - 0.12, 0, 0]}>
+                <cylinderGeometry args={[0.06, 0.08, 1.1, 6]} />
+                <meshStandardMaterial color="#cbd5e1" metalness={0.6} />
               </mesh>
               {/* Anjungan & tiang radar */}
-              <mesh position={[0, 0.95, 0.6]}>
-                <boxGeometry args={[1.5, 1.1, 2.4]} />
+              <mesh position={[0, 1.08, 0.7]}>
+                <boxGeometry args={[1.65, 1.25, 2.8]} />
                 <meshStandardMaterial color="#cbd5e1" roughness={0.45} />
               </mesh>
-              <mesh position={[0, 2.1, 0.4]}>
-                <cylinderGeometry args={[0.08, 0.14, 1.4, 6]} />
-                <meshStandardMaterial color="#94a3b8" metalness={0.5} />
+              <mesh position={[0, 1.45, 1.85]}>
+                <boxGeometry args={[1.55, 0.34, 0.45]} />
+                <meshStandardMaterial color="#0f172a" roughness={0.18} metalness={0.75} />
+              </mesh>
+              <mesh position={[0, 2.35, 0.4]}>
+                <cylinderGeometry args={[0.08, 0.15, 1.6, 6]} />
+                <meshStandardMaterial color="#94a3b8" metalness={0.55} />
+              </mesh>
+              <mesh position={[0, 3.1, 0.4]}>
+                <boxGeometry args={[1.1, 0.18, 0.16]} />
+                <meshStandardMaterial color="#f8fafc" />
               </mesh>
               {/* Jejak buih air V-wake di belakang kapal */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.32, -10.5]}>
-                <planeGeometry args={[2.8, 14]} />
-                <meshBasicMaterial color="#e0f6ff" transparent opacity={0.42} />
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.36, -12.5]}>
+                <planeGeometry args={[3.2, 16]} />
+                <meshBasicMaterial color="#e0f6ff" transparent opacity={0.46} />
               </mesh>
+            </group>
+          ))}
+
+          {/* 6 Perahu Nelayan Tradisional Nusantara (Lambung kayu, cadik/katir & layar/atap warna-warni) */}
+          {[
+            { x: 8, z: -18, rot: 0.4, sail: '#f8fafc', hull: '#1d4ed8' },
+            { x: -32, z: -6, rot: -0.6, sail: '#fef08a', hull: '#dc2626' },
+            { x: 18, z: -68, rot: 1.1, sail: '#fed7aa', hull: '#0f766e' },
+            { x: -12, z: 48, rot: -0.9, sail: '#ffffff', hull: '#2563eb' },
+            { x: 44, z: 8, rot: 2.2, sail: '#bae6fd', hull: '#b91c1c' },
+            { x: -46, z: -56, rot: 0.25, sail: '#fef9c3', hull: '#0369a1' },
+          ].map((boat, bIdx) => (
+            <group
+              key={`boat-${bIdx}`}
+              ref={(el) => {
+                boatRefs.current[bIdx] = el;
+              }}
+              position={[boat.x, 0.08, boat.z]}
+              rotation={[0, boat.rot, 0]}
+            >
+              {/* Lambung perahu nelayan */}
+              <mesh>
+                <boxGeometry args={[0.9, 0.45, 3.2]} />
+                <meshStandardMaterial color={boat.hull} roughness={0.7} />
+              </mesh>
+              <mesh position={[0, 0.04, 1.9]} rotation={[Math.PI / 2, 0, 0]}>
+                <coneGeometry args={[0.45, 0.9, 4]} />
+                <meshStandardMaterial color={boat.hull} roughness={0.7} />
+              </mesh>
+              {/* Cadik / outrigger bambu kiri-kanan khas perahu Nusantara */}
+              <mesh position={[0, 0.14, 0]}>
+                <boxGeometry args={[3.2, 0.07, 0.1]} />
+                <meshStandardMaterial color="#b45309" roughness={0.85} />
+              </mesh>
+              <mesh position={[-1.55, 0.02, 0]}>
+                <boxGeometry args={[0.12, 0.12, 2.6]} />
+                <meshStandardMaterial color="#d97706" roughness={0.85} />
+              </mesh>
+              <mesh position={[1.55, 0.02, 0]}>
+                <boxGeometry args={[0.12, 0.12, 2.6]} />
+                <meshStandardMaterial color="#d97706" roughness={0.85} />
+              </mesh>
+              {/* Tiang & Layar Segitiga Nelayan */}
+              <mesh position={[0, 1.3, 0.2]}>
+                <cylinderGeometry args={[0.04, 0.05, 2.2, 6]} />
+                <meshStandardMaterial color="#78350f" />
+              </mesh>
+              <mesh position={[0.05, 1.35, -0.35]} rotation={[0, Math.PI / 2, 0]}>
+                <coneGeometry args={[0.95, 1.85, 3]} />
+                <meshStandardMaterial color={boat.sail} roughness={0.85} side={THREE.DoubleSide} />
+              </mesh>
+              {/* Riak putih kecil di sekitar perahu */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.14, -1.8]}>
+                <planeGeometry args={[1.2, 3.6]} />
+                <meshBasicMaterial color="#e0f6ff" transparent opacity={0.35} />
+              </mesh>
+            </group>
+          ))}
+
+          {/* Kawanan Ikan & Lumba-Lumba Melompat di Permukaan Laut (3 Gugusan x 3 Ekor) */}
+          {[
+            { x: -6, z: -12, col: '#38bdf8' },
+            { x: -4.2, z: -10.5, col: '#7dd3fc' },
+            { x: -7.5, z: -13.5, col: '#0ea5e9' },
+            { x: 14, z: 14, col: '#60a5fa' },
+            { x: 16, z: 12.2, col: '#93c5fd' },
+            { x: 12.5, z: 15.8, col: '#38bdf8' },
+            { x: -24, z: 26, col: '#7dd3fc' },
+            { x: -22, z: 24.5, col: '#38bdf8' },
+            { x: -25.8, z: 27.5, col: '#0ea5e9' },
+          ].map((fish, fIdx) => (
+            <group key={`fish-pod-${fIdx}`} position={[fish.x, 0.05, fish.z]}>
+              {/* Cincin cipratan air di permukaan laut */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
+                <ringGeometry args={[0.6, 1.05, 16]} />
+                <meshBasicMaterial color="#e0f7ff" transparent opacity={0.42} />
+              </mesh>
+              <group
+                ref={(el) => {
+                  fishRefs.current[fIdx] = el;
+                }}
+              >
+                {/* Tubuh ikan / lumba-lumba aerodinamis berkilau */}
+                <mesh scale={[0.42, 0.52, 1.45]}>
+                  <sphereGeometry args={[0.55, 10, 8]} />
+                  <meshStandardMaterial color={fish.col} roughness={0.22} metalness={0.45} />
+                </mesh>
+                {/* Sirip punggung & ekor */}
+                <mesh position={[0, 0.32, -0.05]} rotation={[-0.4, 0, 0]}>
+                  <coneGeometry args={[0.14, 0.42, 4]} />
+                  <meshStandardMaterial color="#0284c7" roughness={0.3} />
+                </mesh>
+                <mesh position={[0, 0, -0.95]} rotation={[Math.PI / 2, 0, 0]}>
+                  <coneGeometry args={[0.28, 0.45, 3]} />
+                  <meshStandardMaterial color="#0284c7" roughness={0.3} />
+                </mesh>
+              </group>
             </group>
           ))}
         </group>

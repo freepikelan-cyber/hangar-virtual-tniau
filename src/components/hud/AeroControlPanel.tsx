@@ -1,4 +1,5 @@
-import { ArrowDownRight, ArrowUpRight, RotateCcw, RotateCw, Sparkles, Wind, X } from 'lucide-react';
+import { useState } from 'react';
+import { ArrowDownRight, ArrowUpRight, ChevronDown, ChevronUp, RotateCcw, RotateCw, Sparkles, Square, Wind } from 'lucide-react';
 import { FLAP_INFO, TRIM_INFO } from '../../data/supportSystems';
 import { useHangarStore, useSelectedUnit, type AeroManeuver } from '../../store/useHangarStore';
 
@@ -45,6 +46,8 @@ export function AeroControlPanel() {
   const setTrimAngle = useHangarStore((s) => s.setTrimAngle);
   const setAeroManeuver = useHangarStore((s) => s.setAeroManeuver);
   const toggle = useHangarStore((s) => s.toggle);
+  // Pada layar HP/Smartphone (< lg), panel detail default tertutup agar animasi 3D pesawat terlihat 100% penuh!
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
   const isHeli = unit.category === 'Helikopter';
@@ -54,34 +57,56 @@ export function AeroControlPanel() {
   const activeInfo = MANEUVER_INFO[aeroManeuver];
 
   return (
-    <aside className="pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] right-2.5 sm:right-4 z-30 lg:z-20 flex items-start">
-      <div className="hud-panel pointer-events-auto flex h-full w-[min(350px,calc(100vw-1.25rem))] lg:w-[330px] xl:w-[365px] flex-col rounded-xl border-cyan-400/50 overflow-hidden animate-slidein">
-        {/* Header Panel Aerodinamika */}
-        <div className="flex items-start justify-between gap-2 border-b border-cyan-400/25 bg-[#0b2349]/90 px-4 py-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-cyan-300">
-              <Wind className="h-4 w-4 shrink-0" />
-              <span className="font-display text-[11px] font-bold tracking-[0.16em] uppercase">
-                LAB AERODINAMIKA 3D
-              </span>
+    <>
+      {/* Tombol Pill Ringkas khusus HP/Smartphone (agar layar tengah 100% bebas melihat animasi pesawat 3D!) */}
+      <div className="pointer-events-none fixed top-[66px] right-2.5 z-30 flex items-center gap-1.5 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileExpanded((v) => !v)}
+          className="hud-panel pointer-events-auto inline-flex items-center gap-1.5 rounded-full border-cyan-400/55 bg-[#091c3a]/90 px-3 py-1.5 font-display text-[11px] font-bold tracking-wider text-cyan-200 uppercase shadow-glow cursor-pointer active:scale-95"
+        >
+          <Wind className="h-3.5 w-3.5 text-cyan-300" />
+          <span>{mobileExpanded ? 'Sembunyikan Info' : 'Detail Flap & Trim'}</span>
+          {mobileExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
+      </div>
+
+      <aside
+        className={`pointer-events-none fixed top-[106px] lg:top-[84px] bottom-[96px] lg:bottom-[112px] right-2.5 sm:right-4 z-30 lg:z-20 items-start ${
+          mobileExpanded ? 'flex' : 'hidden lg:flex'
+        }`}
+      >
+        <div className="hud-panel pointer-events-auto flex max-h-full lg:h-full w-[min(340px,calc(100vw-1.25rem))] lg:w-[330px] xl:w-[365px] flex-col rounded-xl border-cyan-400/50 overflow-hidden animate-slidein">
+          {/* Header Panel Aerodinamika */}
+          <div className="flex items-start justify-between gap-2 border-b border-cyan-400/25 bg-[#0b2349]/90 px-4 py-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 text-cyan-300">
+                <Wind className="h-4 w-4 shrink-0" />
+                <span className="font-display text-[11px] font-bold tracking-[0.16em] uppercase">
+                  LAB AERODINAMIKA 3D
+                </span>
+              </div>
+              <h2 className="mt-0.5 font-display text-base sm:text-lg font-bold tracking-wide text-white truncate">
+                {unit.name}
+              </h2>
+              <p className="text-[11px] text-slate-300">
+                Aliran Angin, Gaya Lift Sayap &amp; Manuver 3D
+              </p>
             </div>
-            <h2 className="mt-0.5 font-display text-base sm:text-lg font-bold tracking-wide text-white truncate">
-              {unit.name}
-            </h2>
-            <p className="text-[11px] text-slate-300">
-              Aliran Angin, Gaya Lift Sayap &amp; Manuver 3D
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setMobileExpanded(false);
+                toggle('aeroMode');
+              }}
+              aria-label="Stop Aerodinamika"
+              title="Stop & Kembali ke Menu Utama"
+              className="inline-flex items-center gap-1 rounded-lg border border-rose-400/60 bg-rose-500/20 px-2.5 py-2 font-display text-xs font-bold tracking-wider text-rose-200 uppercase hover:bg-rose-500/35 hover:text-white cursor-pointer active:scale-95 shrink-0"
+            >
+              <Square className="h-3.5 w-3.5" />
+              Stop
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => toggle('aeroMode')}
-            aria-label="Tutup Panel Aerodinamika"
-            title="Tutup Aerodinamika"
-            className="hud-btn h-11 w-11 shrink-0 border-cyan-400/35 bg-[#103060]/70 text-cyan-300 hover:bg-cyan-400/20"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
 
         {/* Isi Scrollable Rapi */}
         <div className="hud-scroll flex-1 overflow-y-auto p-3.5 space-y-3.5">
@@ -251,7 +276,8 @@ export function AeroControlPanel() {
             </div>
           </div>
         </div>
-      </div>
-    </aside>
+        </div>
+      </aside>
+    </>
   );
 }

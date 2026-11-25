@@ -31,6 +31,8 @@ export function BottomDock() {
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
   const aeroMode = useHangarStore((s) => s.aeroMode);
+  const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
+  const setAeroManeuver = useHangarStore((s) => s.setAeroManeuver);
   const safetyMode = useHangarStore((s) => s.safetyMode);
   const oxygenMode = useHangarStore((s) => s.oxygenMode);
   const flightMode = useHangarStore((s) => s.flightMode);
@@ -62,6 +64,7 @@ export function BottomDock() {
         : 'Flare Tempur';
   const isFlightActive = !isEquipment && flightMode !== 'parked';
   const isSimPanelActive = !isEquipment && (simMenuOpen || isFlightActive);
+  const isAeroPanelActive = !isEquipment && aeroMode;
 
   const canTakeOff = flightMode === 'parked';
   const isAirborneReady =
@@ -183,8 +186,8 @@ export function BottomDock() {
         </div>
       )}
 
-      {/* Pilihan Warna / Livery untuk pesawat yang memiliki 2 versi cat TNI AU (hanya saat parkir & menu simulasi tertutup) */}
-      {unit.liveries && unit.liveries.length > 1 && !isSimPanelActive && (
+      {/* Pilihan Warna / Livery untuk pesawat yang memiliki 2 versi cat TNI AU (hanya saat parkir & menu simulasi/aero tertutup) */}
+      {unit.liveries && unit.liveries.length > 1 && !isSimPanelActive && !isAeroPanelActive && (
         <div className="hud-panel pointer-events-auto flex items-center gap-1.5 rounded-full border-[#4da6ff]/40 bg-[#091c3a]/90 px-2.5 py-1 text-[10px] sm:text-xs">
           <span className="font-display font-bold tracking-wider text-slate-300 uppercase px-1">Warna:</span>
           {unit.liveries.map((lv) => {
@@ -384,7 +387,47 @@ export function BottomDock() {
         </div>
       )}
 
-      {!isSimPanelActive && (
+      {/* Bar Ringkas "AERODINAMIKA" — Menyembunyikan menu lain agar animasi 3D di HP sangat lega, klik Stop untuk kembali */}
+      {isAeroPanelActive && !isSimPanelActive && (
+        <div className="hud-panel pointer-events-auto flex max-w-full items-center gap-1 sm:gap-1.5 overflow-x-auto rounded-2xl border-cyan-400/50 bg-[#091c3a]/95 px-2 sm:px-3 py-1.5 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
+          {(
+            [
+              { id: 'liftDemo', label: 'Demo Lift' },
+              { id: 'climb', label: 'Menanjak' },
+              { id: 'descend', label: 'Menurun' },
+              { id: 'turnLeft', label: 'Kiri' },
+              { id: 'turnRight', label: 'Kanan' },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setAeroManeuver(item.id)}
+              className={`shrink-0 rounded-lg border px-2.5 sm:px-3 py-2 font-display text-[11px] sm:text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                aeroManeuver === item.id
+                  ? 'border-cyan-300 bg-cyan-400 text-[#0a1e3c] shadow-glow'
+                  : 'border-slate-700/80 bg-[#0e2a54]/90 text-slate-200 hover:border-cyan-400/60 hover:text-white'
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+
+          <div className="mx-0.5 h-6 w-px shrink-0 bg-cyan-400/25" />
+
+          <button
+            type="button"
+            onClick={() => toggle('aeroMode')}
+            title="Hentikan Aerodinamika & Kembali ke Menu Utama"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-rose-400/70 bg-rose-500/25 px-3 py-2 font-display text-[11px] sm:text-xs font-bold tracking-wider text-rose-100 uppercase hover:bg-rose-500/40 hover:text-white cursor-pointer active:scale-95"
+          >
+            <Square className="h-3.5 w-3.5" />
+            Stop
+          </button>
+        </div>
+      )}
+
+      {!isSimPanelActive && !isAeroPanelActive && (
         <nav
           aria-label="Kontrol Hangar 3D"
           className="hud-panel pointer-events-auto flex max-w-full items-center gap-1 sm:gap-2 overflow-x-auto rounded-2xl px-1.5 sm:px-3 py-1.5 sm:py-2"
