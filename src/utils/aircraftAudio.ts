@@ -111,6 +111,39 @@ class AircraftAudioEngine {
     void this.preloadJetAudio('fly');
   }
 
+  /**
+   * Membuat AudioBuffer loop yang 100% mulus tanpa jeda/putus-putus (equal-power overlap crossfade)
+   * dengan memangkas bagian sunyi awal/akhir rekaman asli.
+   */
+  private makeSeamlessLoopBuffer(raw: AudioBuffer, trimStartSec: number, trimEndSec: number, xfadeSec: number): AudioBuffer {
+    if (!this.ctx) return raw;
+    const sr = raw.sampleRate;
+    const startIdx = Math.min(raw.length - 1, Math.max(0, Math.floor(trimStartSec * sr)));
+    const endIdx = Math.max(startIdx + sr, Math.min(raw.length, raw.length - Math.floor(trimEndSec * sr)));
+    const xfadeSamples = Math.min(Math.floor(xfadeSec * sr), Math.floor((endIdx - startIdx) * 0.3));
+    const outLen = Math.max(sr, endIdx - startIdx - xfadeSamples);
+
+    const out = this.ctx.createBuffer(raw.numberOfChannels, outLen, sr);
+    for (let ch = 0; ch < raw.numberOfChannels; ch++) {
+      const src = raw.getChannelData(ch);
+      const dst = out.getChannelData(ch);
+      // Salin isi utama
+      for (let i = 0; i < outLen; i++) {
+        dst[i] = src[startIdx + i];
+      }
+      // Equal-power crossfade bagian ekor (tail) ke bagian awal (head) agar sambungan loop 100% tak terdengar!
+      for (let i = 0; i < xfadeSamples; i++) {
+        const t = i / xfadeSamples;
+        const fadeIn = Math.sin(t * Math.PI * 0.5);
+        const fadeOut = Math.cos(t * Math.PI * 0.5);
+        const headSample = src[startIdx + i];
+        const tailSample = src[startIdx + outLen + i];
+        dst[i] = headSample * fadeIn + tailSample * fadeOut;
+      }
+    }
+    return out;
+  }
+
   private async preloadJetAudio(key: 'takeoff' | 'fly' | 'taxi'): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.jetBuffers.get(key);
@@ -121,9 +154,16 @@ class AircraftAudioEngine {
       const res = await fetch(`/audio/fighter-${key}.mp3`);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
-      const decoded = await this.ctx.decodeAudioData(arr);
-      this.jetBuffers.set(key, decoded);
-      return decoded;
+      const raw = await this.ctx.decodeAudioData(arr);
+      // Proses seamless crossfade loop untuk 'fly' & 'taxi' agar TIDAK PERNAH putus-putus!
+      const processed =
+        key === 'fly'
+          ? this.makeSeamlessLoopBuffer(raw, 0.55, 0.75, 1.35)
+          : key === 'taxi'
+            ? this.makeSeamlessLoopBuffer(raw, 0.85, 0.9, 1.6)
+            : raw;
+      this.jetBuffers.set(key, processed);
+      return processed;
     } catch {
       return null;
     } finally {
@@ -131,7 +171,7 @@ class AircraftAudioEngine {
     }
   }
 
-  private stopJetSample(fadeSec = 0.25) {
+  private stopJetSample(fadeSec = 0.75) {
     if (!this.ctx) return;
     const now = this.ctx.currentTime;
     const oldSrc = this.activeJetSrc;
@@ -142,7 +182,8 @@ class AircraftAudioEngine {
     if (oldGain) {
       try {
         oldGain.gain.cancelScheduledValues(now);
-        oldGain.gain.setTargetAtTime(0.0001, now, fadeSec * 0.35);
+        oldGain.gain.setValueAtTime(Math.max(0.0001, oldGain.gain.value), now);
+        oldGain.gain.exponentialRampToValueAtTime(0.0001, now + fadeSec);
       } catch {
         // ignore
       }
@@ -154,11 +195,11 @@ class AircraftAudioEngine {
         } catch {
           // already stopped
         }
-      }, Math.max(80, fadeSec * 1000));
+      }, Math.max(120, Math.ceil((fadeSec + 0.08) * 1000)));
     }
   }
 
-  /** Memutar & melakukan crossfade halus antar rekaman audio asli pesawat tempur (taxi / takeoff / fly). */
+  /** Memutar & melakukan crossfade panjang & mulus (0.85s) antar rekaman audio asli pesawat tempur. */
   private updateJetSample(desiredKey: 'takeoff' | 'fly' | 'taxi', targetVol: number, playbackRate = 1.0): boolean {
     if (!this.ctx) return false;
     const buf = this.jetBuffers.get(desiredKey);
@@ -168,15 +209,21 @@ class AircraftAudioEngine {
     }
     const now = this.ctx.currentTime;
     if (this.activeJetKey !== desiredKey || !this.activeJetSrc || !this.activeJetGain) {
-      this.stopJetSample(0.28);
+      const xfade = 0.85;
+      this.stopJetSample(xfade);
       const src = this.ctx.createBufferSource();
       src.buffer = buf;
       src.loop = true;
+      if (desiredKey === 'takeoff') {
+        // Untuk Take Off: mulai dari 0 (spool-up -> afterburner), dan jika masih menanjak loop mulus di zona raungan penuh!
+        src.loopStart = Math.min(4.2, buf.duration * 0.28);
+        src.loopEnd = Math.max(src.loopStart + 2.0, buf.duration - 1.4);
+      }
       src.playbackRate.value = playbackRate;
 
       const gain = this.ctx.createGain();
       gain.gain.setValueAtTime(0.001, now);
-      gain.gain.linearRampToValueAtTime(targetVol, now + 0.32);
+      gain.gain.linearRampToValueAtTime(Math.max(0.001, targetVol), now + xfade);
 
       src.connect(gain);
       gain.connect(this.ctx.destination);
@@ -186,8 +233,8 @@ class AircraftAudioEngine {
       this.activeJetSrc = src;
       this.activeJetGain = gain;
     } else {
-      this.activeJetGain.gain.setTargetAtTime(targetVol, now, 0.14);
-      this.activeJetSrc.playbackRate.setTargetAtTime(playbackRate, now, 0.16);
+      this.activeJetGain.gain.setTargetAtTime(Math.max(0.0001, targetVol), now, 0.22);
+      this.activeJetSrc.playbackRate.setTargetAtTime(playbackRate, now, 0.24);
     }
     return true;
   }
@@ -699,51 +746,65 @@ class AircraftAudioEngine {
       }
     }
 
-    // Gunakan rekaman audio asli pesawat tempur (Take Off, Terbang, & Taxiway) untuk seluruh jet tempur TNI AU!
+    // Gunakan rekaman audio asli pesawat tempur yang disinkronkan presisi dengan tiap fase gerak!
     if (profile === 'fighter_single' || profile === 'fighter_twin') {
       let desiredTrack: 'takeoff' | 'fly' | 'taxi' = 'fly';
-      let sampleVol = 0.65;
+      let sampleVol = 0.62;
       let sampleRate = 1.0;
 
       if (flightMode === 'takeoff') {
-        if (phaseTime < 6.0) {
+        if (phaseTime < 5.3) {
+          // Fase Taxi Out dari Hanggar -> Line-Up ke titik start Runway 09
           desiredTrack = 'taxi';
-          sampleVol = 0.58;
-          sampleRate = 0.96 + (phaseTime / 6.0) * 0.1;
+          sampleVol = 0.56;
+          sampleRate = 0.94 + (phaseTime / 5.3) * 0.08;
         } else {
+          // Fase Spool-Up di Runway (5.3..7.6s) -> Akselerasi Full Afterburner (7.6..10.8s) -> Liftoff & Climb!
           desiredTrack = 'takeoff';
-          sampleVol = 0.78;
-          sampleRate = 1.0;
+          const accelBoost = phaseTime < 7.6 ? 0.66 + ((phaseTime - 5.3) / 2.3) * 0.16 : 0.82;
+          sampleVol = accelBoost;
+          sampleRate = phaseTime < 7.6 ? 0.98 : 1.04;
         }
       } else if (flightMode === 'landing') {
-        if (phaseTime < 10.2) {
+        if (phaseTime < 5.8) {
+          // Long Final Approach & Flare: deru jet melandai halus
           desiredTrack = 'fly';
-          sampleVol = Math.max(0.24, 0.62 - (phaseTime / 10.2) * 0.25);
-          sampleRate = 0.95;
-        } else if (phaseTime < 26.5) {
+          const p = phaseTime / 5.8;
+          sampleVol = 0.58 - p * 0.14;
+          sampleRate = 0.98 - p * 0.07;
+        } else if (phaseTime < 10.6) {
+          // Touchdown & High-Speed Rollout di runway: thrust reverser / rollout roar
+          desiredTrack = 'fly';
+          const p = (phaseTime - 5.8) / 4.8;
+          sampleVol = 0.56 - p * 0.18;
+          sampleRate = 0.94 - p * 0.1;
+        } else if (phaseTime < 26.2) {
+          // Pengereman akhir -> berhenti di runway -> taxi pelan kembali ke Hanggar
           desiredTrack = 'taxi';
-          sampleVol = 0.52;
-          sampleRate = 0.94;
+          const p = Math.min(1, (phaseTime - 10.6) / 5.4);
+          sampleVol = 0.48 - p * 0.1;
+          sampleRate = 0.98 - p * 0.08;
         } else {
+          // Parkir di dalam Hanggar: mesin spool-down perlahan hingga mati!
           desiredTrack = 'taxi';
-          const idleP = Math.min(1, (phaseTime - 26.5) / 1.3);
-          sampleVol = Math.max(0.02, 0.42 * (1 - idleP));
-          sampleRate = 0.85;
+          const idleP = Math.min(1, (phaseTime - 26.2) / 1.6);
+          sampleVol = Math.max(0.001, 0.38 * (1 - idleP));
+          sampleRate = Math.max(0.45, 0.9 - idleP * 0.45);
         }
       } else {
         // airborne, maneuver, aar, engineSim
         desiredTrack = 'fly';
-        sampleVol = flightMode === 'maneuver' ? 0.72 : 0.58;
-        sampleRate = 1.0 + speedMod * 0.45;
+        sampleVol = flightMode === 'maneuver' ? 0.7 : 0.56;
+        sampleRate = 1.0 + speedMod * 0.32;
       }
 
       if (this.updateJetSample(desiredTrack, sampleVol, sampleRate)) {
         // Matikan sintesis osilator saat rekaman asli pesawat tempur aktif agar suara bersih & 100% autentik!
-        this.masterGain.gain.setTargetAtTime(0, now, 0.12);
+        this.masterGain.gain.setTargetAtTime(0, now, 0.15);
         return;
       }
     } else if (this.activeJetSrc) {
-      this.stopJetSample(0.2);
+      this.stopJetSample(0.4);
     }
 
     // Terapkan parameter akustik spesifik tiap pesawat
