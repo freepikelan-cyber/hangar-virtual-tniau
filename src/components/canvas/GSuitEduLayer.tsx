@@ -144,30 +144,30 @@ export function GSuitEduLayer() {
         </group>
       ))}
 
-      {/* 4. Label Komponen 3D Informatif (Ringkas & Tidak Menutupi Figur) */}
-      <Html position={[1.95, 6.45, 0.3]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] sm:text-[10px] font-bold tracking-wider text-cyan-300 uppercase shadow">
-          Kantung Perut (Abdominal)
+      {/* 4. Label Komponen 3D Informatif (Diposisikan jauh di sisi luar agar 100% bebas dari figur & animasi!) */}
+      <Html position={[2.85, 6.45, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] font-bold tracking-wider text-cyan-300 uppercase shadow">
+          Kantung Perut
         </span>
       </Html>
-      <Html position={[2.05, 4.92, 0.3]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] sm:text-[10px] font-bold tracking-wider text-cyan-300 uppercase shadow">
-          Kantung Paha (Thigh)
+      <Html position={[2.85, 4.92, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] font-bold tracking-wider text-cyan-300 uppercase shadow">
+          Kantung Paha
         </span>
       </Html>
-      <Html position={[2.05, 2.38, 0.3]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] sm:text-[10px] font-bold tracking-wider text-cyan-300 uppercase shadow">
-          Kantung Betis (Calf)
+      <Html position={[2.85, 2.38, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="whitespace-nowrap rounded-md border border-cyan-400/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] font-bold tracking-wider text-cyan-300 uppercase shadow">
+          Kantung Betis
         </span>
       </Html>
-      <Html position={[-2.35, 3.65, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="whitespace-nowrap rounded-md border border-[#ffb703]/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] sm:text-[10px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
-          Selang Pneumatik (3–7 Bar)
+      <Html position={[-2.95, 3.65, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="whitespace-nowrap rounded-md border border-[#ffb703]/70 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
+          Selang Pneumatik
         </span>
       </Html>
       {showPressure && (
-        <Html position={[0, 10.95, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-          <span className="whitespace-nowrap rounded-full border border-rose-400 bg-rose-950/90 px-2.5 py-0.5 font-display text-[10px] font-bold tracking-wider text-rose-200 uppercase shadow">
+        <Html position={[0, 11.15, 0.2]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+          <span className="whitespace-nowrap rounded-full border border-rose-400 bg-rose-950/90 px-2.5 py-0.5 font-display text-[9px] font-bold tracking-wider text-rose-200 uppercase shadow">
             ↑ ALIRAN DARAH KE OTAK TERJAGA (ANTI G-LOC)
           </span>
         </Html>

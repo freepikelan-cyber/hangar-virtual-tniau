@@ -555,16 +555,56 @@ export function buildDetailedGSuit(): BuildResult {
   headG.position.set(0, 9.76, 0.04);
   upperBody.add(headG);
 
-  const helmShell = mkMesh(new THREE.SphereGeometry(0.84, 32, 24), helmetShellMat);
-  helmShell.scale.set(0.95, 1.0, 1.08);
-  headG.add(helmShell);
+  // Siluet wajah/balaclava gelap di dalam helm
+  const innerHead = mkMesh(new THREE.SphereGeometry(0.74, 24, 18), strapMat);
+  innerHead.scale.set(0.88, 1.0, 0.94);
+  headG.add(innerHead);
 
-  const helmVisor = mkMesh(
-    new THREE.SphereGeometry(0.86, 28, 18, -Math.PI * 0.38, Math.PI * 0.76, Math.PI * 0.28, Math.PI * 0.28),
-    helmetVisorMat,
-  );
+  // Cangkang helm komposit abu-abu terang dengan bukaan wajah di depan (+Z) agar tidak memotong visor!
+  const helmShellGeo = new THREE.SphereGeometry(0.84, 36, 26, 0, Math.PI * 2, 0, Math.PI * 0.78);
+  const hsPos = helmShellGeo.attributes.position;
+  for (let i = 0; i < hsPos.count; i++) {
+    let x = hsPos.getX(i);
+    let y = hsPos.getY(i);
+    let z = hsPos.getZ(i);
+    z *= z < 0 ? 1.08 : 1.0;
+    x *= 0.95;
+    // Bukaan wajah di depan (+Z)
+    if (z > 0.25 && y < 0.32) {
+      const f = Math.min(1, Math.max(0, (z - 0.25) / 0.45)) * Math.min(1, Math.max(0, (0.32 - y) / 0.45));
+      z -= f * 0.28;
+      y += f * 0.14;
+    }
+    hsPos.setXYZ(i, x, y, z);
+  }
+  helmShellGeo.computeVertexNormals();
+  headG.add(mkMesh(helmShellGeo, helmetShellMat));
+
+  // Visor gelap reflektif utuh dengan lekukan hidung presisi (radius 0.88 > cangkang depan, 100% bebas terpotong!)
+  const helmVisorGeo = new THREE.SphereGeometry(0.88, 32, 20, -Math.PI * 0.39, Math.PI * 0.78, Math.PI * 0.27, Math.PI * 0.3);
+  const hvPos = helmVisorGeo.attributes.position;
+  for (let i = 0; i < hvPos.count; i++) {
+    const x = hvPos.getX(i);
+    let y = hvPos.getY(i);
+    const z = hvPos.getZ(i);
+    if (y < 0.02 && Math.abs(z) < 0.26) {
+      const notch = Math.cos((z / 0.26) * (Math.PI / 2));
+      y += notch * 0.14 * Math.min(1, Math.max(0, (0.02 - y) / 0.24));
+    }
+    hvPos.setXYZ(i, x, y, z);
+  }
+  helmVisorGeo.computeVertexNormals();
+  const helmVisor = mkMesh(helmVisorGeo, helmetVisorMat);
   helmVisor.rotation.y = Math.PI / 2;
+  helmVisor.scale.set(0.97, 1.0, 1.03);
   headG.add(helmVisor);
+
+  // List karet hitam di atas visor (brow seal)
+  const browSeal = mkMesh(new THREE.TorusGeometry(0.87, 0.028, 8, 28, Math.PI * 0.76), strapMat);
+  browSeal.rotation.x = Math.PI / 2 - 0.12;
+  browSeal.rotation.z = -Math.PI * 0.38;
+  browSeal.position.set(0, 0.34, 0.06);
+  headG.add(browSeal);
 
   // Soket samping visor hitam
   for (const s of [1, -1] as const) {
@@ -574,10 +614,20 @@ export function buildDetailedGSuit(): BuildResult {
     headG.add(knob);
   }
 
+  // Masker oksigen MBU-20/P & strap ke pipi helm + selang oksigen melengkung ke dada
   const maskCone = mkMesh(new THREE.ConeGeometry(0.32, 0.64, 16), darkMetalMat);
   maskCone.rotation.x = Math.PI / 2.2;
   maskCone.position.set(0, -0.34, 0.78);
   headG.add(maskCone);
+
+  for (const s of [1, -1] as const) {
+    const mStrap = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(s * 0.24, -0.34, 0.84),
+      new THREE.Vector3(s * 0.56, -0.32, 0.66),
+      new THREE.Vector3(s * 0.74, -0.3, 0.34),
+    ]);
+    headG.add(mkMesh(new THREE.TubeGeometry(mStrap, 12, 0.036, 8, false), strapMat));
+  }
 
   const o2HoseCurve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0, -0.45, 0.98),
