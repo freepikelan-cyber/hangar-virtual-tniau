@@ -1,6 +1,8 @@
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, MapPin, Search, X } from 'lucide-react';
 import { CATEGORIES, FLEET, type AircraftCategory } from '../../data/fleetData';
 import { filterFleet, useHangarStore } from '../../store/useHangarStore';
+import { getCachedAircraftThumbnail, requestAircraftThumbnail } from '../../utils/aircraftSnapshot';
 
 function CategorySilhouette({ category, active }: { category: AircraftCategory; active: boolean }) {
   const color = active ? '#4da6ff' : '#94a3b8';
@@ -44,6 +46,72 @@ function CategorySilhouette({ category, active }: { category: AircraftCategory; 
     <svg viewBox="0 0 40 24" className="h-6 w-9 shrink-0" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 12 L9 10 L18 3 L23 10 L37 12 L23 14 L18 21 L9 14 Z" fill={active ? 'rgba(77,166,255,0.22)' : 'none'} />
     </svg>
+  );
+}
+
+/** Thumbnail foto 3D nyata tiap pesawat (dirender malas 1 per frame saat kartu terlihat agar tetap 60 FPS). */
+function AircraftThumbnail({
+  unitId,
+  name,
+  category,
+  active,
+}: {
+  unitId: string;
+  name: string;
+  category: AircraftCategory;
+  active: boolean;
+}) {
+  const [src, setSrc] = useState<string | null>(() => getCachedAircraftThumbnail(unitId));
+  const boxRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const cached = getCachedAircraftThumbnail(unitId);
+    if (cached) {
+      setSrc(cached);
+      return;
+    }
+    const el = boxRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') {
+      return requestAircraftThumbnail(unitId, setSrc);
+    }
+    let cancelReq: (() => void) | null = null;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          obs.disconnect();
+          cancelReq = requestAircraftThumbnail(unitId, setSrc);
+        }
+      },
+      { rootMargin: '120px' },
+    );
+    obs.observe(el);
+    return () => {
+      obs.disconnect();
+      if (cancelReq) cancelReq();
+    };
+  }, [unitId]);
+
+  return (
+    <div
+      ref={boxRef}
+      className={`relative flex h-12 w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-lg border ${
+        active
+          ? 'border-[#4da6ff]/70 bg-gradient-to-br from-[#0e2d5c] via-[#091d3d] to-[#061226]'
+          : 'border-slate-700/80 bg-gradient-to-br from-[#0b2144] via-[#071630] to-[#040d1d]'
+      }`}
+    >
+      {src ? (
+        <img
+          src={src}
+          alt={name}
+          loading="lazy"
+          draggable={false}
+          className="h-full w-full object-contain p-0.5 drop-shadow-[0_2px_6px_rgba(0,0,0,0.65)]"
+        />
+      ) : (
+        <CategorySilhouette category={category} active={active} />
+      )}
+    </div>
   );
 }
 
@@ -151,13 +219,7 @@ export function FleetSidebar() {
                         : 'border-slate-700/60 bg-[#0e2a54]/60 hover:border-[#4da6ff]/50 hover:bg-[#13376e]/80'
                     }`}
                   >
-                    <div
-                      className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border ${
-                        active ? 'border-[#4da6ff]/60 bg-[#4da6ff]/15' : 'border-slate-700/80 bg-[#060f1d]'
-                      }`}
-                    >
-                      <CategorySilhouette category={unit.category} active={active} />
-                    </div>
+                    <AircraftThumbnail unitId={unit.id} name={unit.name} category={unit.category} active={active} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-1.5">
                         <span className={`font-display text-sm font-bold tracking-wide truncate ${active ? 'text-white' : 'text-slate-100'}`}>
