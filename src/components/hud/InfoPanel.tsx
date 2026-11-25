@@ -47,10 +47,9 @@ export function InfoPanel() {
   const currentQuestion = quiz.status === 'active' ? quiz.questions[quiz.index] ?? null : null;
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
-  const isJupiterManeuver = unit.id === 'kt1b' && flightMode === 'maneuver';
   const isFighterManeuver = unit.category === 'Tempur' && flightMode === 'maneuver';
   const isAar = flightMode === 'aar';
-  if ((aeroMode || safetyMode || isJupiterManeuver || isFighterManeuver || isAar) && !isEquipment) return null;
+  if ((aeroMode || safetyMode || isFighterManeuver || isAar) && !isEquipment) return null;
 
   return (
     <aside

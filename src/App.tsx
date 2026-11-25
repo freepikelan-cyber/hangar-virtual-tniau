@@ -26,9 +26,6 @@ const FighterManeuverPanel = lazy(() =>
 const GSuitControlPanel = lazy(() =>
   import('./components/hud/GSuitControlPanel').then((m) => ({ default: m.GSuitControlPanel })),
 );
-const JupiterManeuverPanel = lazy(() =>
-  import('./components/hud/JupiterManeuverPanel').then((m) => ({ default: m.JupiterManeuverPanel })),
-);
 const SafetyStoryPanel = lazy(() =>
   import('./components/hud/SafetyStoryPanel').then((m) => ({ default: m.SafetyStoryPanel })),
 );
@@ -184,7 +181,6 @@ export function App() {
             <AarStatusPanel />
             <FighterManeuverPanel />
             <GSuitControlPanel />
-            <JupiterManeuverPanel />
             <SafetyStoryPanel />
             <InfographicModal />
           </Suspense>

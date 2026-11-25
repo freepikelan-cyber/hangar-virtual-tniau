@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
 import { getFighterManeuverSpec, type FighterManeuverId } from '../data/fighterManeuvers';
-import type { JupiterManeuverId } from '../data/jupiterManeuvers';
 import { buildMixedQuiz, type QuizQuestion } from '../data/quizData';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
@@ -101,7 +100,6 @@ interface HangarState {
   trimAngle: -5 | 0 | 8;
   aeroManeuver: AeroManeuver;
   fighterManeuver: FighterManeuverId;
-  jupiterManeuver: JupiterManeuverId;
   gForceLevel: 1 | 4 | 9;
   aarFuel: number;
   aarStep: number;
@@ -134,12 +132,10 @@ interface HangarState {
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
   setFighterManeuver: (m: FighterManeuverId) => void;
-  setJupiterManeuver: (m: JupiterManeuverId) => void;
   setGForceLevel: (g: 1 | 4 | 9) => void;
   triggerAar: () => void;
   setAarProgress: (fuel: number, step: number) => void;
   triggerMission: () => void;
-  triggerJupiterShow: () => void;
   enterCockpitSim: () => void;
   exitCockpitSim: () => void;
   cycleTimeOfDay: () => void;
@@ -202,7 +198,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   trimAngle: 8,
   aeroManeuver: 'liftDemo',
   fighterManeuver: 'auto',
-  jupiterManeuver: 'auto',
   gForceLevel: 4,
   aarFuel: 35,
   aarStep: 0,
@@ -343,7 +338,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       }
     }
   },
-  setJupiterManeuver: (jupiterManeuver) => set({ jupiterManeuver }),
   triggerAar: () => {
     const s = get();
     aircraftAudio.unlock();
@@ -396,30 +390,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
         u.category === 'Helikopter'
           ? { pos: [14.5, 6.2, 16.5] as Vec3, target: [0, 1.8, 0] as Vec3, nonce: nonce++ }
           : { pos: [17.5, 7.5, 21.0] as Vec3, target: [0, 2.2, -2.5] as Vec3, nonce: nonce++ },
-    });
-  },
-  triggerJupiterShow: () => {
-    const s = get();
-    const mobile = isCompactViewport();
-    aircraftAudio.unlock();
-    aircraftAudio.resetPhaseTriggers();
-    pinRegistry.clear();
-    set({
-      selectedId: 'kt1b',
-      flightMode: 'maneuver',
-      flightNonce: s.flightNonce + 1,
-      jupiterManeuver: 'auto',
-      flightLabel: 'JUPITER AEROBATIC SHOW • JUPITER 1 MEMIMPIN FORMASI',
-      safetyMode: false,
-      aeroMode: false,
-      oxygenMode: false,
-      showInfographic: false,
-      showPins: false,
-      showcaseMode: false,
-      autoRotate: false,
-      activeHotspot: null,
-      leftOpen: mobile ? false : s.leftOpen,
-      camRequest: { pos: [34, 18, 44] as Vec3, target: [0, 3.2, -13] as Vec3, nonce: nonce++ },
     });
   },
   enterCockpitSim: () => {
@@ -507,15 +477,10 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       flightMode: activating ? 'maneuver' : 'airborne',
       flightNonce: s.flightNonce + 1,
       flightLabel: activating
-        ? s.selectedId === 'kt1b'
-          ? 'JUPITER AEROBATIC TEAM (6-SHIP) • FORMASI AKTIF'
-          : 'TAHAP 2 • MANUVER UDARA AKTIF'
+        ? 'TAHAP 2 • MANUVER UDARA AKTIF'
         : 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING',
       autoRotate: false,
       activeHotspot: null,
-      ...(activating && s.selectedId === 'kt1b'
-        ? { camRequest: { pos: [26.0, 18.0, 44.0] as Vec3, target: [0, 3.5, -8.5] as Vec3, nonce: nonce++ } }
-        : {}),
     });
   },
   triggerLanding: () => {
