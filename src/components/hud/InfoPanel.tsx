@@ -34,6 +34,7 @@ export function InfoPanel() {
   const focusHotspot = useHangarStore((s) => s.focusHotspot);
   const quiz = useHangarStore((s) => s.quiz);
   const startQuiz = useHangarStore((s) => s.startQuiz);
+  const answerMcq = useHangarStore((s) => s.answerMcq);
   const nextQuestion = useHangarStore((s) => s.nextQuestion);
   const exitQuiz = useHangarStore((s) => s.exitQuiz);
 
@@ -43,10 +44,7 @@ export function InfoPanel() {
     { id: 'quiz', label: 'Kuis 3D', icon: HelpCircle },
   ];
 
-  const currentQuestionHotspot =
-    quiz.status === 'active'
-      ? unit.hotspots.find((h) => h.id === quiz.order[quiz.index])
-      : null;
+  const currentQuestion = quiz.status === 'active' ? quiz.questions[quiz.index] ?? null : null;
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
   const isJupiterManeuver = unit.id === 'kt1b' && flightMode === 'maneuver';
@@ -243,31 +241,32 @@ export function InfoPanel() {
                       <Target className="h-7 w-7" />
                     </div>
                     <h3 className="font-display text-lg font-bold tracking-wider text-white uppercase">
-                      KUIS EKSPLORASI 3D
+                      KUIS DIRGANTARA 3D
                     </h3>
                     <p className="text-xs leading-relaxed text-slate-300">
-                      Uji pengetahuanmu mengenai <strong className="text-white">{unit.name}</strong>! Putar model 3D,
-                      amati komponennya, lalu ketuk nomor pin yang tepat langsung pada badan pesawat.
+                      Uji wawasanmu tentang <strong className="text-white">{unit.name}</strong> serta pengetahuan umum{' '}
+                      <strong className="text-[#ffb703]">TNI Angkatan Udara</strong>! Kombinasi soal Pin 3D interaktif
+                      dan pilihan ganda teknis &amp; dirgantara.
                     </p>
                     <div className="rounded-lg border border-slate-700/70 bg-[#091c3a]/70 p-2.5 text-xs text-slate-300">
-                      Total Soal: <strong className="text-[#ffb703]">5 Soal Acak</strong> (dari {unit.hotspots.length} komponen)
+                      Total Soal: <strong className="text-[#ffb703]">7 Soal Campuran</strong> (Pin 3D + Pengetahuan Umum)
                     </div>
                     <button
                       type="button"
                       onClick={startQuiz}
                       className="hud-btn w-full border-[#4da6ff] bg-[#4da6ff] font-display text-sm font-bold tracking-[0.15em] text-[#0a1e3c] uppercase shadow-glow hover:bg-[#75bcff]"
                     >
-                      MULAI KUIS 3D
+                      MULAI KUIS
                     </button>
                   </div>
                 )}
 
-                {quiz.status === 'active' && currentQuestionHotspot && (
+                {quiz.status === 'active' && currentQuestion && (
                   <div className="space-y-3">
                     {/* Progress & Skor */}
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-display font-bold tracking-wider text-[#4da6ff] uppercase">
-                        SOAL {quiz.index + 1} / {quiz.order.length}
+                        SOAL {quiz.index + 1} / {quiz.questions.length}
                       </span>
                       <span className="font-display font-bold tracking-wider text-[#ffb703] uppercase">
                         SKOR: {quiz.score}
@@ -276,20 +275,56 @@ export function InfoPanel() {
                     <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
                       <div
                         className="h-full bg-[#4da6ff] transition-all duration-300"
-                        style={{ width: `${((quiz.index + (quiz.feedback ? 1 : 0)) / quiz.order.length) * 100}%` }}
+                        style={{ width: `${((quiz.index + (quiz.feedback ? 1 : 0)) / Math.max(1, quiz.questions.length)) * 100}%` }}
                       />
                     </div>
 
                     {/* Pertanyaan */}
                     <div className="rounded-xl border border-[#ffb703]/45 bg-[#1b1608]/50 p-4">
                       <p className="font-display text-[11px] font-bold tracking-[0.16em] text-[#ffb703] uppercase">
-                        TEMUKAN & KLIK PIN PADA MODEL 3D:
+                        {currentQuestion.kind === 'hotspot'
+                          ? 'SOAL PIN 3D // KETUK PIN PADA PESAWAT:'
+                          : 'PENGETAHUAN UMUM & TEKNIS // PILIH JAWABAN:'}
                       </p>
                       <p className="mt-1.5 text-sm font-semibold leading-snug text-white">
-                        Klik pin yang menunjukkan <span className="text-[#4da6ff]">{currentQuestionHotspot.name}</span>{' '}
-                        pada {unit.name} ini!
+                        {currentQuestion.prompt}
                       </p>
                     </div>
+
+                    {/* Pilihan Ganda untuk soal umum/teknis */}
+                    {currentQuestion.kind === 'mcq' && (
+                      <div className="space-y-2">
+                        {currentQuestion.options.map((opt, idx) => {
+                          const letter = ['A', 'B', 'C', 'D'][idx] ?? '';
+                          const fb = quiz.feedback;
+                          let cls =
+                            'border-slate-700/80 bg-[#0d264d]/80 text-slate-100 hover:border-[#4da6ff] hover:bg-[#13376e] cursor-pointer';
+                          if (fb) {
+                            if (idx === currentQuestion.correctIndex) {
+                              cls = 'border-emerald-400 bg-emerald-500/20 text-emerald-100 cursor-default';
+                            } else if (idx === fb.pickedId && !fb.correct) {
+                              cls = 'border-rose-500 bg-rose-500/20 text-rose-100 cursor-default';
+                            } else {
+                              cls = 'border-slate-800 bg-slate-900/50 text-slate-400 opacity-65 cursor-default';
+                            }
+                          }
+                          return (
+                            <button
+                              key={idx}
+                              type="button"
+                              disabled={Boolean(fb)}
+                              onClick={() => answerMcq(idx)}
+                              className={`w-full flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left text-xs leading-snug transition-all ${cls}`}
+                            >
+                              <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded border border-current/40 font-display text-[11px] font-bold">
+                                {letter}
+                              </span>
+                              <span className="flex-1">{opt}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     {/* Umpan Balik Instan */}
                     {quiz.feedback ? (
@@ -303,30 +338,32 @@ export function InfoPanel() {
                         <div className="flex items-center gap-2 font-display text-sm font-bold tracking-wider uppercase">
                           {quiz.feedback.correct ? (
                             <>
-                              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                              <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0" />
                               <span>TEPAT SEKALI! (+1 POIN)</span>
                             </>
                           ) : (
                             <>
-                              <XCircle className="h-5 w-5 text-rose-400" />
-                              <span>KURANG TEPAT (JAWABAN: PIN {quiz.feedback.questionId})</span>
+                              <XCircle className="h-5 w-5 text-rose-400 shrink-0" />
+                              <span>JAWABAN: {quiz.feedback.correctText}</span>
                             </>
                           )}
                         </div>
-                        <p className="text-xs leading-relaxed text-slate-200">{currentQuestionHotspot.desc}</p>
+                        <p className="text-xs leading-relaxed text-slate-200">{quiz.feedback.explanation}</p>
                         <button
                           type="button"
                           onClick={nextQuestion}
                           className="hud-btn mt-2 w-full border-[#4da6ff] bg-[#4da6ff]/20 font-display text-sm font-bold tracking-widest text-[#4da6ff] uppercase hover:bg-[#4da6ff] hover:text-[#0a1e3c]"
                         >
-                          {quiz.index + 1 >= quiz.order.length ? 'LIHAT SKOR AKHIR' : 'SOAL BERIKUTNYA'}
+                          {quiz.index + 1 >= quiz.questions.length ? 'LIHAT SKOR AKHIR' : 'SOAL BERIKUTNYA'}
                         </button>
                       </div>
                     ) : (
-                      <p className="rounded-lg border border-slate-700/70 bg-[#091c3a]/70 p-3 text-center text-xs text-slate-300">
-                        Ketuk salah satu pin angka <strong className="text-[#4da6ff]">1–{unit.hotspots.length}</strong>{' '}
-                        yang menempel di pesawat 3D.
-                      </p>
+                      currentQuestion.kind === 'hotspot' && (
+                        <p className="rounded-lg border border-slate-700/70 bg-[#091c3a]/70 p-3 text-center text-xs text-slate-300">
+                          Ketuk salah satu pin angka <strong className="text-[#4da6ff]">1–{unit.hotspots.length}</strong>{' '}
+                          yang menempel di pesawat 3D.
+                        </p>
+                      )
                     )}
 
                     <button
@@ -348,30 +385,27 @@ export function InfoPanel() {
                       KUIS SELESAI!
                     </h3>
                     <div className="font-display text-4xl font-bold text-[#4da6ff]">
-                      {Math.round((quiz.score / Math.max(1, quiz.order.length)) * 100)}
+                      {Math.round((quiz.score / Math.max(1, quiz.questions.length)) * 100)}
                       <span className="text-lg text-slate-400"> / 100</span>
                     </div>
                     <p className="text-xs text-slate-300">
                       Kamu menjawab benar <strong className="text-[#ffb703]">{quiz.score}</strong> dari{' '}
-                      <strong className="text-white">{quiz.order.length}</strong> komponen {unit.name}.
+                      <strong className="text-white">{quiz.questions.length}</strong> soal Kuis Dirgantara.
                     </p>
                     <div className="space-y-1.5 pt-2 text-left">
-                      {quiz.answers.map((a, idx) => {
-                        const h = unit.hotspots.find((x) => x.id === a.questionId);
-                        return (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-[#091c3a]/80 px-2.5 py-1.5 text-xs"
-                          >
-                            <span className="truncate text-slate-200">{h?.name}</span>
-                            {a.correct ? (
-                              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
-                            ) : (
-                              <XCircle className="h-4 w-4 shrink-0 text-rose-400" />
-                            )}
-                          </div>
-                        );
-                      })}
+                      {quiz.answers.map((a, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between gap-2 rounded-lg border border-slate-800 bg-[#091c3a]/80 px-2.5 py-1.5 text-xs"
+                        >
+                          <span className="truncate text-slate-200">{a.label}</span>
+                          {a.correct ? (
+                            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                          ) : (
+                            <XCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <button
                       type="button"
@@ -408,7 +442,7 @@ export function InfoPanel() {
       {showCert && (
         <QuizCertificateModal
           score={quiz.score}
-          total={quiz.order.length}
+          total={quiz.questions.length}
           onClose={() => setShowCert(false)}
         />
       )}

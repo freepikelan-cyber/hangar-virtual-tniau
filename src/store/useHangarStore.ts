@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
 import { getFighterManeuverSpec, type FighterManeuverId } from '../data/fighterManeuvers';
 import type { JupiterManeuverId } from '../data/jupiterManeuvers';
+import { buildMixedQuiz, type QuizQuestion } from '../data/quizData';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
@@ -47,13 +48,18 @@ export const DEFAULT_CAMERA: { pos: Vec3; target: Vec3 } = {
 export const pinRegistry = new Map<number, THREE.Object3D>();
 
 export interface QuizAnswer {
+  kind: 'hotspot' | 'mcq';
   questionId: number;
   pickedId: number;
   correct: boolean;
+  label: string;
+  correctText: string;
+  explanation: string;
 }
 
 export interface QuizState {
   status: 'idle' | 'active' | 'finished';
+  questions: QuizQuestion[];
   order: number[];
   index: number;
   score: number;
@@ -148,20 +154,12 @@ interface HangarState {
 
   startQuiz: () => void;
   answerQuiz: (pickedId: number) => void;
+  answerMcq: (optionIndex: number) => void;
   nextQuestion: () => void;
   exitQuiz: () => void;
 }
 
-const emptyQuiz: QuizState = { status: 'idle', order: [], index: 0, score: 0, answers: [], feedback: null };
-
-const shuffle = <T,>(arr: T[]) => {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-};
+const emptyQuiz: QuizState = { status: 'idle', questions: [], order: [], index: 0, score: 0, answers: [], feedback: null };
 
 let nonce = 1;
 const tmp = new THREE.Vector3();
@@ -538,10 +536,16 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   startQuiz: () => {
     const unit = getUnit(get().selectedId);
     const mobile = isCompactViewport();
+    const questions = buildMixedQuiz(unit);
     set({
-      quiz: { ...emptyQuiz, status: 'active', order: shuffle(unit.hotspots.map((h) => h.id)).slice(0, 5) },
+      quiz: {
+        ...emptyQuiz,
+        status: 'active',
+        questions,
+        order: questions.map((_, i) => i),
+      },
       infoTab: 'quiz',
-      showPins: true,
+      showPins: questions[0]?.kind === 'hotspot',
       showInfographic: false,
       autoRotate: false,
       activeHotspot: null,
@@ -553,8 +557,35 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   answerQuiz: (pickedId) => {
     const q = get().quiz;
     if (q.status !== 'active' || q.feedback) return;
-    const questionId = q.order[q.index];
-    const ans: QuizAnswer = { questionId, pickedId, correct: questionId === pickedId };
+    const cur = q.questions[q.index];
+    if (!cur || cur.kind !== 'hotspot') return;
+    const ans: QuizAnswer = {
+      kind: 'hotspot',
+      questionId: cur.hotspotId,
+      pickedId,
+      correct: cur.hotspotId === pickedId,
+      label: cur.label,
+      correctText: `Pin ${cur.hotspotId}`,
+      explanation: cur.explanation,
+    };
+    set({
+      quiz: { ...q, feedback: ans, answers: [...q.answers, ans], score: q.score + (ans.correct ? 1 : 0) },
+    });
+  },
+  answerMcq: (optionIndex) => {
+    const q = get().quiz;
+    if (q.status !== 'active' || q.feedback) return;
+    const cur = q.questions[q.index];
+    if (!cur || cur.kind !== 'mcq') return;
+    const ans: QuizAnswer = {
+      kind: 'mcq',
+      questionId: cur.correctIndex,
+      pickedId: optionIndex,
+      correct: cur.correctIndex === optionIndex,
+      label: cur.label,
+      correctText: cur.options[cur.correctIndex],
+      explanation: cur.explanation,
+    };
     set({
       quiz: { ...q, feedback: ans, answers: [...q.answers, ans], score: q.score + (ans.correct ? 1 : 0) },
     });
@@ -562,13 +593,17 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   nextQuestion: () => {
     const q = get().quiz;
     if (q.status !== 'active') return;
-    if (q.index + 1 >= q.order.length) {
+    if (q.index + 1 >= q.questions.length) {
       set({
         quiz: { ...q, status: 'finished', feedback: null },
         rightOpen: true,
       });
     } else {
-      set({ quiz: { ...q, index: q.index + 1, feedback: null } });
+      const nextIdx = q.index + 1;
+      set({
+        quiz: { ...q, index: nextIdx, feedback: null },
+        showPins: q.questions[nextIdx]?.kind === 'hotspot',
+      });
     }
   },
   exitQuiz: () => set({ quiz: emptyQuiz }),

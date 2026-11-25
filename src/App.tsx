@@ -7,7 +7,7 @@ import { InfoPanel } from './components/hud/InfoPanel';
 import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
-import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
+import { useHangarStore } from './store/useHangarStore';
 
 // Lazy-load panel sekunder agar muat awal aplikasi instan & ringan
 const InfographicModal = lazy(() =>
@@ -34,22 +34,22 @@ const SafetyStoryPanel = lazy(() =>
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
 function FloatingQuizBanner() {
-  const unit = useSelectedUnit();
   const quiz = useHangarStore((s) => s.quiz);
   const rightOpen = useHangarStore((s) => s.rightOpen);
+  const answerMcq = useHangarStore((s) => s.answerMcq);
   const nextQuestion = useHangarStore((s) => s.nextQuestion);
   const exitQuiz = useHangarStore((s) => s.exitQuiz);
 
   if (quiz.status !== 'active' || rightOpen) return null;
-  const qHotspot = unit.hotspots.find((h) => h.id === quiz.order[quiz.index]);
-  if (!qHotspot) return null;
+  const curQ = quiz.questions[quiz.index];
+  if (!curQ) return null;
 
   return (
     <div className="pointer-events-none fixed top-[122px] left-1/2 z-25 w-[min(420px,calc(100vw-1.5rem))] -translate-x-1/2 animate-slidein">
       <div className="hud-panel pointer-events-auto rounded-xl border-[#ffb703]/60 p-3 shadow-xl space-y-2">
         <div className="flex items-center justify-between gap-2 text-[11px] font-display font-bold tracking-wider uppercase">
           <span className="text-[#4da6ff]">
-            KUIS {quiz.index + 1}/{quiz.order.length} • SKOR: {quiz.score}
+            KUIS {quiz.index + 1}/{quiz.questions.length} • SKOR: {quiz.score}
           </span>
           <button
             type="button"
@@ -61,9 +61,23 @@ function FloatingQuizBanner() {
           </button>
         </div>
 
-        <p className="text-xs sm:text-sm font-medium text-white leading-snug">
-          Ketuk pin <strong className="text-[#ffb703]">{qHotspot.name}</strong> pada pesawat 3D!
-        </p>
+        <p className="text-xs sm:text-sm font-medium text-white leading-snug">{curQ.prompt}</p>
+
+        {curQ.kind === 'mcq' && !quiz.feedback && (
+          <div className="grid grid-cols-1 gap-1.5 pt-1">
+            {curQ.options.map((opt, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => answerMcq(i)}
+                className="rounded-lg border border-slate-700 bg-[#0e2a54]/90 px-2.5 py-1.5 text-left text-xs text-slate-100 hover:border-[#4da6ff] cursor-pointer"
+              >
+                <strong className="text-[#ffb703] mr-1.5">{['A', 'B', 'C', 'D'][i]}.</strong>
+                {opt}
+              </button>
+            ))}
+          </div>
+        )}
 
         {quiz.feedback && (
           <div className="flex items-center justify-between gap-2 pt-1 border-t border-[#4da6ff]/20">
@@ -74,20 +88,20 @@ function FloatingQuizBanner() {
             >
               {quiz.feedback.correct ? (
                 <>
-                  <CheckCircle2 className="h-4 w-4" /> Tepat!
+                  <CheckCircle2 className="h-4 w-4 shrink-0" /> Tepat!
                 </>
               ) : (
                 <>
-                  <XCircle className="h-4 w-4" /> Jawaban: Pin {quiz.feedback.questionId}
+                  <XCircle className="h-4 w-4 shrink-0" /> Jawaban: {quiz.feedback.correctText}
                 </>
               )}
             </span>
             <button
               type="button"
               onClick={nextQuestion}
-              className="rounded-lg border border-[#4da6ff] bg-[#4da6ff]/20 px-3 py-1.5 font-display text-xs font-bold tracking-wider text-[#4da6ff] uppercase hover:bg-[#4da6ff] hover:text-[#0a1e3c] cursor-pointer"
+              className="rounded-lg border border-[#4da6ff] bg-[#4da6ff]/20 px-3 py-1.5 font-display text-xs font-bold tracking-wider text-[#4da6ff] uppercase hover:bg-[#4da6ff] hover:text-[#0a1e3c] cursor-pointer shrink-0"
             >
-              {quiz.index + 1 >= quiz.order.length ? 'Skor Akhir' : 'Lanjut'}
+              {quiz.index + 1 >= quiz.questions.length ? 'Skor Akhir' : 'Lanjut'}
             </button>
           </div>
         )}

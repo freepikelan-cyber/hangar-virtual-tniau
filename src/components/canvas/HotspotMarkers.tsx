@@ -23,14 +23,15 @@ function HotspotPin({ item }: HotspotPinProps) {
     };
   }, [item.id]);
 
-  const isQuizActive = quiz.status === 'active';
+  const currentQ = quiz.status === 'active' ? quiz.questions[quiz.index] : null;
+  const isQuizHotspot = quiz.status === 'active' && currentQ?.kind === 'hotspot';
   const isSelected = activeHotspot === item.id;
   const fb = quiz.feedback;
 
-  const isInternal = !isQuizActive && item.partType === 'Sistem Internal';
+  const isInternal = !isQuizHotspot && item.partType === 'Sistem Internal';
 
   let tone: 'blue' | 'internal' | 'amber' | 'green' | 'red' = isInternal ? 'internal' : 'blue';
-  if (isQuizActive && fb) {
+  if (isQuizHotspot && fb && fb.kind === 'hotspot') {
     if (item.id === fb.questionId) tone = 'green';
     else if (item.id === fb.pickedId && !fb.correct) tone = 'red';
   } else if (isSelected) {
@@ -55,7 +56,7 @@ function HotspotPin({ item }: HotspotPinProps) {
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isQuizActive) {
+    if (isQuizHotspot) {
       answerQuiz(item.id);
     } else {
       focusHotspot(item.id);
@@ -73,8 +74,8 @@ function HotspotPin({ item }: HotspotPinProps) {
           <button
             type="button"
             onClick={handleClick}
-            title={isQuizActive ? `Pin ${item.id}` : `${item.id}. ${item.name}${item.partType ? ` (${item.partType})` : ''}`}
-            aria-label={isQuizActive ? `Pilih pin ${item.id}` : `Lihat komponen ${item.name}`}
+            title={isQuizHotspot ? `Pin ${item.id}` : `${item.id}. ${item.name}${item.partType ? ` (${item.partType})` : ''}`}
+            aria-label={isQuizHotspot ? `Pilih pin ${item.id}` : `Lihat komponen ${item.name}`}
             className={`relative flex h-8 w-8 min-h-[32px] min-w-[32px] items-center justify-center rounded-full border-2 font-display text-sm font-bold transition-all duration-200 cursor-pointer ${toneClasses}`}
           >
             {item.id}
@@ -87,9 +88,10 @@ function HotspotPin({ item }: HotspotPinProps) {
 
 export function HotspotMarkers({ hotspots }: { hotspots: HotspotItem[] }) {
   const showPins = useHangarStore((s) => s.showPins);
-  const quizStatus = useHangarStore((s) => s.quiz.status);
+  const quiz = useHangarStore((s) => s.quiz);
+  const isQuizHotspot = quiz.status === 'active' && quiz.questions[quiz.index]?.kind === 'hotspot';
 
-  if (!showPins && quizStatus !== 'active') return null;
+  if (!showPins && !isQuizHotspot) return null;
 
   return (
     <group name="hotspot-markers">
