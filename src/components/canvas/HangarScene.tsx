@@ -125,9 +125,6 @@ function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
-  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
-  const pilotRoomStage = useHangarStore((s) => s.pilotRoomStage);
-  const isCockpitPov = pilotRoomOpen && pilotRoomStage === 'cockpit';
 
   const initial = useMemo(() => getDefaultCamera(), []);
   const desiredPos = useRef(new THREE.Vector3(...initial.pos));
@@ -138,27 +135,19 @@ function CameraRig() {
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     if (!cam.isPerspectiveCamera) return;
-    const nextFov = isCockpitPov ? 64 : size.width < size.height ? 52 : 42;
+    const nextFov = size.width < size.height ? 52 : 42;
     if (cam.fov !== nextFov) {
       cam.fov = nextFov;
       cam.updateProjectionMatrix();
     }
-  }, [camera, size.width, size.height, isCockpitPov]);
+  }, [camera, size.width, size.height]);
 
   useEffect(() => {
-    if (isCockpitPov) {
-      desiredPos.current.set(0, 3.25, 6.2);
-      desiredTarget.current.set(0, 2.75, 42.0);
-      animating.current = true;
-    }
-  }, [isCockpitPov]);
-
-  useEffect(() => {
-    if (!camRequest || isCockpitPov) return;
+    if (!camRequest) return;
     desiredPos.current.set(...camRequest.pos);
     desiredTarget.current.set(...camRequest.target);
     animating.current = true;
-  }, [camRequest, isCockpitPov]);
+  }, [camRequest]);
 
   useFrame((_, delta) => {
     if (!animating.current || !controlsRef.current) return;
@@ -179,7 +168,6 @@ function CameraRig() {
     <OrbitControls
       ref={controlsRef}
       makeDefault
-      enabled={!isCockpitPov}
       enableDamping
       dampingFactor={0.07}
       enablePan

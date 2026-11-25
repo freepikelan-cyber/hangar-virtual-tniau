@@ -83,9 +83,6 @@ interface HangarState {
   soundEnabled: boolean;
   timeOfDay: TimeOfDay;
   showcaseMode: boolean;
-  pilotRoomOpen: boolean;
-  pilotRoomStage: 'gear' | 'cockpit';
-  canopyOpen: boolean;
   aeroMode: boolean;
   safetyMode: boolean;
   safetyNonce: number;
@@ -134,10 +131,6 @@ interface HangarState {
   triggerJupiterShow: () => void;
   cycleTimeOfDay: () => void;
   toggleShowcase: () => void;
-  openPilotRoom: () => void;
-  closePilotRoom: () => void;
-  setPilotRoomStage: (stage: 'gear' | 'cockpit') => void;
-  toggleCanopy: () => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
 
@@ -190,9 +183,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   soundEnabled: true,
   timeOfDay: 'day',
   showcaseMode: false,
-  pilotRoomOpen: false,
-  pilotRoomStage: 'gear',
-  canopyOpen: true,
   aeroMode: false,
   safetyMode: false,
   safetyNonce: 0,
@@ -381,7 +371,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       aeroMode: false,
       oxygenMode: false,
       showcaseMode: false,
-      pilotRoomOpen: false,
       autoRotate: false,
       activeHotspot: null,
       leftOpen: mobile ? false : s.leftOpen,
@@ -400,40 +389,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
         autoRotate: next,
         leftOpen: next ? false : s.leftOpen,
         rightOpen: next ? false : s.rightOpen,
-        pilotRoomOpen: false,
       };
     }),
-  openPilotRoom: () =>
-    set({
-      pilotRoomOpen: true,
-      pilotRoomStage: 'gear',
-      canopyOpen: true,
-      showcaseMode: false,
-      safetyMode: false,
-      aeroMode: false,
-      oxygenMode: false,
-      autoRotate: false,
-      activeHotspot: null,
-      leftOpen: false,
-      rightOpen: false,
-    }),
-  closePilotRoom: () => {
-    const s = get();
-    set({
-      pilotRoomOpen: false,
-      pilotRoomStage: 'gear',
-      canopyOpen: true,
-      flightMode: 'parked',
-      flightLabel: null,
-      camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
-    });
-  },
-  setPilotRoomStage: (pilotRoomStage) =>
-    set({
-      pilotRoomStage,
-      canopyOpen: pilotRoomStage === 'cockpit' ? true : false,
-    }),
-  toggleCanopy: () => set((s) => ({ canopyOpen: !s.canopyOpen })),
   replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
   setSafetyStep: (safetyStep) => {
     if (get().safetyStep !== safetyStep) set({ safetyStep });

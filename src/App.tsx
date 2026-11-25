@@ -14,7 +14,6 @@ import { FighterManeuverPanel } from './components/hud/FighterManeuverPanel';
 import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
 import { JupiterManeuverPanel } from './components/hud/JupiterManeuverPanel';
 import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
-import { PilotRoomOverlay } from './components/hud/PilotRoomOverlay';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
@@ -85,7 +84,6 @@ const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16', 'kt1b', 'c130j', 'b737vip', 
 
 export function App() {
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
-  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
 
   useEffect(() => {
     if (!showcaseMode) return;
@@ -105,7 +103,7 @@ export function App() {
 
       {/* Lapisan HUD Militer */}
       <TopHeader />
-      {!pilotRoomOpen && <FleetSidebar />}
+      <FleetSidebar />
       <InfoPanel />
       <AeroControlPanel />
       <AarStatusPanel />
@@ -113,7 +111,6 @@ export function App() {
       <GSuitControlPanel />
       <JupiterManeuverPanel />
       <SafetyStoryPanel />
-      <PilotRoomOverlay />
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />

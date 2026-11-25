@@ -6,7 +6,6 @@ import {
   FileText,
   Flame,
   Fuel,
-  Gauge,
   Lock,
   Mail,
   MapPin,
@@ -36,7 +35,6 @@ export function BottomDock() {
   const oxygenMode = useHangarStore((s) => s.oxygenMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
-  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
 
   const toggle = useHangarStore((s) => s.toggle);
   const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
@@ -46,14 +44,11 @@ export function BottomDock() {
   const triggerAar = useHangarStore((s) => s.triggerAar);
   const triggerMission = useHangarStore((s) => s.triggerMission);
   const triggerJupiterShow = useHangarStore((s) => s.triggerJupiterShow);
-  const openPilotRoom = useHangarStore((s) => s.openPilotRoom);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const [simMenuOpen, setSimMenuOpen] = useState(false);
-
-  if (pilotRoomOpen) return null;
 
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
@@ -131,18 +126,6 @@ export function BottomDock() {
             onClick: () => {
               setSimMenuOpen(false);
               toggle('safetyMode');
-            },
-          },
-          {
-            id: 'pilot-room',
-            label: 'Pilot Room',
-            short: 'Pilot',
-            icon: Gauge,
-            active: pilotRoomOpen,
-            accent: 'emerald' as const,
-            onClick: () => {
-              setSimMenuOpen(false);
-              openPilotRoom();
             },
           },
         ]),

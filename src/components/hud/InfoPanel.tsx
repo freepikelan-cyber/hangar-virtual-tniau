@@ -27,7 +27,6 @@ export function InfoPanel() {
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
   const flightMode = useHangarStore((s) => s.flightMode);
-  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
   const toggleRight = useHangarStore((s) => s.toggleRight);
   const infoTab = useHangarStore((s) => s.infoTab);
   const setInfoTab = useHangarStore((s) => s.setInfoTab);
@@ -53,7 +52,6 @@ export function InfoPanel() {
   const isJupiterManeuver = unit.id === 'kt1b' && flightMode === 'maneuver';
   const isFighterManeuver = unit.category === 'Tempur' && flightMode === 'maneuver';
   const isAar = flightMode === 'aar';
-  if (pilotRoomOpen) return null;
   if ((aeroMode || safetyMode || isJupiterManeuver || isFighterManeuver || isAar) && !isEquipment) return null;
 
   return (

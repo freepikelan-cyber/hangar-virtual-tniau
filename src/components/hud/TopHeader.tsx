@@ -10,12 +10,9 @@ export function TopHeader() {
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const timeOfDay = useHangarStore((s) => s.timeOfDay);
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
-  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
   const toggle = useHangarStore((s) => s.toggle);
   const cycleTimeOfDay = useHangarStore((s) => s.cycleTimeOfDay);
   const toggleShowcase = useHangarStore((s) => s.toggleShowcase);
-
-  if (pilotRoomOpen) return null;
 
   const TimeIcon = timeOfDay === 'sunset' ? Sunset : timeOfDay === 'night' ? Moon : Sun;
   const timeLabel = timeOfDay === 'sunset' ? 'Senja' : timeOfDay === 'night' ? 'Malam' : 'Siang';
