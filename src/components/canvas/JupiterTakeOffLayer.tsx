@@ -21,31 +21,31 @@ function heartPoint(u: number, s: 1 | -1): THREE.Vector3 {
   return new THREE.Vector3(hx, 10.5 + hy, -3.5);
 }
 
-// Formasi Arrowhead 5 wingmen (J2–J6) relatif terhadap Jupiter 1 (Lead) di udara
+// Formasi Arrowhead 5 wingmen (J2–J6) berjarak LEGA (≥ 13.5 unit antar pesawat agar sayap bebas bersentuhan!)
 const ARROWHEAD_SLOTS: [number, number, number][] = [
-  [7.0, 2.8, -6.5],    // Jupiter 2 (Kanan)
-  [-7.0, 2.8, -6.5],   // Jupiter 3 (Kiri)
-  [0.0, 2.5, -13.0],   // Jupiter 4 (Slot Tengah)
-  [14.0, 2.6, -13.0],  // Jupiter 5 (Synchro Kanan)
-  [-14.0, 2.6, -13.0], // Jupiter 6 (Synchro Kiri)
+  [13.5, 2.8, -12.0],   // Jupiter 2 (Kanan)
+  [-13.5, 2.8, -12.0],  // Jupiter 3 (Kiri)
+  [0.0, 2.4, -24.0],    // Jupiter 4 (Slot Tengah)
+  [27.0, 2.6, -24.0],   // Jupiter 5 (Synchro Kanan)
+  [-27.0, 2.6, -24.0],  // Jupiter 6 (Synchro Kiri)
 ];
 
-// Formasi Arrowhead RAPAT saat "Tighten up into Arrowhead formation!"
+// Formasi Arrowhead RAPAT (lebih rapat dari Arrowhead awal, namun tetap menjaga jarak aman antar sayap!)
 const TIGHT_ARROW_SLOTS: [number, number, number][] = [
-  [5.4, 2.85, -5.0],
-  [-5.4, 2.85, -5.0],
-  [0.0, 2.65, -10.0],
-  [10.8, 2.75, -10.0],
-  [-10.8, 2.75, -10.0],
+  [11.5, 2.85, -10.5],
+  [-11.5, 2.85, -10.5],
+  [0.0, 2.55, -21.0],
+  [23.0, 2.7, -21.0],
+  [-23.0, 2.7, -21.0],
 ];
 
-// Formasi Left Echelon (J2–J6 berjajar rapi di sayap kiri Jupiter 1) saat Rejoin & persiapan Landing
+// Formasi Left Echelon (J2–J6 berjajar rapi di sayap kiri Jupiter 1 dengan jarak aman ≥ 11.5 unit!)
 const LEFT_ECHELON_SLOTS: [number, number, number][] = [
-  [-5.2, 2.9, -4.6],
-  [-10.4, 2.85, -9.2],
-  [-15.6, 2.8, -13.8],
-  [-20.8, 2.75, -18.4],
-  [-26.0, 2.7, -23.0],
+  [-11.5, 2.9, -10.5],
+  [-23.0, 2.8, -21.0],
+  [-34.5, 2.7, -31.5],
+  [-46.0, 2.6, -42.0],
+  [-57.5, 2.5, -52.5],
 ];
 
 // Formasi 6-Ship SIAP TAKE OFF berjarak LEGA & MAJU jauh dari tepi laut di Runway 09 3-jalur (WORLD SPACE)!
@@ -413,17 +413,17 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tz = THREE.MathUtils.lerp(baseSlot[2], tightSlot[2], p);
           tp = -0.03;
           tr = 0;
-        } else if (pt < 26.0) {
-          // 21..26s: "Standby for Jupiter Roll... Pulling up, 20 degrees... Ready, roll..."
-          const p = easeInOut((pt - 21.0) / 5.0);
+        } else if (pt < 24.5) {
+          // 21..24.5s: "Standby for Jupiter Roll... Pulling up, 20 degrees... Ready..."
+          const p = easeInOut((pt - 21.0) / 3.5);
           tx = tightSlot[0];
           ty = tightSlot[1] + 1.2 * p;
           tz = tightSlot[2];
-          tp = -0.03 - 0.32 * p;
+          tp = -0.03 - 0.3 * p;
           tr = 0;
-        } else if (pt < 29.2) {
-          // 26..29.2s: "...NOW!" -> JUPITER ROLL 360° mulus serempak!
-          const p = easeInOut((pt - 26.0) / 3.2);
+        } else if (pt < 29.5) {
+          // 24.5..29.5s: "...NOW!" -> JUPITER ROLL 360° SANTAI & ANGGUN (5 detik penuh, jarak tetap terjaga!)
+          const p = easeInOut((pt - 24.5) / 5.0);
           const angle = p * Math.PI * 2;
           const rx = tightSlot[0];
           const ry = tightSlot[1] - 2.95;
@@ -432,33 +432,40 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tx = rx * cosA + ry * sinA;
           ty = 4.15 - 1.2 * p + (-rx * sinA + ry * cosA);
           tz = tightSlot[2];
-          tp = -0.22 * Math.sin(p * Math.PI);
+          tp = -0.18 * Math.sin(p * Math.PI);
           tr = -angle;
         } else if (pt < 46.5 && (i === 3 || i === 4)) {
           // 29.5..46.5s: HANYA J5 & J6 melakukan Opposing Pass Crossing!
+          // J5 & J6 menjauh keluar layar ke JAUH KANAN (+72) & JAUH KIRI (-72) dulu, lalu baru melesat CROSSING tepat di tengah!
           const isJ5 = i === 3;
           const dir = isJ5 ? 1 : -1;
-          if (pt < 37.5) {
-            // "Five and Six, breaking off for opposing pass. Heading reciprocal, altitude 500 feet."
-            const p = easeInOut((pt - 29.5) / 8.0);
-            tx = THREE.MathUtils.lerp(tightSlot[0], dir * 34.0, p);
-            ty = THREE.MathUtils.lerp(tightSlot[1], 2.8, p);
-            tz = THREE.MathUtils.lerp(tightSlot[2], -3.0 + (isJ5 ? 1.5 : -1.5), p);
-            tyaw = dir * -Math.PI * 0.5 * easeInOut(Math.min(1, p * 1.35));
-            tr = dir * 0.42 * Math.sin(p * Math.PI);
-          } else if (pt < 45.2) {
-            // "Six, visual! Closing speed 400 knots... Three, two, one... CROSSING!" (Cross tepat di X=0 pada pt=44.0s!)
-            const p = Math.min(1, (pt - 37.5) / 7.7);
-            const xPos = THREE.MathUtils.lerp(dir * 34.0, -dir * 12.0, p);
-            tx = xPos;
-            ty = 2.8 + (isJ5 ? 0.35 : -0.35);
-            tz = -3.0 + (isJ5 ? 1.5 : -1.5);
+          if (pt < 35.5) {
+            // Break off keluar jauh ke kanan (+72) & kiri (-72) agar tidak terlihat di tengah layar!
+            const p = easeInOut((pt - 29.5) / 6.0);
+            tx = THREE.MathUtils.lerp(tightSlot[0], dir * 72.0, p);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 3.0, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], -3.0 + (isJ5 ? 2.2 : -2.2), p);
+            tyaw = dir * -Math.PI * 0.5 * easeInOut(Math.min(1, p * 1.4));
+            tr = dir * 0.38 * Math.sin(p * Math.PI);
+          } else if (pt < 41.0) {
+            // Tahan posisi JAUH di kanan (+72) & kiri (-72) saat "Heading reciprocal... Visual contact? Six, visual!"
+            tx = dir * 72.0;
+            ty = 3.0 + (isJ5 ? 0.5 : -0.5);
+            tz = -3.0 + (isJ5 ? 2.2 : -2.2);
             tyaw = dir * -Math.PI * 0.5;
-            tr = dir * 0.1 * Math.sin(p * Math.PI);
+            tr = 0;
+          } else if (pt < 45.4) {
+            // "Closing speed 400 knots... Three, two, one... CROSSING!" -> Baru melesat masuk & berpapasan tepat di X=0 (pt = 43.2s)!
+            const p = (pt - 41.0) / 4.4;
+            tx = THREE.MathUtils.lerp(dir * 72.0, -dir * 72.0, p);
+            ty = 3.0 + (isJ5 ? 0.5 : -0.5);
+            tz = -3.0 + (isJ5 ? 2.2 : -2.2);
+            tyaw = dir * -Math.PI * 0.5;
+            tr = dir * 0.08 * Math.sin(p * Math.PI);
           } else {
-            const p = easeInOut((pt - 45.2) / 1.3);
-            tx = THREE.MathUtils.lerp(-dir * 12.0, baseSlot[0], p);
-            ty = THREE.MathUtils.lerp(2.8, baseSlot[1], p);
+            const p = easeInOut((pt - 45.4) / 1.1);
+            tx = THREE.MathUtils.lerp(-dir * 72.0, baseSlot[0], p);
+            ty = THREE.MathUtils.lerp(3.0, baseSlot[1], p);
             tz = THREE.MathUtils.lerp(-3.0, baseSlot[2], p);
             tyaw = THREE.MathUtils.lerp(dir * -Math.PI * 0.5, 0, p);
           }
@@ -598,7 +605,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       } else {
         grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 6));
         grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 6));
-        if (flightMode === 'airborne' && pt >= 26.0 && pt < 29.2) {
+        if (flightMode === 'airborne' && pt >= 24.5 && pt < 29.5) {
           grp.rotation.z = tr;
         } else {
           if (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;

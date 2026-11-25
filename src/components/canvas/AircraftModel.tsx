@@ -511,18 +511,19 @@ export function AircraftModel() {
           targetPitch = -0.03;
           targetRoll = 0;
           setFlightLabel('🎙️ JUPITERS, TIGHTEN UP INTO ARROWHEAD FORMATION • STEADY ON MY WING');
-        } else if (pt < 26.0) {
-          const p = easeInOut((pt - 21.0) / 5.0);
-          targetPitch = -0.03 - 0.32 * p;
+        } else if (pt < 24.5) {
+          const p = easeInOut((pt - 21.0) / 3.5);
+          targetPitch = -0.03 - 0.3 * p;
           targetY = 2.95 + 1.2 * p;
           targetRoll = 0;
           setFlightLabel('🎙️ STANDBY FOR JUPITER ROLL • PULLING UP 20 DEGREES... READY...');
-        } else if (pt < 29.2) {
-          const p = easeInOut((pt - 26.0) / 3.2);
-          targetPitch = -0.22 * Math.sin(p * Math.PI);
+        } else if (pt < 29.5) {
+          // Putaran Jupiter Roll santai & anggun (5 detik penuh untuk 1 putaran 360°)
+          const p = easeInOut((pt - 24.5) / 5.0);
+          targetPitch = -0.18 * Math.sin(p * Math.PI);
           targetY = 4.15 - 1.2 * p;
           directRoll = -p * Math.PI * 2;
-          setFlightLabel('🔥 ROLL... NOW! • JUPITER ROLL 360° BERSAMA');
+          setFlightLabel('🔥 ROLL... NOW! • JUPITER ROLL 360° SANTAI & ANGGUN');
         } else if (pt < 46.5) {
           // 29.5..46.5: Opposing Pass HANYA 2 pesawat (J5 & J6) — J1 mundur & sembunyi jauh di belakang!
           const pullBack = pt < 31.2 ? easeInOut((pt - 29.2) / 2.0) : pt > 44.5 ? 1 - easeInOut((pt - 44.5) / 2.0) : 1;
