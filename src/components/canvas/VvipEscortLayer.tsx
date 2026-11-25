@@ -55,7 +55,9 @@ export function VvipEscortLayer() {
   const rightFlameRef = useRef<THREE.Mesh>(null);
   const smokeSpriteRefs = useRef<(THREE.Sprite | null)[]>([]);
   const timer = useRef(0);
+  const welcomePlayed = useRef(false);
   const greetingPlayed = useRef(false);
+  const replyPlayed = useRef(false);
   const smokeEmitAccum = useRef(0);
   const smokeIdx = useRef(0);
 
@@ -108,7 +110,9 @@ export function VvipEscortLayer() {
   useEffect(() => {
     if (!isActive) {
       timer.current = 0;
+      welcomePlayed.current = false;
       greetingPlayed.current = false;
+      replyPlayed.current = false;
       smokeEmitAccum.current = 0;
       smokePool.forEach((p) => {
         p.active = false;
@@ -123,11 +127,24 @@ export function VvipEscortLayer() {
     timer.current += dt;
     const st = timer.current;
 
-    const ESCORT_APPEAR = 6.0;
-    const GREET_START = 10.5;
-    const SALUTE_START = 27.6;
-    const BURST_START = 29.4; // 1.8 detik hormat wing-rock + akselerasi maju dulu, lalu Bomb Burst lengkung mulus!
+    // Timeline lengkap audio & visual Indonesia One (tanpa tumpang tindih!):
+    // 0.6..20.4s : Pengumuman Kapten Pnb Herlani di atas pesawat Kepresidenan RI menuju Sentani Jayapura
+    // 21.0..25.0s: 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
+    // 25.2..42.2s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara
+    // 42.6..49.5s: Balasan Indonesia One kepada Flight Pengawal ("Terima kasih atas pengawalannya...")
+    // 50.0s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
+    const WELCOME_START = 0.6;
+    const ESCORT_APPEAR = 21.0;
+    const GREET_START = 25.2;
+    const REPLY_START = 42.6;
+    const SALUTE_START = 50.0;
+    const BURST_START = 51.8;
     const BURST_DUR = 6.2;
+
+    if (st >= WELCOME_START && !welcomePlayed.current) {
+      welcomePlayed.current = true;
+      aircraftAudio.playVvipVoice('vvip-welcome', soundEnabled);
+    }
 
     if (st < ESCORT_APPEAR) {
       if (rightRef.current) rightRef.current.visible = false;
@@ -137,9 +154,9 @@ export function VvipEscortLayer() {
       });
       if (flightMode === 'airborne') {
         setFlightLabel(
-          st > 4.2
-            ? '📡 RADAR: 2 PESAWAT TEMPUR PENGAWAL F-16 TNI AU MENDEKAT...'
-            : 'TERBANG JELAJAH VVIP • PESAWAT KEPRESIDENAN RI',
+          st > 19.2
+            ? '📡 RADAR: 2 PESAWAT TEMPUR PENGAWAL TNI AU MENDEKAT...'
+            : '🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KABIN MENUJU BANDARA SENTANI JAYAPURA',
         );
       }
       return;
@@ -286,12 +303,22 @@ export function VvipEscortLayer() {
       aircraftAudio.playVvipEscortRadio(soundEnabled);
     }
 
-    if (st >= GREET_START && st < SALUTE_START) {
+    // Fase 3B: Balasan dari Indonesia One kepada Flight Pengawal
+    if (st >= REPLY_START && !replyPlayed.current) {
+      replyPlayed.current = true;
+      aircraftAudio.playVvipVoice('vvip-reply', soundEnabled);
+    }
+
+    if (st >= GREET_START && st < REPLY_START) {
       setFlightLabel(
         '📡 LETKOL PNB MUHAMMAD JAKI DIRGANTARA: "SELAMAT PAGI, YANG KAMI HORMATI BAPAK PRESIDEN REPUBLIK INDONESIA... SALAM SWA BHUWANA PAKSA!"',
       );
+    } else if (st >= REPLY_START && st < SALUTE_START) {
+      setFlightLabel(
+        '🎙️ INDONESIA ONE: "TERIMA KASIH ATAS PENGAWALANNYA DI WILAYAH UDARA RI. SELAMAT BERTUGAS KEMBALI. SALAM SWA BHUWANA PAKSA!"',
+      );
     } else if (st >= SALUTE_START && st < BURST_START + BURST_DUR) {
-      setFlightLabel('🔥 PENGAWAL 1 (F-16) • SALUTE WING-ROCK & MANUVER BOMB BURST HORMAT KEPRESIDENAN!');
+      setFlightLabel('🔥 PENGAWAL 1 • SALUTE WING-ROCK & MANUVER BOMB BURST HORMAT KEPRESIDENAN!');
     } else if (st >= BURST_START + BURST_DUR && flightMode === 'airborne') {
       setFlightLabel('PENGAWALAN VVIP AKTIF • PENGAWAL 1 & 2 MENGAWAL PESAWAT KEPRESIDENAN RI');
     }

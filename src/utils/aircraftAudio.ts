@@ -115,6 +115,10 @@ class AircraftAudioEngine {
     void this.preloadAtc('transport-cruise');
     void this.preloadAtc('transport-landing');
     void this.preloadAtc('transport-airdrop');
+    void this.preloadAtc('vvip-takeoff');
+    void this.preloadAtc('vvip-welcome');
+    void this.preloadAtc('vvip-reply');
+    void this.preloadAtc('vvip-landing');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -260,7 +264,11 @@ class AircraftAudioEngine {
       | 'transport-takeoff'
       | 'transport-cruise'
       | 'transport-landing'
-      | 'transport-airdrop',
+      | 'transport-airdrop'
+      | 'vvip-takeoff'
+      | 'vvip-welcome'
+      | 'vvip-reply'
+      | 'vvip-landing',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -285,7 +293,15 @@ class AircraftAudioEngine {
                       ? '/audio/transport-voice-landing.wav'
                       : key === 'transport-airdrop'
                         ? '/audio/transport-voice-airdrop.wav'
-                        : `/audio/atc-${key}.mp3`;
+                        : key === 'vvip-takeoff'
+                          ? '/audio/vvip-voice-takeoff.wav'
+                          : key === 'vvip-welcome'
+                            ? '/audio/vvip-voice-welcome.wav'
+                            : key === 'vvip-reply'
+                              ? '/audio/vvip-voice-reply.wav'
+                              : key === 'vvip-landing'
+                                ? '/audio/vvip-voice-landing.wav'
+                                : `/audio/atc-${key}.mp3`;
       const res = await fetch(url);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
@@ -465,7 +481,11 @@ class AircraftAudioEngine {
       | 'transport-takeoff'
       | 'transport-cruise'
       | 'transport-landing'
-      | 'transport-airdrop',
+      | 'transport-airdrop'
+      | 'vvip-takeoff'
+      | 'vvip-welcome'
+      | 'vvip-reply'
+      | 'vvip-landing',
   ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
@@ -475,7 +495,7 @@ class AircraftAudioEngine {
 
       const now = ctx.currentTime;
       const isVvipVoice =
-        key === 'vvip-escort' ||
+        key.startsWith('vvip-') ||
         key.startsWith('fighter-') ||
         key.startsWith('transport-');
       const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli kokpit!
@@ -568,6 +588,20 @@ class AircraftAudioEngine {
         if (buf) run(buf);
       });
     }
+  }
+
+  /** Memutar pengumuman kabin / balasan radio dari Indonesia One (VVIP). */
+  playVvipVoice(kind: 'vvip-welcome' | 'vvip-reply', soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    const cached = this.atcBuffers.get(kind);
+    if (cached) {
+      this.playAtcRadio(kind);
+      return;
+    }
+    void this.preloadAtc(kind).then((buf) => {
+      if (buf) this.playAtcRadio(kind);
+    });
   }
 
   /** Memutar ucapan radio kokpit Bahasa Indonesia dari pesawat tempur pengawal VVIP. */
@@ -884,6 +918,7 @@ class AircraftAudioEngine {
     let speedMod = 0;
 
     const isFighter = profile === 'fighter_single' || profile === 'fighter_twin';
+    const isVvip = unitId === 'b737vip' || unitId === 'falcon8x';
     const isCargoTransport =
       unitId === 'c130j' ||
       unitId === 'a400m' ||
@@ -895,13 +930,15 @@ class AircraftAudioEngine {
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
       const atcTime = isHeli ? 4.2 : 6.0;
-      const voiceStart = isFighter ? 3.6 : isCargoTransport ? 1.6 : atcTime;
+      const voiceStart = isFighter ? 3.6 : isCargoTransport ? 1.6 : isVvip ? 4.8 : atcTime;
       const rollStart = isHeli ? 6.0 : 7.6;
       const gearUpTime = isHeli ? 8.4 : 12.4;
 
       if (phaseTime > voiceStart && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio(isFighter ? 'fighter-takeoff' : isCargoTransport ? 'transport-takeoff' : 'takeoff');
+        this.playAtcRadio(
+          isFighter ? 'fighter-takeoff' : isCargoTransport ? 'transport-takeoff' : isVvip ? 'vvip-takeoff' : 'takeoff',
+        );
       }
       if (phaseTime < atcTime) {
         // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
@@ -922,7 +959,9 @@ class AircraftAudioEngine {
     } else if (flightMode === 'landing') {
       if (phaseTime > 0.15 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio(isFighter ? 'fighter-landing' : isCargoTransport ? 'transport-landing' : 'landing');
+        this.playAtcRadio(
+          isFighter ? 'fighter-landing' : isCargoTransport ? 'transport-landing' : isVvip ? 'vvip-landing' : 'landing',
+        );
       }
       const isHeli = profile === 'helicopter';
       const touchTime = 5.8;
