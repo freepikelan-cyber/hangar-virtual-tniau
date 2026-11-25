@@ -201,6 +201,7 @@ export function SkyCloudsEnvironment() {
   const phaseTime = useRef(0);
   const worldY = useRef(-0.02);
   const scrollZ = useRef(0);
+  const currentSpeed = useRef(0);
   const chunkZ = useRef({ runway: RUNWAY_OFFSET, mountain: RUNWAY_OFFSET + CHUNK_LEN, ocean: RUNWAY_OFFSET + CHUNK_LEN * 2 });
   const prevFlightMode = useRef<string>('parked');
 
@@ -223,6 +224,7 @@ export function SkyCloudsEnvironment() {
     } else if (flightMode === 'takeoff') {
       worldY.current = -0.02;
       scrollZ.current = 0;
+      currentSpeed.current = 0;
       chunkZ.current = {
         runway: RUNWAY_OFFSET,
         mountain: RUNWAY_OFFSET + CHUNK_LEN,
@@ -608,15 +610,16 @@ export function SkyCloudsEnvironment() {
         groundSpeed = 52 * p * p;
       } else if (pt < airborneStart) {
         const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-        targetWorldY = THREE.MathUtils.lerp(-0.02, -28.0, p * p);
+        // Menanjak bertahap mulus hingga -18m di akhir Take Off, lalu lanjut halus ke -28m saat Airborne (tanpa hentakan/berhenti!)
+        targetWorldY = THREE.MathUtils.lerp(-0.02, -18.0, p * p);
         groundSpeed = 52;
       } else {
         targetWorldY = -28.0;
-        groundSpeed = 46;
+        groundSpeed = 48;
       }
     } else if (flightMode === 'airborne' || flightMode === 'aar') {
       targetWorldY = -28.0;
-      groundSpeed = 46;
+      groundSpeed = 48;
     } else if (flightMode === 'mission') {
       if (isHeli) {
         // SAR Hoist Helikopter: terkunci langsung di atas Zona Laut 3D!
@@ -678,7 +681,11 @@ export function SkyCloudsEnvironment() {
       }
     }
 
-    worldY.current = THREE.MathUtils.lerp(worldY.current, targetWorldY, Math.min(1, dt * 3.6));
+    // Interpolasi ketinggian & kecepatan super mulus agar perpindahan Take Off -> Airborne tidak pernah terasa berhenti/patah!
+    const yLerpRate = flightMode === 'airborne' ? 1.15 : 3.2;
+    worldY.current = THREE.MathUtils.lerp(worldY.current, targetWorldY, Math.min(1, dt * yLerpRate));
+    currentSpeed.current = THREE.MathUtils.lerp(currentSpeed.current, groundSpeed, Math.min(1, dt * 2.6));
+    const smoothSpeed = flightMode === 'landing' ? groundSpeed : currentSpeed.current;
 
     if (worldGroupRef.current) {
       worldGroupRef.current.visible = isOutdoorSim;
@@ -689,7 +696,7 @@ export function SkyCloudsEnvironment() {
       // Runway HANYA tampil saat Take Off & Landing! Saat transisi Take Off -> Airborne, Runway meluncur pergi
       // mulus ke belakang tanpa lompatan/jeda, lalu hilang & hanya Pegunungan <-> Laut Hidup yang berputar!
       if (flightMode === 'landing' || safetyMode || (flightMode === 'mission' && isHeli)) {
-        scrollZ.current = (scrollZ.current + groundSpeed * dt) % LOOP_LEN;
+        scrollZ.current = (scrollZ.current + smoothSpeed * dt) % LOOP_LEN;
         const wrapZ = (offset: number) => {
           let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
           if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
@@ -704,7 +711,7 @@ export function SkyCloudsEnvironment() {
       } else {
         // Kontinu tanpa jeda/snap dari Take Off -> Airborne -> Manuver -> AAR -> Misi!
         const cz = chunkZ.current;
-        const step = groundSpeed * dt;
+        const step = smoothSpeed * dt;
         cz.runway -= step;
         cz.mountain -= step;
         cz.ocean -= step;

@@ -16,88 +16,87 @@ interface SeatSpec {
 function getPilotSeats(unitId: string, category: string): SeatSpec[] {
   switch (unitId) {
     case 'f16id':
-      return [{ pos: [0, 1.74, 3.3], scale: 0.68, isFighter: true }];
+      return [{ pos: [0, 1.74, 3.3], scale: 0.66, isFighter: true }];
     case 'su30mk2':
       return [
-        { pos: [0, 1.84, 3.82], scale: 0.68, isFighter: true },
-        { pos: [0, 1.98, 2.68], scale: 0.66, isFighter: true },
+        { pos: [0, 1.84, 3.82], scale: 0.66, isFighter: true },
+        { pos: [0, 1.98, 2.68], scale: 0.64, isFighter: true },
       ];
     case 'su27skm':
-      return [{ pos: [0, 1.86, 3.6], scale: 0.68, isFighter: true }];
+      return [{ pos: [0, 1.86, 3.6], scale: 0.66, isFighter: true }];
     case 'rafale':
       return [
-        { pos: [0, 1.75, 3.62], scale: 0.66, isFighter: true },
-        { pos: [0, 1.88, 2.55], scale: 0.64, isFighter: true },
+        { pos: [0, 1.75, 3.62], scale: 0.64, isFighter: true },
+        { pos: [0, 1.88, 2.55], scale: 0.62, isFighter: true },
       ];
     case 'hawk209':
-      return [{ pos: [0, 1.72, 2.82], scale: 0.64, isFighter: true }];
+      return [{ pos: [0, 1.72, 2.82], scale: 0.62, isFighter: true }];
     case 't50i':
       return [
-        { pos: [0, 1.7, 3.34], scale: 0.64, isFighter: true },
-        { pos: [0, 1.82, 2.38], scale: 0.62, isFighter: true },
+        { pos: [0, 1.7, 3.34], scale: 0.62, isFighter: true },
+        { pos: [0, 1.82, 2.38], scale: 0.6, isFighter: true },
       ];
     case 'supertucano':
       return [
-        { pos: [0, 1.78, 2.64], scale: 0.64, isFighter: true },
-        { pos: [0, 1.9, 1.58], scale: 0.62, isFighter: true },
+        { pos: [0, 1.78, 2.64], scale: 0.62, isFighter: true },
+        { pos: [0, 1.9, 1.58], scale: 0.6, isFighter: true },
       ];
     case 'kt1b':
       return [
-        { pos: [0, 1.68, 2.6], scale: 0.62, isFighter: true },
-        { pos: [0, 1.8, 1.58], scale: 0.6, isFighter: true },
+        { pos: [0, 1.68, 2.6], scale: 0.6, isFighter: true },
+        { pos: [0, 1.8, 1.58], scale: 0.58, isFighter: true },
       ];
     case 'a4skyhawk':
-      return [{ pos: [0, 1.52, 2.42], scale: 0.62, isFighter: true }];
+      return [{ pos: [0, 1.52, 2.42], scale: 0.6, isFighter: true }];
     case 'g120tp':
       return [
-        { pos: [-0.24, 1.38, 1.15], scale: 0.58, isFighter: false },
-        { pos: [0.24, 1.38, 1.15], scale: 0.58, isFighter: false },
+        { pos: [-0.24, 1.38, 1.15], scale: 0.56, isFighter: false },
+        { pos: [0.24, 1.38, 1.15], scale: 0.56, isFighter: false },
       ];
     case 'c182':
     case 't41':
       return [
-        { pos: [-0.22, 1.32, 1.05], scale: 0.56, isFighter: false },
-        { pos: [0.22, 1.32, 1.05], scale: 0.56, isFighter: false },
+        { pos: [-0.22, 1.32, 1.05], scale: 0.54, isFighter: false },
+        { pos: [0.22, 1.32, 1.05], scale: 0.54, isFighter: false },
       ];
     case 'sgs233':
     case 'dg1000':
       return [
-        { pos: [0, 1.14, 2.02], scale: 0.56, isFighter: false },
-        { pos: [0, 1.22, 1.15], scale: 0.55, isFighter: false },
+        { pos: [0, 1.14, 2.02], scale: 0.54, isFighter: false },
+        { pos: [0, 1.22, 1.15], scale: 0.52, isFighter: false },
       ];
     case 'caracal':
     case 'superpuma':
       return [
-        { pos: [-0.36, 1.32, 2.55], scale: 0.64, isFighter: false },
-        { pos: [0.36, 1.32, 2.55], scale: 0.64, isFighter: false },
+        { pos: [-0.36, 1.32, 2.55], scale: 0.62, isFighter: false },
+        { pos: [0.36, 1.32, 2.55], scale: 0.62, isFighter: false },
       ];
     case 'aw101':
       return [
-        { pos: [-0.38, 1.36, 2.75], scale: 0.66, isFighter: false },
-        { pos: [0.38, 1.36, 2.75], scale: 0.66, isFighter: false },
+        { pos: [-0.38, 1.36, 2.75], scale: 0.64, isFighter: false },
+        { pos: [0.38, 1.36, 2.75], scale: 0.64, isFighter: false },
       ];
     case 'colibri':
     case 'h145':
     case 'as365':
       return [
-        { pos: [-0.28, 1.16, 1.95], scale: 0.6, isFighter: false },
-        { pos: [0.28, 1.16, 1.95], scale: 0.6, isFighter: false },
+        { pos: [-0.28, 1.16, 1.95], scale: 0.58, isFighter: false },
+        { pos: [0.28, 1.16, 1.95], scale: 0.58, isFighter: false },
       ];
     default:
       if (category === 'Tempur' || category === 'Latih') {
-        return [{ pos: [0, 1.74, 2.88], scale: 0.65, isFighter: true }];
+        return [{ pos: [0, 1.74, 2.88], scale: 0.64, isFighter: true }];
       }
-      // Pesawat Angkut & VIP: kokpit kaca gelap / tertutup sehingga figur pilot tidak ditampilkan
       return [];
   }
 }
 
 /**
- * Figur Pilot TNI AU 3D realistis & proporsional di dalam kokpit:
- * - Duduk rebah alami di sandaran kursi lontar (ejection seat headrest)
- * - Flight suit hijau zaitun TNI AU + rompi taktis + harness bahu tipis rapi
- * - Helm penerbang tempur HGU-55/P / JHMCS aerodinamis (visor kaca gelap menghadap tepat ke depan +Z,
- *   ear-cup kiri-kanan, masker oksigen MBU-20/P & selang melengkung rapi).
+ * Figur Pilot TNI AU 3D realistis & hidup dengan animasi penuh di dalam kokpit:
+ * - Kepala menoleh halus mengikuti manuver & memantau radar/target
+ * - Tangan kanan menggerakkan Stick Kendali HOTAS secara nyata, tangan kiri mendorong Throttle
+ * - Napas & ayunan bahu halus mengikuti G-force
+ * - Helm JHMCS / HGU-55/P mulus dengan visor gelap iridium menghadap tepat ke depan (+Z) & masker oksigen.
  */
 export function CockpitPilotLayer() {
   const unit = useSelectedUnit();
@@ -107,35 +106,102 @@ export function CockpitPilotLayer() {
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
 
+  const torsoRefs = useRef<(THREE.Group | null)[]>([]);
   const headRefs = useRef<(THREE.Group | null)[]>([]);
+  const rightArmRefs = useRef<(THREE.Group | null)[]>([]);
+  const leftArmRefs = useRef<(THREE.Group | null)[]>([]);
+  const stickRefs = useRef<(THREE.Group | null)[]>([]);
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
   const isEjectionCategory = unit.category === 'Tempur' || unit.category === 'Latih';
   const ejectedOut = safetyMode && isEjectionCategory && safetyStep >= 2;
   const seats = getPilotSeats(unit.id, unit.category);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
+    const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     const isSim = flightMode !== 'parked' || safetyMode || aeroMode;
-    headRefs.current.forEach((head, idx) => {
-      if (!head) return;
-      if (!isSim) {
-        head.rotation.y = Math.sin(t * 0.4 + idx) * 0.06;
-        head.rotation.x = 0.04;
-        return;
+    const smooth = Math.min(1, dt * 4.5);
+
+    seats.forEach((_, idx) => {
+      const torso = torsoRefs.current[idx];
+      const head = headRefs.current[idx];
+      const rArm = rightArmRefs.current[idx];
+      const lArm = leftArmRefs.current[idx];
+      const stick = stickRefs.current[idx];
+
+      // Target gerakan kepala, bahu, tangan kanan (stick), & tangan kiri (throttle)
+      let headY = Math.sin(t * 0.45 + idx) * 0.07;
+      let headX = 0.03 + Math.sin(t * 0.8) * 0.02;
+      let headZ = 0;
+      let stickPitch = 0;
+      let stickRoll = 0;
+      let throttlePush = 0;
+      let torsoLeanZ = 0;
+
+      if (isSim) {
+        if (flightMode === 'takeoff') {
+          headY = Math.sin(t * 0.65) * 0.08;
+          headX = -0.05;
+          stickPitch = -0.14;
+          throttlePush = 0.22; // Tangan kiri mendorong throttle full power!
+        } else if (flightMode === 'maneuver' || (safetyMode && isEjectionCategory && safetyStep < 2)) {
+          headY = Math.sin(t * 0.95 + idx * 0.5) * 0.34;
+          headX = -0.06 + Math.cos(t * 0.8) * 0.06;
+          headZ = Math.sin(t * 0.95) * 0.07;
+          stickRoll = Math.sin(t * 1.1) * 0.22;
+          stickPitch = Math.cos(t * 0.85) * 0.16;
+          throttlePush = 0.18 + Math.sin(t * 1.4) * 0.06;
+          torsoLeanZ = Math.sin(t * 0.95) * 0.045;
+        } else if (aeroMode) {
+          if (aeroManeuver === 'turnLeft') {
+            headY = 0.32;
+            stickRoll = 0.24;
+            torsoLeanZ = 0.05;
+          } else if (aeroManeuver === 'turnRight') {
+            headY = -0.32;
+            stickRoll = -0.24;
+            torsoLeanZ = -0.05;
+          } else if (aeroManeuver === 'climb') {
+            headX = -0.1;
+            stickPitch = -0.22;
+          } else if (aeroManeuver === 'descend') {
+            headX = 0.1;
+            stickPitch = 0.18;
+          } else {
+            headY = Math.sin(t * 0.7) * 0.12;
+            stickPitch = Math.sin(t * 0.9) * 0.1;
+          }
+          throttlePush = 0.14;
+        } else {
+          // Airborne / Landing / AAR / Mission
+          headY = Math.sin(t * 0.6 + idx) * 0.12;
+          headX = Math.sin(t * 0.45) * 0.04;
+          stickRoll = Math.sin(t * 0.75) * 0.08;
+          stickPitch = Math.cos(t * 0.65) * 0.06;
+          throttlePush = flightMode === 'landing' ? -0.08 : 0.12;
+        }
       }
-      if (flightMode === 'maneuver' || (safetyMode && isEjectionCategory && safetyStep < 2)) {
-        head.rotation.y = Math.sin(t * 1.25 + idx * 0.6) * 0.28;
-        head.rotation.x = -0.04 + Math.cos(t * 1.0) * 0.05;
-      } else if (aeroMode && aeroManeuver === 'turnLeft') {
-        head.rotation.y = 0.26;
-        head.rotation.x = -0.03;
-      } else if (aeroMode && aeroManeuver === 'turnRight') {
-        head.rotation.y = -0.26;
-        head.rotation.x = -0.03;
-      } else {
-        head.rotation.y = Math.sin(t * 0.7 + idx) * 0.1;
-        head.rotation.x = Math.sin(t * 0.5) * 0.03;
+
+      if (torso) {
+        torso.rotation.z = THREE.MathUtils.lerp(torso.rotation.z, torsoLeanZ, smooth);
+        torso.position.y = Math.sin(t * 1.8 + idx) * 0.005; // Gerak napas halus
+      }
+      if (head) {
+        head.rotation.y = THREE.MathUtils.lerp(head.rotation.y, headY, smooth);
+        head.rotation.x = THREE.MathUtils.lerp(head.rotation.x, 0.15 + headX, smooth);
+        head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, headZ, smooth);
+      }
+      if (rArm) {
+        rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, 0.85 + stickPitch * 0.55, smooth);
+        rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, -0.14 + stickRoll * 0.4, smooth);
+      }
+      if (lArm) {
+        lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, 0.82 + throttlePush, smooth);
+      }
+      if (stick) {
+        stick.rotation.x = THREE.MathUtils.lerp(stick.rotation.x, stickPitch, smooth);
+        stick.rotation.z = THREE.MathUtils.lerp(stick.rotation.z, stickRoll, smooth);
       }
     });
   });
@@ -145,129 +211,172 @@ export function CockpitPilotLayer() {
   return (
     <group name="cockpit-pilots-3d">
       {seats.map((seat, idx) => {
-        const s = seat.scale ?? 0.65;
+        const s = seat.scale ?? 0.64;
         return (
           <group key={`${unit.id}-pilot-${idx}`} position={seat.pos} scale={[s, s, s]}>
-            {/* Sandaran Kepala Kursi Lontar (Ejection Seat Headrest) di belakang pilot */}
+            {/* Sandaran Kursi Lontar (Ejection Seat Headrest) */}
             {seat.isFighter && (
-              <group position={[0, 0.36, -0.22]} rotation={[-0.22, 0, 0]}>
+              <group position={[0, 0.35, -0.22]} rotation={[-0.22, 0, 0]}>
                 <mesh>
-                  <boxGeometry args={[0.26, 0.42, 0.1]} />
-                  <meshStandardMaterial color="#1f2937" roughness={0.78} metalness={0.22} />
+                  <boxGeometry args={[0.24, 0.42, 0.09]} />
+                  <meshStandardMaterial color="#1f2937" roughness={0.8} metalness={0.2} />
                 </mesh>
-                {/* Bantalan headrest atas */}
-                <mesh position={[0, 0.23, 0.02]}>
-                  <boxGeometry args={[0.22, 0.14, 0.09]} />
-                  <meshStandardMaterial color="#111827" roughness={0.85} />
+                <mesh position={[0, 0.22, 0.02]}>
+                  <boxGeometry args={[0.2, 0.13, 0.08]} />
+                  <meshStandardMaterial color="#111827" roughness={0.88} />
                 </mesh>
               </group>
             )}
 
-            {/* Tubuh Pilot Duduk Rebah Alami (-12°) */}
-            <group rotation={[-0.2, 0, 0]}>
+            {/* Tuas Kendali HOTAS di depan tangan kanan pilot */}
+            {seat.isFighter && (
+              <group
+                ref={(el) => {
+                  stickRefs.current[idx] = el;
+                }}
+                position={[0.14, 0.02, 0.22]}
+              >
+                <mesh position={[0, 0.08, 0]}>
+                  <cylinderGeometry args={[0.014, 0.018, 0.16, 8]} />
+                  <meshStandardMaterial color="#111827" roughness={0.5} metalness={0.5} />
+                </mesh>
+              </group>
+            )}
+
+            {/* Tubuh Pilot Duduk Rebah Alami (-12°) dengan animasi napas & G-force */}
+            <group
+              ref={(el) => {
+                torsoRefs.current[idx] = el;
+              }}
+              rotation={[-0.2, 0, 0]}
+            >
               {/* Dada & Bahu (Flight Suit Hijau Zaitun TNI AU) */}
-              <mesh position={[0, 0.18, 0]} scale={[1.15, 1.0, 0.78]}>
-                <capsuleGeometry args={[0.145, 0.22, 10, 16]} />
-                <meshStandardMaterial color="#44543c" roughness={0.82} metalness={0.05} />
+              <mesh position={[0, 0.18, 0]} scale={[1.14, 1.0, 0.76]}>
+                <capsuleGeometry args={[0.14, 0.22, 12, 18]} />
+                <meshStandardMaterial color="#43533b" roughness={0.82} metalness={0.05} />
               </mesh>
 
               {/* Rompi Taktis / Survival Vest gelap */}
-              <mesh position={[0, 0.19, 0.015]} scale={[1.08, 0.9, 0.8]}>
-                <capsuleGeometry args={[0.14, 0.16, 8, 14]} />
-                <meshStandardMaterial color="#2f3a2c" roughness={0.85} metalness={0.08} />
+              <mesh position={[0, 0.19, 0.014]} scale={[1.07, 0.88, 0.78]}>
+                <capsuleGeometry args={[0.136, 0.15, 10, 16]} />
+                <meshStandardMaterial color="#2c3729" roughness={0.86} metalness={0.08} />
               </mesh>
 
-              {/* Sabuk Harness 4-Titik tipis & realistis */}
-              {[-0.072, 0.072].map((hx, hi) => (
-                <mesh key={hi} position={[hx, 0.22, 0.105]} rotation={[0.08, 0, hi === 0 ? 0.08 : -0.08]}>
-                  <boxGeometry args={[0.032, 0.26, 0.018]} />
-                  <meshStandardMaterial color="#64748b" roughness={0.6} metalness={0.2} />
+              {/* Sabuk Harness Bahu ramping */}
+              {[-0.07, 0.07].map((hx, hi) => (
+                <mesh key={hi} position={[hx, 0.21, 0.102]} rotation={[0.08, 0, hi === 0 ? 0.07 : -0.07]}>
+                  <boxGeometry args={[0.028, 0.25, 0.015]} />
+                  <meshStandardMaterial color="#475569" roughness={0.65} metalness={0.2} />
                 </mesh>
               ))}
 
-              {/* Leher ramping */}
-              <mesh position={[0, 0.37, 0.01]}>
-                <cylinderGeometry args={[0.052, 0.062, 0.08, 12]} />
-                <meshStandardMaterial color="#374333" roughness={0.85} />
+              {/* Leher & Kerah Flight Suit */}
+              <mesh position={[0, 0.365, 0.01]}>
+                <cylinderGeometry args={[0.05, 0.06, 0.08, 14]} />
+                <meshStandardMaterial color="#364232" roughness={0.85} />
               </mesh>
 
-              {/* Bahu & Lengan Kiri-Kanan memegang Stick / Throttle */}
-              {[-1, 1].map((side) => (
-                <group key={side}>
-                  {/* Sendi bahu halus */}
-                  <mesh position={[side * 0.175, 0.26, 0.0]}>
-                    <sphereGeometry args={[0.062, 10, 10]} />
-                    <meshStandardMaterial color="#44543c" roughness={0.82} />
+              {/* Lengan Kiri (Throttle — beranimasi mendorong tuas gas) */}
+              <group position={[-0.17, 0.25, 0.0]}>
+                <mesh>
+                  <sphereGeometry args={[0.058, 12, 12]} />
+                  <meshStandardMaterial color="#43533b" roughness={0.82} />
+                </mesh>
+                <group
+                  ref={(el) => {
+                    leftArmRefs.current[idx] = el;
+                  }}
+                  rotation={[0.82, 0, 0.12]}
+                >
+                  <mesh position={[0, -0.11, 0]}>
+                    <capsuleGeometry args={[0.045, 0.17, 8, 12]} />
+                    <meshStandardMaterial color="#3f4e38" roughness={0.82} />
                   </mesh>
-                  {/* Lengan atas & bawah */}
-                  <mesh position={[side * 0.18, 0.14, 0.09]} rotation={[0.88, 0, side * -0.14]}>
-                    <capsuleGeometry args={[0.048, 0.19, 8, 12]} />
-                    <meshStandardMaterial color="#415039" roughness={0.82} />
+                  {/* Sarung tangan penerbang Nomex */}
+                  <mesh position={[0, -0.22, 0]}>
+                    <sphereGeometry args={[0.036, 10, 10]} />
+                    <meshStandardMaterial color="#1f2937" roughness={0.8} />
                   </mesh>
                 </group>
-              ))}
+              </group>
 
-              {/* Kepala + Helm Penerbang Tempur HGU-55/P / JHMCS Realistis */}
+              {/* Lengan Kanan (HOTAS Stick — beranimasi mengendalikan manuver) */}
+              <group position={[0.17, 0.25, 0.0]}>
+                <mesh>
+                  <sphereGeometry args={[0.058, 12, 12]} />
+                  <meshStandardMaterial color="#43533b" roughness={0.82} />
+                </mesh>
+                <group
+                  ref={(el) => {
+                    rightArmRefs.current[idx] = el;
+                  }}
+                  rotation={[0.85, 0, -0.14]}
+                >
+                  <mesh position={[0, -0.11, 0]}>
+                    <capsuleGeometry args={[0.045, 0.17, 8, 12]} />
+                    <meshStandardMaterial color="#3f4e38" roughness={0.82} />
+                  </mesh>
+                  {/* Sarung tangan penerbang Nomex */}
+                  <mesh position={[0, -0.22, 0]}>
+                    <sphereGeometry args={[0.036, 10, 10]} />
+                    <meshStandardMaterial color="#1f2937" roughness={0.8} />
+                  </mesh>
+                </group>
+              </group>
+
+              {/* Kepala + Helm Penerbang Tempur JHMCS / HGU-55/P Rapi & Aerodinamis */}
               <group
                 ref={(el) => {
                   headRefs.current[idx] = el;
                 }}
-                position={[0, 0.49, 0.025]}
-                rotation={[0.16, 0, 0]}
+                position={[0, 0.485, 0.024]}
+                rotation={[0.15, 0, 0]}
               >
-                {/* Batok Helm Aerodinamis (sedikit lonjong depan-belakang, mulus tanpa tonjolan aneh) */}
-                <mesh scale={[0.94, 1.0, 1.08]}>
-                  <sphereGeometry args={[0.135, 22, 18]} />
+                {/* Batok Helm Halus & Proporsional */}
+                <mesh scale={[0.93, 0.98, 1.06]}>
+                  <sphereGeometry args={[0.13, 24, 20]} />
                   <meshStandardMaterial
-                    color={seat.isFighter ? '#2c3645' : '#cbd5e1'}
-                    roughness={0.32}
-                    metalness={0.38}
+                    color={seat.isFighter ? '#25303f' : '#cbd5e1'}
+                    roughness={0.28}
+                    metalness={0.42}
                   />
                 </mesh>
 
-                {/* Ear-cup komunikasi kiri & kanan yang menyatu rapi di sisi helm */}
+                {/* Ear-cup komunikasi kiri & kanan mulus */}
                 {[-1, 1].map((side) => (
                   <mesh
                     key={side}
-                    position={[side * 0.118, -0.015, -0.01]}
+                    position={[side * 0.114, -0.014, -0.008]}
                     rotation={[0, 0, Math.PI / 2]}
-                    scale={[1.0, 0.55, 1.12]}
+                    scale={[1.0, 0.48, 1.08]}
                   >
-                    <cylinderGeometry args={[0.052, 0.056, 0.04, 14]} />
-                    <meshStandardMaterial color={seat.isFighter ? '#1e293b' : '#94a3b8'} roughness={0.4} metalness={0.3} />
+                    <cylinderGeometry args={[0.048, 0.052, 0.036, 16]} />
+                    <meshStandardMaterial color={seat.isFighter ? '#1b2432' : '#94a3b8'} roughness={0.36} metalness={0.35} />
                   </mesh>
                 ))}
 
-                {/* Pelindung Atas Visor (Visor Brow Cover tipis & melengkung rapi di dahi) */}
-                <mesh position={[0, 0.058, 0.032]} rotation={[-0.22, 0, 0]} scale={[0.98, 0.52, 1.06]}>
-                  <sphereGeometry args={[0.132, 18, 10, Math.PI * 0.14, Math.PI * 0.72, 0.18, 0.48]} />
-                  <meshStandardMaterial color="#18202c" roughness={0.38} metalness={0.45} />
-                </mesh>
-
-                {/* Visor Kaca Gelap Reflektif — MENGHADAP TEPAT KE DEPAN (+Z, phi terpusat di PI/2!) */}
-                <mesh position={[0, 0.012, 0.016]} scale={[0.96, 1.0, 1.08]}>
-                  <sphereGeometry args={[0.136, 20, 14, Math.PI * 0.18, Math.PI * 0.64, Math.PI * 0.34, Math.PI * 0.28]} />
+                {/* Visor Kaca Gelap Iridium Reflektif — TEPAT di depan (+Z) */}
+                <mesh position={[0, 0.01, 0.014]} scale={[0.95, 0.99, 1.07]}>
+                  <sphereGeometry args={[0.131, 22, 16, Math.PI * 0.2, Math.PI * 0.6, Math.PI * 0.34, Math.PI * 0.27]} />
                   <meshStandardMaterial
-                    color="#090f1a"
-                    roughness={0.08}
-                    metalness={0.92}
-                    emissive={seat.isFighter ? '#0c2340' : '#0b192c'}
-                    emissiveIntensity={0.22}
+                    color="#09101c"
+                    roughness={0.06}
+                    metalness={0.95}
+                    emissive={seat.isFighter ? '#1e3a5f' : '#0f172a'}
+                    emissiveIntensity={0.28}
                   />
                 </mesh>
 
-                {/* Masker Oksigen MBU-20/P (kecil, pas di dagu/hidung depan +Z) + Selang Oksigen ke Dada */}
+                {/* Masker Oksigen MBU-20/P kompak & rapi di dagu depan (+Z) + Selang */}
                 {seat.isFighter && (
-                  <group position={[0, -0.055, 0.118]}>
-                    {/* Cup masker silikon gelap */}
-                    <mesh rotation={[0.35, 0, 0]} scale={[1.0, 0.85, 0.9]}>
-                      <cylinderGeometry args={[0.044, 0.032, 0.068, 12]} />
-                      <meshStandardMaterial color="#27313d" roughness={0.68} metalness={0.15} />
+                  <group position={[0, -0.052, 0.112]}>
+                    <mesh rotation={[0.32, 0, 0]} scale={[1.0, 0.82, 0.88]}>
+                      <cylinderGeometry args={[0.04, 0.028, 0.062, 14]} />
+                      <meshStandardMaterial color="#1f2937" roughness={0.65} metalness={0.18} />
                     </mesh>
-                    {/* Selang oksigen bergelombang turun rapi ke dada */}
-                    <mesh position={[0, -0.085, 0.012]} rotation={[0.18, 0, 0]}>
-                      <cylinderGeometry args={[0.016, 0.018, 0.14, 10]} />
-                      <meshStandardMaterial color="#1f2937" roughness={0.78} />
+                    <mesh position={[0, -0.08, 0.01]} rotation={[0.18, 0, 0]}>
+                      <cylinderGeometry args={[0.014, 0.016, 0.13, 10]} />
+                      <meshStandardMaterial color="#18202c" roughness={0.78} />
                     </mesh>
                   </group>
                 )}

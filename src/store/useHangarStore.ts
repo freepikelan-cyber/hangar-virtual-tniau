@@ -315,7 +315,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set({
       fighterManeuver,
       ...(s.flightMode === 'maneuver' && isCombat
-        ? { camRequest: { pos: [24.0, 12.5, 29.0] as Vec3, target: [0, 4.2, 0] as Vec3, nonce: nonce++ } }
+        ? { camRequest: { pos: [28.0, 14.0, 34.0] as Vec3, target: [0, 4.5, 0] as Vec3, nonce: nonce++ } }
         : {}),
     });
     if (s.flightMode === 'maneuver') {
