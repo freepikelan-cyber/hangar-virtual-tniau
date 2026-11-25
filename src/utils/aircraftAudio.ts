@@ -193,6 +193,7 @@ class AircraftAudioEngine {
   private trainerRollPlayed = false;
   private trainerLandRollPlayed = false;
   private jupiterCheckinPlayed = false;
+  private jupiterAirbornePlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -388,7 +389,8 @@ class AircraftAudioEngine {
       | 'trainer-landing'
       | 'trainer-landroll'
       | 'jupiter-takeoff-prep'
-      | 'jupiter-checkin',
+      | 'jupiter-checkin'
+      | 'jupiter-airborne',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -441,7 +443,9 @@ class AircraftAudioEngine {
                                                   ? '/audio/jupiter-takeoff-prep.wav'
                                                   : key === 'jupiter-checkin'
                                                     ? '/audio/jupiter-checkin.wav'
-                                                    : `/audio/atc-${key}.mp3`;
+                                                    : key === 'jupiter-airborne'
+                                                      ? '/audio/jupiter-airborne.wav'
+                                                      : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -586,6 +590,7 @@ class AircraftAudioEngine {
     this.trainerRollPlayed = false;
     this.trainerLandRollPlayed = false;
     this.jupiterCheckinPlayed = false;
+    this.jupiterAirbornePlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -643,7 +648,8 @@ class AircraftAudioEngine {
       | 'trainer-landing'
       | 'trainer-landroll'
       | 'jupiter-takeoff-prep'
-      | 'jupiter-checkin',
+      | 'jupiter-checkin'
+      | 'jupiter-airborne',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1125,6 +1131,7 @@ class AircraftAudioEngine {
         }
         if (unitId === 'kt1b') {
           void this.preloadAtc('jupiter-checkin');
+          void this.preloadAtc('jupiter-airborne');
         }
         this.playAtcRadio(
           unitId === 'kt1b'
@@ -1146,6 +1153,10 @@ class AircraftAudioEngine {
       if (unitId === 'kt1b' && phaseTime > 18.8 && !this.jupiterCheckinPlayed) {
         this.jupiterCheckinPlayed = true;
         this.playAtcRadio('jupiter-checkin');
+      }
+      if (unitId === 'kt1b' && phaseTime > 26.5 && !this.jupiterAirbornePlayed) {
+        this.jupiterAirbornePlayed = true;
+        this.playAtcRadio('jupiter-airborne');
       }
 
       if (isBasicTrainer && phaseTime > 19.0 && !this.trainerRollPlayed) {
@@ -1174,13 +1185,13 @@ class AircraftAudioEngine {
       if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         if (unitId === 'kt1b') {
-    // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
-    // 1. jupiter-takeoff-prep.wav (0.3..18.44s): J1–J6 keluar hanggar menuju titik Take Off.
-    // 2. jupiter-checkin.wav (18.8..26.21s): Semua 6 pesawat bersiap di formasi Take Off ("Jupiters, check in! Two! Three! Four! Five! Six!").
-    // 3. Take Off satu per satu (26.5..46.5s): J1 lepas landas duluan, disusul J2–J6 satu per satu!
-    return { voiceStart: 0.3, rollStart: 26.5, rotStart: 28.6, climbStart: 30.0, airborneStart: 46.5 };
-  }
-  if (isBasicTrainer) {
+          // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
+          // 1. jupiter-takeoff-prep.wav (0.3..18.44s): J1–J6 keluar hanggar menuju titik Take Off.
+          // 2. jupiter-checkin.wav (18.8..26.21s): Semua 6 pesawat bersiap di formasi Take Off ("Jupiters, check in! Two! Three! Four! Five! Six!").
+          // 3. Take Off satu per satu (26.5..46.5s): J1 lepas landas duluan, disusul J2–J6 satu per satu!
+          return { voiceStart: 0.3, rollStart: 26.5, rotStart: 28.6, climbStart: 30.0, airborneStart: 46.5 };
+        }
+        if (isBasicTrainer) {
           void this.preloadAtc('trainer-landroll');
         }
         this.playAtcRadio(

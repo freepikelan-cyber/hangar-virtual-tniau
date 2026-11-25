@@ -167,7 +167,7 @@ export function AircraftModel() {
 
   const activeGroup = glbGroup ?? procedural.group;
 
-    // Reset saat berganti pesawat
+  // Reset saat berganti pesawat
   useEffect(() => {
     aircraftAudio.stop();
     phaseTime.current = 0;
@@ -402,9 +402,9 @@ export function AircraftModel() {
             targetGear = 1;
             const seqIdx = Math.min(6, Math.max(2, Math.floor((pt - 29.0) / 2.5) + 2));
             setFlightLabel(
-              pt < 43.0
-                ? `JUPITER ${seqIdx} TAKE OFF RUNWAY 09 • MEMBENTUK FORMASI`
-                : 'JUPITER AEROBATIC TEAM (6-SHIP) • MENGUDARA DALAM FORMASI!',
+              pt < 41.0
+                ? `JUPITER ${seqIdx} TAKE OFF RUNWAY 09 • CLIMBING TO 5,000 FT`
+                : '📡 ADISUTJIPTO TOWER: RADAR CONTACT • AEROBATIC BOX IS CLEAR!',
             );
           } else {
             targetZ = 0;
