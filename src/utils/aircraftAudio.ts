@@ -99,9 +99,10 @@ export function getLandingTiming(unitId: string): LandingTiming {
 
   // fighter-voice-landing.wav (21.0s): selesai penuh di 21.1s + jeda -> baru Flare & Touchdown di 24.5s!
   // transport-voice-landing.wav (13.76s): selesai penuh di 13.86s + jeda -> baru Flare & Touchdown di 17.6s!
-  // trainer-voice-landing.wav (13.34s): selesai penuh di 13.44s + jeda -> baru Flare & Touchdown di 17.0s!
+  // trainer-voice-landing.wav (0.1..13.44s) + trainer-voice-landroll.wav (14.0..43.49s):
+  //   "500 ft.. 65 kts.. Minimums.. Power idle.. Flare!" (33.8s) -> Touchdown tepat di 35.8s -> Rollout & "Runway vacated — Oke, terima kasih"!
   // vvip-voice-landing.wav (19.24s): pengumuman persiapan mendarat selesai di 19.34s -> baru turun & Touchdown di 25.4s!
-  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isBasicTrainer ? 17.0 : isVvip ? 25.4 : 5.8;
+  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isBasicTrainer ? 35.8 : isVvip ? 25.4 : 5.8;
   const flareDur = 2.0;
   const approachEnd = Math.max(2.0, touchTime - flareDur);
   const rolloutEnd = touchTime + 4.4;
@@ -183,6 +184,7 @@ class AircraftAudioEngine {
   private transportCruisePlayed = false;
   private vvipWelcomePlayed = false;
   private trainerRollPlayed = false;
+  private trainerLandRollPlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -375,7 +377,8 @@ class AircraftAudioEngine {
       | 'heli-landing'
       | 'trainer-takeoff'
       | 'trainer-roll'
-      | 'trainer-landing',
+      | 'trainer-landing'
+      | 'trainer-landroll',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -422,7 +425,9 @@ class AircraftAudioEngine {
                                             ? '/audio/trainer-voice-roll.wav'
                                             : key === 'trainer-landing'
                                               ? '/audio/trainer-voice-landing.wav'
-                                              : `/audio/atc-${key}.mp3`;
+                                              : key === 'trainer-landroll'
+                                                ? '/audio/trainer-voice-landroll.wav'
+                                                : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -565,6 +570,7 @@ class AircraftAudioEngine {
     this.transportCruisePlayed = false;
     this.vvipWelcomePlayed = false;
     this.trainerRollPlayed = false;
+    this.trainerLandRollPlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -619,7 +625,8 @@ class AircraftAudioEngine {
       | 'heli-landing'
       | 'trainer-takeoff'
       | 'trainer-roll'
-      | 'trainer-landing',
+      | 'trainer-landing'
+      | 'trainer-landroll',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1139,6 +1146,9 @@ class AircraftAudioEngine {
       const isHeli = profile === 'helicopter';
       if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
+        if (isBasicTrainer) {
+          void this.preloadAtc('trainer-landroll');
+        }
         this.playAtcRadio(
           isHeli
             ? 'heli-landing'
@@ -1153,13 +1163,17 @@ class AircraftAudioEngine {
                     : 'landing',
         );
       }
+      if (isBasicTrainer && phaseTime > 14.0 && !this.trainerLandRollPlayed) {
+        this.trainerLandRollPlayed = true;
+        this.playAtcRadio('trainer-landroll');
+      }
       const ld = getLandingTiming(unitId);
       const touchTime = isHeli ? 25.0 : ld.touchTime;
       const stopTime = isHeli ? 25.4 : ld.brakeEnd;
       const vacateTime = isHeli ? 25.2 : ld.brakeEnd;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
-        if (!isHeli) this.playAtcRadio('vacate');
+        if (!isHeli && !isBasicTrainer) this.playAtcRadio('vacate');
       }
       if (phaseTime < touchTime) {
         throttle = 0.62 - (phaseTime / touchTime) * 0.16;
