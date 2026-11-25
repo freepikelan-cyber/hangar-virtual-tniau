@@ -49,6 +49,11 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     // heli-voice-takeoff.wav (15.76s): 4.2..19.96s suara selesai -> 20.8..25.4s naik vertikal perlahan & hover di tempat -> 25.4..29.8s baru maju perlahan & menanjak!
     return { voiceStart: 4.2, rollStart: 20.8, rotStart: 25.4, climbStart: 26.8, airborneStart: 29.8 };
   }
+  if (unitId === 'rafale') {
+    // Khusus Dassault Rafale: fighter-voice-takeoff.wav (6.0..24.08s) + audio khusus rafale-takeoff.mp3 (~17s)
+    // Mulai spool-up di 20.4s (4s sebelum roll) -> 24.4..30.2s akselerasi afterburner -> 30.2..33.2s rotate & liftoff -> 33.2..37.2s climb!
+    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 30.2, climbStart: 33.2, airborneStart: 37.2 };
+  }
   if (isFighter) {
     // fighter-voice-takeoff.wav (18.08s): 6.0s..24.08s suara selesai penuh -> 24.4s baru mulai Take Off roll!
     return { voiceStart: 6.0, rollStart: 24.4, rotStart: 28.0, climbStart: 29.8, airborneStart: 32.2 };
@@ -171,10 +176,10 @@ class AircraftAudioEngine {
   private voiceEpoch = 0;
   private radioCurve: Float32Array | null = null;
 
-  // Rekaman audio asli pesawat tempur (Take Off, Terbang, & Taxiway)
-  private jetBuffers = new Map<'takeoff' | 'fly' | 'taxi', AudioBuffer>();
-  private jetLoading = new Set<'takeoff' | 'fly' | 'taxi'>();
-  private activeJetKey: 'takeoff' | 'fly' | 'taxi' | null = null;
+  // Rekaman audio asli pesawat tempur (Take Off, Rafale Take Off khusus, Terbang, & Taxiway)
+  private jetBuffers = new Map<'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi', AudioBuffer>();
+  private jetLoading = new Set<'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi'>();
+  private activeJetKey: 'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi' | null = null;
   private activeJetSrc: AudioBufferSourceNode | null = null;
   private activeJetGain: GainNode | null = null;
 
@@ -226,14 +231,15 @@ class AircraftAudioEngine {
     return out;
   }
 
-  private async preloadJetAudio(key: 'takeoff' | 'fly' | 'taxi'): Promise<AudioBuffer | null> {
+  private async preloadJetAudio(key: 'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi'): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.jetBuffers.get(key);
     if (cached) return cached;
     if (this.jetLoading.has(key)) return null;
     this.jetLoading.add(key);
     try {
-      const res = await fetch(`/audio/fighter-${key}.mp3`);
+      const url = key === 'rafale-takeoff' ? '/audio/rafale-takeoff.mp3' : `/audio/fighter-${key}.mp3`;
+      const res = await fetch(url);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
       const raw = await this.ctx.decodeAudioData(arr);
@@ -282,7 +288,11 @@ class AircraftAudioEngine {
   }
 
   /** Memutar & melakukan crossfade panjang & mulus (0.85s) antar rekaman audio asli pesawat tempur. */
-  private updateJetSample(desiredKey: 'takeoff' | 'fly' | 'taxi', targetVol: number, playbackRate = 1.0): boolean {
+  private updateJetSample(
+    desiredKey: 'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi',
+    targetVol: number,
+    playbackRate = 1.0,
+  ): boolean {
     if (!this.ctx) return false;
     const buf = this.jetBuffers.get(desiredKey);
     if (!buf) {
@@ -291,11 +301,11 @@ class AircraftAudioEngine {
     }
     const now = this.ctx.currentTime;
     if (this.activeJetKey !== desiredKey || !this.activeJetSrc || !this.activeJetGain) {
-      const xfade = 0.85;
+      const xfade = desiredKey === 'rafale-takeoff' ? 0.5 : 0.85;
       this.stopJetSample(xfade);
       const src = this.ctx.createBufferSource();
       src.buffer = buf;
-      src.loop = true;
+      src.loop = desiredKey !== 'rafale-takeoff';
       if (desiredKey === 'takeoff') {
         // Untuk Take Off: mulai dari 0 (spool-up -> afterburner), dan jika masih menanjak loop mulus di zona raungan penuh!
         src.loopStart = Math.min(4.2, buf.duration * 0.28);
@@ -1157,23 +1167,46 @@ class AircraftAudioEngine {
 
     // Gunakan rekaman audio asli pesawat tempur yang disinkronkan presisi dengan tiap fase gerak!
     if (profile === 'fighter_single' || profile === 'fighter_twin') {
-      let desiredTrack: 'takeoff' | 'fly' | 'taxi' = 'fly';
+      let desiredTrack: 'takeoff' | 'rafale-takeoff' | 'fly' | 'taxi' = 'fly';
       let sampleVol = 0.62;
       let sampleRate = 1.0;
 
       if (flightMode === 'takeoff') {
-        const spoolStart = toTiming.rollStart - 1.4;
-        if (phaseTime < spoolStart) {
-          // Fase Taxi Out dari Hanggar -> Line-Up & Tunggu Izin Tower di garis start Runway
-          desiredTrack = 'taxi';
-          sampleVol = phaseTime < 5.5 ? 0.52 : 0.38; // Lebih tenang saat berbicara dengan Tower agar suara pilot sangat jelas!
-          sampleRate = 0.94 + Math.min(1, phaseTime / 5.5) * 0.06;
+        const isRafale = unitId === 'rafale';
+        if (isRafale) {
+          // Preload audio khusus Rafale sejak fase taxi agar 0ms delay saat spool-up dimulai!
+          if (!this.jetBuffers.has('rafale-takeoff')) {
+            void this.preloadJetAudio('rafale-takeoff');
+          }
+          const spoolStart = toTiming.rollStart - 4.0; // 20.4s: 4 detik spool-up -> 24.4s full afterburner roll -> 30.2s rotate -> 37.2s airborne
+          if (phaseTime < spoolStart) {
+            desiredTrack = 'taxi';
+            sampleVol = phaseTime < 5.5 ? 0.5 : 0.34;
+            sampleRate = 0.94 + Math.min(1, phaseTime / 5.5) * 0.06;
+          } else {
+            desiredTrack = 'rafale-takeoff';
+            if (phaseTime < toTiming.rollStart) {
+              const p = Math.min(1, (phaseTime - spoolStart) / 4.0);
+              sampleVol = 0.42 + p * 0.48; // Spool-up makin menderu tanpa menutupi akhir aba-aba kokpit
+            } else {
+              sampleVol = 0.94; // Full afterburner roar saat rolling, rotate, liftoff & initial climb!
+            }
+            sampleRate = 1.0; // Pitch asli mesin ganda Snecma M88 Rafale
+          }
         } else {
-          // Fase Spool-Up -> "Afterburner on, rolling!" -> Akselerasi Full Afterburner -> Liftoff & Climb!
-          desiredTrack = 'takeoff';
-          const accelBoost = phaseTime < toTiming.rollStart ? 0.58 + ((phaseTime - spoolStart) / 1.4) * 0.24 : 0.82;
-          sampleVol = accelBoost;
-          sampleRate = phaseTime < toTiming.rollStart ? 0.98 : 1.04;
+          const spoolStart = toTiming.rollStart - 1.4;
+          if (phaseTime < spoolStart) {
+            // Fase Taxi Out dari Hanggar -> Line-Up & Tunggu Izin Tower di garis start Runway
+            desiredTrack = 'taxi';
+            sampleVol = phaseTime < 5.5 ? 0.52 : 0.38; // Lebih tenang saat berbicara dengan Tower agar suara pilot sangat jelas!
+            sampleRate = 0.94 + Math.min(1, phaseTime / 5.5) * 0.06;
+          } else {
+            // Fase Spool-Up -> "Afterburner on, rolling!" -> Akselerasi Full Afterburner -> Liftoff & Climb!
+            desiredTrack = 'takeoff';
+            const accelBoost = phaseTime < toTiming.rollStart ? 0.58 + ((phaseTime - spoolStart) / 1.4) * 0.24 : 0.82;
+            sampleVol = accelBoost;
+            sampleRate = phaseTime < toTiming.rollStart ? 0.98 : 1.04;
+          }
         }
       } else if (flightMode === 'landing') {
         const ld = getLandingTiming(unitId);
