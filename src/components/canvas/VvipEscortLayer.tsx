@@ -6,13 +6,43 @@ import { useHangarStore } from '../../store/useHangarStore';
 import { buildDetailedF16 } from '../../utils/f16Builder';
 import { aircraftAudio } from '../../utils/aircraftAudio';
 
+/** Tekstur kepulan asap putih aerobatik lembut untuk jejak manuver Pengawal 1. */
+function makeWhiteSmokeTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const ctx = c.getContext('2d')!;
+  const g = ctx.createRadialGradient(64, 64, 6, 64, 64, 58);
+  g.addColorStop(0.0, 'rgba(255,255,255,0.88)');
+  g.addColorStop(0.45, 'rgba(235,245,255,0.52)');
+  g.addColorStop(1.0, 'rgba(220,238,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function easeInOutCubic(x: number): number {
+  const t = Math.max(0, Math.min(1, x));
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+interface SmokePuffState {
+  pos: THREE.Vector3;
+  age: number;
+  maxAge: number;
+  active: boolean;
+}
+
 /**
  * Pengawalan Udara Pesawat Kepresidenan VVIP (Boeing 737 VIP & Falcon 8X — Skadron Udara 17):
- * 1. Jeda awal (0..6 dtk): Pesawat VVIP terbang jelajah sendiri dulu sebelum pengawal muncul.
- * 2. Intersep & Formasi (6..10,5 dtk): 2 Pesawat Tempur F-16 TNI AU meluncur masuk di sayap kiri & kanan (jarak lega ±14,8).
- * 3. Ucapan Radio Kokpit (10,5..27,5 dtk): Rekaman asli Letkol Pnb Muhammad Jaki Dirgantara ("Salam Swa Bhuwana Paksa").
- * 4. Aksi Manuver Bomb Burst (27,5 dtk+): Setelah ucapan selesai, Pengawal 1 melakukan manuver Bomb Burst
- *    (full afterburner menanjak tajam + gulingan + asap putih melesat tinggi ke kanan atas) sementara Pengawal 2 tetap mengawal!
+ * 1. Jeda awal (0..6 dtk): Pesawat VVIP terbang jelajah sendiri dulu.
+ * 2. Intersep & Formasi Lega (6..10,5 dtk): 2 F-16 TNI AU masuk di posisi aman (Pengawal 1: +21.5, Pengawal 2: -29.0).
+ * 3. Ucapan Radio Kokpit (10,5..27,6 dtk): Rekaman asli Letkol Pnb Muhammad Jaki Dirgantara.
+ * 4. Manuver Salute & Bomb Burst Halus (27,6 dtk+):
+ *    - Wing-Rock hormat + Full Afterburner melesat maju -> Busur melengkung 3D ke kanan-atas sambil 360° Victory Roll
+ *      dengan jejak pita asap putih volumetrik melengkung di langit -> lalu menetap terlihat di posisi Overwatch atas-kanan!
  */
 export function VvipEscortLayer() {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -22,13 +52,42 @@ export function VvipEscortLayer() {
 
   const rightRef = useRef<THREE.Group>(null);
   const leftRef = useRef<THREE.Group>(null);
-  const rightSmokeRef = useRef<THREE.Mesh>(null);
   const rightFlameRef = useRef<THREE.Mesh>(null);
+  const smokeSpriteRefs = useRef<(THREE.Sprite | null)[]>([]);
   const timer = useRef(0);
   const greetingPlayed = useRef(false);
+  const smokeEmitAccum = useRef(0);
+  const smokeIdx = useRef(0);
 
   const isVvip = selectedId === 'b737vip' || selectedId === 'falcon8x';
   const isActive = isVvip && (flightMode === 'airborne' || flightMode === 'maneuver');
+
+  const smokeTex = useMemo(() => makeWhiteSmokeTexture(), []);
+  useEffect(() => () => smokeTex.dispose(), [smokeTex]);
+
+  const smokePool = useMemo<SmokePuffState[]>(
+    () =>
+      Array.from({ length: 28 }, () => ({
+        pos: new THREE.Vector3(),
+        age: 0,
+        maxAge: 3.4,
+        active: false,
+      })),
+    [],
+  );
+
+  // Lintasan lengkung aerodinamis 3D yang mulus (maju -> menanjak kanan-atas -> merata di posisi Overwatch!)
+  const burstCurve = useMemo(
+    () =>
+      new THREE.CatmullRomCurve3([
+        new THREE.Vector3(21.5, 1.0, -3.5),
+        new THREE.Vector3(25.0, 3.8, 3.2),
+        new THREE.Vector3(31.5, 9.6, 2.8),
+        new THREE.Vector3(35.8, 13.6, -5.2),
+        new THREE.Vector3(34.5, 12.2, -14.5),
+      ]),
+    [],
+  );
 
   const escorts = useMemo(() => {
     if (!isVvip) return null;
@@ -50,8 +109,12 @@ export function VvipEscortLayer() {
     if (!isActive) {
       timer.current = 0;
       greetingPlayed.current = false;
+      smokeEmitAccum.current = 0;
+      smokePool.forEach((p) => {
+        p.active = false;
+      });
     }
-  }, [isActive, selectedId]);
+  }, [isActive, selectedId, smokePool]);
 
   useFrame((state, delta) => {
     if (!isActive) return;
@@ -60,14 +123,18 @@ export function VvipEscortLayer() {
     timer.current += dt;
     const st = timer.current;
 
-    const ESCORT_APPEAR = 6.0; // Jeda dulu saat pesawat VVIP baru mengudara!
-    const GREET_START = 10.5;  // Ucapan kokpit dimulai setelah kedua F-16 sejajar rapi
-    const BOMB_BURST_START = 27.6; // Aksi manuver Bomb Burst tepat setelah ucapan selesai!
+    const ESCORT_APPEAR = 6.0;
+    const GREET_START = 10.5;
+    const SALUTE_START = 27.6;
+    const BURST_START = 29.4; // 1.8 detik hormat wing-rock + akselerasi maju dulu, lalu Bomb Burst lengkung mulus!
+    const BURST_DUR = 6.2;
 
-    // Fase 1: Jeda — Pesawat VVIP terbang sendiri dulu sebelum 2 pengawal muncul
     if (st < ESCORT_APPEAR) {
       if (rightRef.current) rightRef.current.visible = false;
       if (leftRef.current) leftRef.current.visible = false;
+      smokeSpriteRefs.current.forEach((sp) => {
+        if (sp) sp.visible = false;
+      });
       if (flightMode === 'airborne') {
         setFlightLabel(
           st > 4.2
@@ -81,9 +148,8 @@ export function VvipEscortLayer() {
     if (rightRef.current) rightRef.current.visible = true;
     if (leftRef.current) leftRef.current.visible = true;
 
-    // Fase 2: Kedua F-16 meluncur masuk ke posisi pengawalan yang jauh & aman (Pengawal 1 di +21.5, Pengawal 2 lebih jauh di -29.0!)
     const entry = Math.min(1, (st - ESCORT_APPEAR) / 4.0);
-    const ease = entry * entry * (3 - 2 * entry);
+    const ease = easeInOutCubic(entry);
 
     const p1X = THREE.MathUtils.lerp(52.0, 21.5, ease);
     const p1Z = THREE.MathUtils.lerp(-44.0, -7.5, ease);
@@ -93,7 +159,7 @@ export function VvipEscortLayer() {
     const p2Z = THREE.MathUtils.lerp(-54.0, -15.5, ease);
     const p2Y = 2.2;
 
-    // Pengawal 2 (Kiri — posisi pengawalan overwatch agak jauh di kiri belakang)
+    // Pengawal 2 (Kiri — overwatch stabil agak jauh)
     if (leftRef.current) {
       leftRef.current.position.set(
         p2X + Math.cos(t * 0.85) * 0.28,
@@ -105,9 +171,10 @@ export function VvipEscortLayer() {
       leftRef.current.rotation.y = 0;
     }
 
-    // Pengawal 1 (Kanan): Mengawal dengan jarak aman -> lalu saat st >= BOMB_BURST_START melakukan aksi BOMB BURST!
+    // Pengawal 1 (Kanan): Formasi -> Hormat Wing-Rock & Akselerasi -> Bomb Burst Busur Halus + 360° Roll -> Overwatch!
+    let emitSmoke = false;
     if (rightRef.current) {
-      if (st < BOMB_BURST_START) {
+      if (st < SALUTE_START) {
         rightRef.current.position.set(
           p1X + Math.sin(t * 0.9) * 0.24,
           p1Y + Math.sin(t * 1.4) * 0.15,
@@ -116,48 +183,102 @@ export function VvipEscortLayer() {
         rightRef.current.rotation.z = (1 - ease) * 0.34 + Math.sin(t * 1.1) * 0.025;
         rightRef.current.rotation.x = -0.02 + Math.sin(t * 1.2) * 0.015;
         rightRef.current.rotation.y = 0;
-        if (rightSmokeRef.current) rightSmokeRef.current.visible = false;
         if (rightFlameRef.current) rightFlameRef.current.scale.set(1, 1, 1);
-      } else {
-        // AKSI MANUVER BOMB BURST: Full afterburner menanjak tajam + gulingan 360° + asap putih,
-        // lalu tetap TERLIHAT mengawal dari posisi tinggi-jauh (CAP Overwatch)!
-        const burstElapsed = st - BOMB_BURST_START;
-        const bp = Math.min(1, burstElapsed / 5.2);
-        const bEase = bp * bp * (3 - 2 * bp);
+      } else if (st < BURST_START) {
+        // Tahap 4A: Salute Wing-Rock (goyang sayap hormat) sambil akselerasi maju bersiap Bomb Burst!
+        const sp = easeInOutCubic((st - SALUTE_START) / (BURST_START - SALUTE_START));
+        rightRef.current.position.set(21.5, 1.0, THREE.MathUtils.lerp(-7.5, -3.5, sp));
+        rightRef.current.rotation.x = THREE.MathUtils.lerp(-0.02, -0.1, sp);
+        rightRef.current.rotation.y = 0;
+        rightRef.current.rotation.z = Math.sin(sp * Math.PI * 2) * 0.38;
+        if (rightFlameRef.current) {
+          rightFlameRef.current.scale.set(1.25, 1.7 + Math.sin(t * 36) * 0.25, 1.25);
+        }
+        emitSmoke = sp > 0.35;
+      } else if (st < BURST_START + BURST_DUR) {
+        // Tahap 4B: BOMB BURST BUSUR HALUS — mengikuti kurva 3D sejati dengan hidung searah lintasan + 360° Victory Roll!
+        const rawP = (st - BURST_START) / BURST_DUR;
+        const u = easeInOutCubic(rawP);
+        const pos = burstCurve.getPoint(u);
+        const tan = burstCurve.getTangent(u).normalize();
 
-        rightRef.current.visible = true;
-        if (burstElapsed < 5.2) {
-          rightRef.current.position.set(
-            THREE.MathUtils.lerp(21.5, 35.5, bEase),
-            THREE.MathUtils.lerp(1.0, 12.5, bEase),
-            THREE.MathUtils.lerp(-7.5, -14.5, bEase),
-          );
-          rightRef.current.rotation.x = -0.58 * Math.sin(bp * Math.PI);
-          rightRef.current.rotation.z = -bp * Math.PI * 2;
-          rightRef.current.rotation.y = -0.25 * Math.sin(bp * Math.PI);
-          if (rightSmokeRef.current) rightSmokeRef.current.visible = true;
-          if (rightFlameRef.current) {
-            rightFlameRef.current.scale.set(1.45, 2.2 + Math.sin(t * 40) * 0.35, 1.45);
-          }
-        } else {
-          // Setelah Bomb Burst selesai: Pengawal 1 tetap terlihat di kejauhan atas-kanan mengawal VVIP!
-          rightRef.current.position.set(
-            35.5 + Math.sin(t * 0.75) * 0.4,
-            12.5 + Math.sin(t * 1.1) * 0.28,
-            -14.5 + Math.cos(t * 0.7) * 0.35,
-          );
-          rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, -0.02, Math.min(1, dt * 3));
-          rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, 0, Math.min(1, dt * 3));
-          rightRef.current.rotation.z = THREE.MathUtils.lerp(
-            rightRef.current.rotation.z,
-            Math.sin(t * 0.9) * 0.04,
-            Math.min(1, dt * 3),
-          );
-          if (rightSmokeRef.current) rightSmokeRef.current.visible = false;
-          if (rightFlameRef.current) rightFlameRef.current.scale.set(1, 1, 1);
+        rightRef.current.position.copy(pos);
+
+        // Hitung pitch & yaw natural agar hidung selalu mengarah halus mengikuti busur terbang (bukan mundur/kaku!)
+        const climbPitch = -Math.asin(THREE.MathUtils.clamp(tan.y, -0.85, 0.85)) * 0.72;
+        const turnYaw = Math.atan2(tan.x, Math.max(0.25, tan.z + 0.65)) * 0.38;
+        const victoryRoll = -easeInOutCubic(rawP) * Math.PI * 2;
+
+        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, climbPitch, Math.min(1, dt * 6));
+        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, turnYaw, Math.min(1, dt * 6));
+        rightRef.current.rotation.z = victoryRoll;
+
+        if (rightFlameRef.current) {
+          rightFlameRef.current.scale.set(1.4, 2.3 + Math.sin(t * 42) * 0.35, 1.4);
+        }
+        emitSmoke = rawP < 0.88;
+      } else {
+        // Tahap 4C: Meratakan sayap mulus & tetap terlihat jelas mengawal dari posisi tinggi-kanan!
+        const targetPos = new THREE.Vector3(
+          34.5 + Math.sin(t * 0.75) * 0.35,
+          12.2 + Math.sin(t * 1.1) * 0.24,
+          -14.5 + Math.cos(t * 0.7) * 0.3,
+        );
+        rightRef.current.position.lerp(targetPos, Math.min(1, dt * 3));
+        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, -0.02, Math.min(1, dt * 3.5));
+        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, 0, Math.min(1, dt * 3.5));
+        if (rightRef.current.rotation.z < -Math.PI) rightRef.current.rotation.z += Math.PI * 2;
+        rightRef.current.rotation.z = THREE.MathUtils.lerp(
+          rightRef.current.rotation.z,
+          Math.sin(t * 0.9) * 0.035,
+          Math.min(1, dt * 3.5),
+        );
+        if (rightFlameRef.current) {
+          rightFlameRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 4));
         }
       }
     }
+
+    // Update pita asap putih volumetrik melengkung di belakang ekor Pengawal 1!
+    if (emitSmoke && rightRef.current) {
+      smokeEmitAccum.current += dt;
+      if (smokeEmitAccum.current >= 0.11) {
+        smokeEmitAccum.current = 0;
+        const puff = smokePool[smokeIdx.current % smokePool.length];
+        smokeIdx.current++;
+        puff.active = true;
+        puff.age = 0;
+        puff.pos.set(
+          rightRef.current.position.x,
+          rightRef.current.position.y + 1.25,
+          rightRef.current.position.z - 5.2,
+        );
+      }
+    }
+
+    smokePool.forEach((puff, i) => {
+      const sp = smokeSpriteRefs.current[i];
+      if (!sp) return;
+      if (!puff.active) {
+        sp.visible = false;
+        return;
+      }
+      puff.age += dt;
+      if (puff.age >= puff.maxAge) {
+        puff.active = false;
+        sp.visible = false;
+        return;
+      }
+      // Asap ikut terbawa aliran udara ke belakang (-Z) sambil mengembang lembut & memudar
+      puff.pos.z -= dt * 11.5;
+      const life = puff.age / puff.maxAge;
+      sp.visible = true;
+      sp.position.copy(puff.pos);
+      const sc = 1.25 + life * 4.2;
+      sp.scale.set(sc, sc, 1);
+      const mat = sp.material as THREE.SpriteMaterial;
+      mat.opacity = Math.sin(Math.min(1, life * 4) * (Math.PI / 2)) * (1 - life) * 0.65;
+    });
 
     // Fase 3: Putar rekaman suara asli Letkol Pnb Muhammad Jaki Dirgantara
     if (st >= GREET_START && !greetingPlayed.current) {
@@ -165,14 +286,14 @@ export function VvipEscortLayer() {
       aircraftAudio.playVvipEscortRadio(soundEnabled);
     }
 
-    if (st >= GREET_START && st < BOMB_BURST_START) {
+    if (st >= GREET_START && st < SALUTE_START) {
       setFlightLabel(
         '📡 LETKOL PNB MUHAMMAD JAKI DIRGANTARA: "SELAMAT PAGI, YANG KAMI HORMATI BAPAK PRESIDEN REPUBLIK INDONESIA... SALAM SWA BHUWANA PAKSA!"',
       );
-    } else if (st >= BOMB_BURST_START && st < BOMB_BURST_START + 6.0) {
-      setFlightLabel('🔥 PENGAWAL 1 (F-16) MELAKUKAN AKSI MANUVER BOMB BURST HORMAT KEPRESIDENAN!');
-    } else if (st >= BOMB_BURST_START + 6.0 && flightMode === 'airborne') {
-      setFlightLabel('PENGAWALAN VVIP AKTIF • PESAWAT KEPRESIDENAN RI');
+    } else if (st >= SALUTE_START && st < BURST_START + BURST_DUR) {
+      setFlightLabel('🔥 PENGAWAL 1 (F-16) • SALUTE WING-ROCK & MANUVER BOMB BURST HORMAT KEPRESIDENAN!');
+    } else if (st >= BURST_START + BURST_DUR && flightMode === 'airborne') {
+      setFlightLabel('PENGAWALAN VVIP AKTIF • PENGAWAL 1 & 2 MENGAWAL PESAWAT KEPRESIDENAN RI');
     }
   });
 
@@ -180,17 +301,25 @@ export function VvipEscortLayer() {
 
   return (
     <group name="vvip-fighter-escort-3d">
-      {/* Pengawal 1: F-16 Fighting Falcon di sisi kanan (melakukan Bomb Burst setelah ucapan!) */}
-      <group ref={rightRef} position={[42, 0.65, -36]} scale={[0.92, 0.92, 0.92]} visible={false}>
+      {/* Pita Asap Putih Volumetrik Melengkung dari Manuver Bomb Burst Pengawal 1 */}
+      {smokePool.map((_, i) => (
+        <sprite
+          key={`vvip-smoke-${i}`}
+          ref={(el) => {
+            smokeSpriteRefs.current[i] = el;
+          }}
+          visible={false}
+        >
+          <spriteMaterial map={smokeTex} transparent opacity={0.6} depthWrite={false} />
+        </sprite>
+      ))}
+
+      {/* Pengawal 1: F-16 Fighting Falcon di sisi kanan (Salute Wing-Rock + Bomb Burst + Overwatch!) */}
+      <group ref={rightRef} position={[52, 1.0, -44]} scale={[0.92, 0.92, 0.92]} visible={false}>
         <primitive object={escorts.right} />
         <mesh ref={rightFlameRef} position={[0, 1.45, -7.2]} rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.32, 2.2, 12]} />
-          <meshBasicMaterial color="#fb923c" transparent opacity={0.82} />
-        </mesh>
-        {/* Jejak asap putih tebal saat aksi manuver Bomb Burst */}
-        <mesh ref={rightSmokeRef} position={[0, 1.45, -14.5]} rotation={[Math.PI / 2, 0, 0]} visible={false}>
-          <coneGeometry args={[0.72, 16.5, 12, 1, true]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.48} depthWrite={false} side={THREE.DoubleSide} />
+          <meshBasicMaterial color="#fb923c" transparent opacity={0.85} />
         </mesh>
         <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
           <span className="whitespace-nowrap rounded border border-[#ffb703]/80 bg-[#081933]/88 px-2 py-0.5 font-display text-[9px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
@@ -199,8 +328,8 @@ export function VvipEscortLayer() {
         </Html>
       </group>
 
-      {/* Pengawal 2: F-16 Fighting Falcon di sisi kiri */}
-      <group ref={leftRef} position={[-42, 0.65, -36]} scale={[0.92, 0.92, 0.92]} visible={false}>
+      {/* Pengawal 2: F-16 Fighting Falcon di sisi kiri belakang (Overwatch) */}
+      <group ref={leftRef} position={[-60, 2.2, -54]} scale={[0.92, 0.92, 0.92]} visible={false}>
         <primitive object={escorts.left} />
         <mesh position={[0, 1.45, -7.2]} rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.32, 2.2, 12]} />
