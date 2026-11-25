@@ -1389,7 +1389,10 @@ export function AircraftModel() {
           navLights={procedural.navLights}
           glowMats={procedural.glowMats}
           engineSim={isEngineVisualActive}
-          rotorWash={procedural.rotorWash}
+          rotorWash={
+            procedural.rotorWash &&
+            (flightMode === 'takeoff' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'engineSim')
+          }
         />
         <AerodynamicsLayer />
         <GSuitEduLayer />
