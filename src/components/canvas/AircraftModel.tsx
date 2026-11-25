@@ -335,9 +335,9 @@ export function AircraftModel() {
 
         if (unit.id === 'kt1b') {
           // KHUSUS KT-1B WONG BEE (JUPITER AEROBATIC SHOW):
-          // 1. J1–J6 keluar hanggar satu per satu ke Runway 09 (0..18.5s)
-          // 2. Semua 6 pesawat membentuk formasi Take Off di Runway 09 saat "Jupiters, check in!" (18.5..26.5s)
-          // 3. J1 Take Off pertama (26.5..32.0s), disusul J2..J6 Take Off satu per satu (29.0..43.4s)!
+          // 1. J1–J6 keluar hanggar menuju Runway 09 3-jalur yang lega (0..18.5s)
+          // 2. Semua 6 pesawat membentuk formasi Take Off berjarak lega di Runway 09 saat "Jupiters, check in!" (18.5..26.5s)
+          // 3. Semua 6 pesawat Take Off SAMA-SAMA dengan mulus & rapi! (26.5..36.5s)
           if (pt < 4.5) {
             const p = easeInOut(pt / 4.5);
             targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
@@ -346,24 +346,24 @@ export function AircraftModel() {
             targetYawOffset = Math.PI / 2;
             targetGear = 0;
             setFlightLabel('JUPITER 1–6 • TAXI KELUAR DARI HANGGAR MENUJU RUNWAY 09');
-          } else if (pt < 6.2) {
-            const p = easeInOut((pt - 4.5) / 1.7);
+          } else if (pt < 6.5) {
+            const p = easeInOut((pt - 4.5) / 2.0);
             targetX = THREE.MathUtils.lerp(-6.5, 0, p);
-            targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
+            targetZ = THREE.MathUtils.lerp(-10.5, -4.0, p);
             targetY = 0;
             targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
             targetGear = 0;
             setFlightLabel('JUPITER 1 • LINE UP RUNWAY 09 • JUPITER 2–6 MENYUSUL');
           } else if (pt < 18.5) {
             targetX = 0;
-            targetZ = -8.5;
+            targetZ = -4.0;
             targetY = 0;
             targetYawOffset = 0;
             targetGear = 0;
             setFlightLabel('🎙️ ADISUTJIPTO TOWER • PERMOHONAN & IZIN TAKE-OFF RUNWAY 09');
           } else if (pt < to.rollStart) {
             targetX = 0;
-            targetZ = -8.5;
+            targetZ = -4.0;
             targetY = 0;
             targetYawOffset = 0;
             const nearRoll = pt > to.rollStart - 1.2;
@@ -372,40 +372,30 @@ export function AircraftModel() {
             setFlightLabel('🎙️ JUPITERS, CHECK IN! TWO, THREE, FOUR, FIVE, SIX • FORMASI SIAP TAKE OFF');
           } else if (pt < to.rotStart) {
             const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
-            targetZ = THREE.MathUtils.lerp(-8.5, 3.8, p * p);
+            targetX = 0;
+            targetZ = THREE.MathUtils.lerp(-4.0, 4.5, p * p);
             targetY = 0;
             targetPitch = -0.02 * p;
             targetGear = 0;
-            setFlightLabel('JUPITER 1 • ROLLING TAKE OFF RUNWAY 09');
+            setFlightLabel('🔥 BRAKES RELEASE, POWER UP! • 6-SHIP ROLLING BERSAMA');
           } else if (pt < to.climbStart) {
             const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
             const ease = easeInOut(p);
-            targetZ = THREE.MathUtils.lerp(3.8, 5.4, ease);
+            targetX = 0;
+            targetZ = THREE.MathUtils.lerp(4.5, 6.2, ease);
             targetY = THREE.MathUtils.lerp(0, 1.85, p * p);
             targetPitch = -0.25 * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
             targetGear = 0;
-            setFlightLabel('JUPITER 1 AIRBORNE! • JUPITER 2–6 TAKE OFF BERGANTIAN');
-          } else if (pt < 32.2) {
-            const p = easeInOut((pt - to.climbStart) / 2.2);
-            targetZ = THREE.MathUtils.lerp(5.4, 0, p);
-            targetY = THREE.MathUtils.lerp(1.85, 3.05, p);
+            setFlightLabel('🔥 ROTATE! • 6-SHIP JUPITER LEPAS LANDAS BERSAMA');
+          } else if (pt < to.airborneStart) {
+            const p = easeInOut((pt - to.climbStart) / Math.max(0.5, to.airborneStart - to.climbStart));
+            targetX = 0;
+            targetZ = THREE.MathUtils.lerp(6.2, 0, p);
+            targetY = THREE.MathUtils.lerp(1.85, 2.95, p);
             targetPitch = THREE.MathUtils.lerp(-0.24, -0.03, p);
             targetGear = 1;
             gearSpeed = 2.2;
-            setFlightLabel('JUPITER 2–6 TAKE OFF BERGANTIAN SATU PER SATU');
-          } else if (pt < to.airborneStart) {
-            targetX = Math.sin(t * 0.55) * 0.25;
-            targetY = 3.0 + Math.sin(t * 1.5) * 0.1;
-            targetZ = 0;
-            targetPitch = -0.025;
-            targetRoll = Math.cos(t * 0.9) * 0.03;
-            targetGear = 1;
-            const seqIdx = Math.min(6, Math.max(2, Math.floor((pt - 29.0) / 2.5) + 2));
-            setFlightLabel(
-              pt < 41.0
-                ? `JUPITER ${seqIdx} TAKE OFF RUNWAY 09 • CLIMBING TO 5,000 FT`
-                : '📡 ADISUTJIPTO TOWER: RADAR CONTACT • AEROBATIC BOX IS CLEAR!',
-            );
+            setFlightLabel('🔥 GEARS UP, SMOKE ON! • MENANJAK MENUJU 5.000 FT');
           } else {
             targetZ = 0;
             targetY = 2.95;
@@ -519,12 +509,16 @@ export function AircraftModel() {
           directRoll = -p * Math.PI * 2;
           setFlightLabel('🔥 JUPITER ROLL! • ASAP PUTIH TEBAL MEMBELAH LANGIT');
         } else if (pt < 46.5) {
+          // 29.5..46.5: J5 & J6 Opposing Pass — J1–J4 mundur jauh ke belakang agar panggung fokus pada J5 & J6!
+          const pullBack = pt < 31.5 ? easeInOut((pt - 29.5) / 2.0) : pt > 44.5 ? 1 - easeInOut((pt - 44.5) / 2.0) : 1;
+          targetZ = -75.0 * pullBack;
+          targetY = 2.95 + 11.0 * pullBack;
           targetPitch = -0.025;
           targetRoll = 0;
           setFlightLabel(
-            pt < 38.0
+            pt < 37.5
               ? '🎙️ JUPITER 5 & 6 BREAKING OFF FOR OPPOSING PASS (500 FT)'
-              : pt < 44.8
+              : pt < 44.5
                 ? '⚡ CLOSING SPEED 400 KNOTS... THREE, TWO, ONE... CROSSING!'
                 : '🔥 OPPOSING PASS CROSSING SUKSES! • REJOIN FORMASI',
           );
@@ -536,12 +530,14 @@ export function AircraftModel() {
           targetRoll = 0;
           setFlightLabel('🎙️ JUPITERS, CLIMBING VERTICAL FOR THE HEART MANEUVER! PULL... PULL...');
         } else if (pt < 68.5) {
-          // 54.0..68.5: J5 & J6 paint the heart, J4 pierces the heart!
-          targetY = 5.0;
+          // 54.0..68.5: J1–J3 mundur jauh di belakang, fokus penuh pada J5 & J6 melukis Hati lalu J4 menembus Hati!
+          const pullBack = pt < 56.0 ? easeInOut((pt - 54.0) / 2.0) : pt > 66.5 ? 1 - easeInOut((pt - 66.5) / 2.0) : 1;
+          targetZ = -78.0 * pullBack;
+          targetY = 3.2 + 12.0 * pullBack;
           targetPitch = -0.04;
           targetRoll = 0;
           setFlightLabel(
-            pt < 64.5
+            pt < 64.0
               ? '❤️ HEART MANEUVER • JUPITER 5 & 6 MELUKIS HATI DI LANGIT!'
               : '💘 JUPITER 4 PIERCING THE HEART! • SMOKE OFF!',
           );

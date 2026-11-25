@@ -600,15 +600,22 @@ export function SkyCloudsEnvironment() {
           groundSpeed = 46;
         }
       } else if (selectedId === 'kt1b') {
-        // Khusus KT-1B (Jupiter Aerobatic Show): runway tetap diam di tempat sampai keenam pesawat selesai take off satu per satu!
-        if (pt < 42.5) {
+        // Khusus KT-1B (Jupiter Aerobatic Show): runway diam selama persiapan & check-in, lalu bergulir mulus saat semua 6 pesawat Take Off sama-sama!
+        if (pt < rollStart) {
           targetWorldY = -0.02;
           groundSpeed = 0;
           scrollZ.current = 0;
+        } else if (pt < rotStart) {
+          const p = (pt - rollStart) / Math.max(0.5, rotStart - rollStart);
+          targetWorldY = -0.02;
+          groundSpeed = 52 * p * p;
+        } else if (pt < airborneStart) {
+          const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
+          targetWorldY = THREE.MathUtils.lerp(-0.02, -18.0, p * p);
+          groundSpeed = 52;
         } else {
-          const p = Math.min(1, (pt - 42.5) / Math.max(0.5, airborneStart - 42.5));
-          targetWorldY = THREE.MathUtils.lerp(-0.02, -28.0, p * p);
-          groundSpeed = 48 * p;
+          targetWorldY = -28.0;
+          groundSpeed = 48;
         }
       } else if (pt < rollStart) {
         // Taxi keluar dari Hanggar -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai!
@@ -944,11 +951,32 @@ export function SkyCloudsEnvironment() {
           ) : (
             /* === PESAWAT SAYAP TETAP: ASPAL RUNWAY 09 + TAXIWAY + HANGGAR JAUH === */
             <>
-              {/* Aspal Runway 3D lengkap */}
+              {/* Aspal Runway 3D lengkap (khusus KT-1B diperlebar 3 jalur 44 unit agar 6 pesawat berjarak lega & rapi!) */}
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-                <planeGeometry args={[11.2, CHUNK_LEN]} />
+                <planeGeometry args={[selectedId === 'kt1b' ? 44.0 : 11.2, CHUNK_LEN]} />
                 <meshStandardMaterial map={runwayTex} roughness={0.86} metalness={0.05} />
               </mesh>
+              {selectedId === 'kt1b' && (
+                <>
+                  {/* Garis jalur formasi kiri & kanan khusus 6-Ship Jupiter Aerobatic Runway */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14.0, 0.015, 0]}>
+                    <planeGeometry args={[0.28, CHUNK_LEN]} />
+                    <meshBasicMaterial color="#e2e8f0" transparent opacity={0.75} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.0, 0.015, 0]}>
+                    <planeGeometry args={[0.28, CHUNK_LEN]} />
+                    <meshBasicMaterial color="#e2e8f0" transparent opacity={0.75} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-22.4, 0.015, 0]}>
+                    <planeGeometry args={[0.35, CHUNK_LEN]} />
+                    <meshBasicMaterial color="#ef4444" transparent opacity={0.85} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.4, 0.015, 0]}>
+                    <planeGeometry args={[0.35, CHUNK_LEN]} />
+                    <meshBasicMaterial color="#ef4444" transparent opacity={0.85} />
+                  </mesh>
+                </>
+              )}
 
               {/* Bahu aspal & parallel taxiway */}
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6.4, -0.02, 0]}>
