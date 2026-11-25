@@ -679,6 +679,17 @@ class AircraftAudioEngine {
     }
   }
 
+  /** Memutar suara radio tempur khusus manuver perang (Dogfight / ACM) atau menghentikannya jika non-tempur. */
+  playFighterCombatVoice(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    this.playAtcRadio('fighter-maneuver');
+  }
+
+  stopVoiceRadio() {
+    this.stopAtcPlayback();
+  }
+
   /** Memutar pengumuman kabin / balasan radio dari Indonesia One (VVIP). */
   playVvipVoice(kind: 'vvip-welcome' | 'vvip-reply', soundEnabled: boolean) {
     if (!soundEnabled) return;
@@ -1103,10 +1114,6 @@ class AircraftAudioEngine {
       throttle = flightMode === 'mission' ? 0.84 : 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
       speedMod = flightMode === 'mission' ? 0.08 : 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
-      if (flightMode === 'maneuver' && isFighter && phaseTime > 0.25 && !this.atcStartPlayed) {
-        this.atcStartPlayed = true;
-        this.playAtcRadio('fighter-maneuver');
-      }
       const cycle = phaseTime % 20;
       if (cycle < 5) {
         // Barrel / Aileron Roll -> high energy!

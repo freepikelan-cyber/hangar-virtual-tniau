@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
-import type { FighterManeuverId } from '../data/fighterManeuvers';
+import { getFighterManeuverSpec, type FighterManeuverId } from '../data/fighterManeuvers';
 import type { JupiterManeuverId } from '../data/jupiterManeuvers';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
@@ -303,7 +303,18 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
   setGForceLevel: (gForceLevel) => set({ gForceLevel }),
-  setFighterManeuver: (fighterManeuver) => set({ fighterManeuver }),
+  setFighterManeuver: (fighterManeuver) => {
+    const s = get();
+    set({ fighterManeuver });
+    if (s.flightMode === 'maneuver') {
+      const isCombat = fighterManeuver !== 'auto' && getFighterManeuverSpec(fighterManeuver).group === 'acm';
+      if (isCombat) {
+        aircraftAudio.playFighterCombatVoice(s.soundEnabled);
+      } else {
+        aircraftAudio.stopVoiceRadio();
+      }
+    }
+  },
   setJupiterManeuver: (jupiterManeuver) => set({ jupiterManeuver }),
   triggerAar: () => {
     const s = get();
@@ -421,6 +432,16 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
     const activating = s.flightMode !== 'maneuver';
+    if (activating) {
+      const u = getUnit(s.selectedId);
+      const isCombat =
+        u.category === 'Tempur' &&
+        s.fighterManeuver !== 'auto' &&
+        getFighterManeuverSpec(s.fighterManeuver).group === 'acm';
+      if (isCombat) {
+        aircraftAudio.playFighterCombatVoice(s.soundEnabled);
+      }
+    }
     set({
       flightMode: activating ? 'maneuver' : 'airborne',
       flightNonce: s.flightNonce + 1,
