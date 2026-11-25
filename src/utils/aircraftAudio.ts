@@ -10,6 +10,45 @@ export type SoundProfile =
   | 'gsuit'
   | 'helmet';
 
+export interface TakeOffTiming {
+  voiceStart: number;
+  rollStart: number;
+  rotStart: number;
+  climbStart: number;
+  airborneStart: number;
+}
+
+/**
+ * Penyelarasan timing Take Off (detik) agar pesawat BERHENTI mantap di runway sampai
+ * aba-aba "Rolling / Afterburner on / Power set" benar-benar terucap di rekaman suara kokpit!
+ */
+export function getTakeOffTiming(unitId: string): TakeOffTiming {
+  const profile = getSoundProfile(unitId);
+  const isFighter = profile === 'fighter_single' || profile === 'fighter_twin';
+  const isVvip = unitId === 'b737vip' || unitId === 'falcon8x';
+  const isCargoTransport =
+    unitId === 'c130j' ||
+    unitId === 'a400m' ||
+    unitId === 'cn295' ||
+    unitId === 'cn235' ||
+    unitId === 'c212' ||
+    unitId === 'a330mrtt';
+
+  if (isFighter) {
+    // 6.0s mulai suara -> 10.6s "Afterburner on, rolling" -> 14.3s "Full throttle, airborne"
+    return { voiceStart: 6.0, rollStart: 10.6, rotStart: 14.2, climbStart: 16.0, airborneStart: 18.4 };
+  }
+  if (isCargoTransport) {
+    // 6.0s mulai suara -> 14.4s "Power set" -> 16.4s "Rotate!"
+    return { voiceStart: 6.0, rollStart: 14.4, rotStart: 16.4, climbStart: 18.3, airborneStart: 20.6 };
+  }
+  if (isVvip) {
+    // 6.0s mulai suara -> 10.8s "Rolling" -> 14.2s Rotation & Liftoff
+    return { voiceStart: 6.0, rollStart: 10.8, rotStart: 14.2, climbStart: 16.0, airborneStart: 18.4 };
+  }
+  return { voiceStart: 6.0, rollStart: 7.6, rotStart: 10.8, climbStart: 12.5, airborneStart: 14.8 };
+}
+
 export function getSoundProfile(unitId: string): SoundProfile {
   switch (unitId) {
     case 'su30mk2':
@@ -927,14 +966,15 @@ class AircraftAudioEngine {
       unitId === 'c212' ||
       unitId === 'a330mrtt';
 
+    const toTiming = getTakeOffTiming(unitId);
+
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
-      const atcTime = isHeli ? 4.2 : 6.0;
-      const voiceStart = isFighter ? 3.6 : isCargoTransport ? 1.6 : isVvip ? 4.8 : atcTime;
-      const rollStart = isHeli ? 6.0 : 7.6;
-      const gearUpTime = isHeli ? 8.4 : 12.4;
+      const atcTime = isHeli ? 4.2 : toTiming.voiceStart;
+      const rollStart = isHeli ? 6.0 : toTiming.rollStart;
+      const gearUpTime = isHeli ? 8.4 : toTiming.climbStart;
 
-      if (phaseTime > voiceStart && !this.atcStartPlayed) {
+      if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
           isFighter ? 'fighter-takeoff' : isCargoTransport ? 'transport-takeoff' : isVvip ? 'vvip-takeoff' : 'takeoff',
@@ -944,10 +984,11 @@ class AircraftAudioEngine {
         // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
         throttle = 0.24 + Math.sin(phaseTime * 2) * 0.03;
       } else if (phaseTime < rollStart) {
-        // Spool-up full power di garis start Runway 09
-        const p = (phaseTime - atcTime) / (rollStart - atcTime);
-        throttle = 0.28 + p * 0.72;
-      } else if (phaseTime < 14.2) {
+        // Berhenti di garis start Runway sambil berkomunikasi dengan Tower -> mulai spool-up saat hampir rolling
+        const holdDur = Math.max(0.5, rollStart - atcTime);
+        const p = Math.max(0, (phaseTime - (rollStart - Math.min(1.6, holdDur))) / Math.min(1.6, holdDur));
+        throttle = 0.26 + p * 0.72;
+      } else if (phaseTime < toTiming.airborneStart) {
         throttle = 1.0;
         if (phaseTime > gearUpTime && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
@@ -1037,17 +1078,18 @@ class AircraftAudioEngine {
       let sampleRate = 1.0;
 
       if (flightMode === 'takeoff') {
-        if (phaseTime < 5.3) {
-          // Fase Taxi Out dari Hanggar -> Line-Up ke titik start Runway 09
+        const spoolStart = toTiming.rollStart - 1.4;
+        if (phaseTime < spoolStart) {
+          // Fase Taxi Out dari Hanggar -> Line-Up & Tunggu Izin Tower di garis start Runway
           desiredTrack = 'taxi';
-          sampleVol = 0.56;
-          sampleRate = 0.94 + (phaseTime / 5.3) * 0.08;
+          sampleVol = phaseTime < 5.5 ? 0.52 : 0.38; // Lebih tenang saat berbicara dengan Tower agar suara pilot sangat jelas!
+          sampleRate = 0.94 + Math.min(1, phaseTime / 5.5) * 0.06;
         } else {
-          // Fase Spool-Up di Runway (5.3..7.6s) -> Akselerasi Full Afterburner (7.6..10.8s) -> Liftoff & Climb!
+          // Fase Spool-Up -> "Afterburner on, rolling!" -> Akselerasi Full Afterburner -> Liftoff & Climb!
           desiredTrack = 'takeoff';
-          const accelBoost = phaseTime < 7.6 ? 0.66 + ((phaseTime - 5.3) / 2.3) * 0.16 : 0.82;
+          const accelBoost = phaseTime < toTiming.rollStart ? 0.58 + ((phaseTime - spoolStart) / 1.4) * 0.24 : 0.82;
           sampleVol = accelBoost;
-          sampleRate = phaseTime < 7.6 ? 0.98 : 1.04;
+          sampleRate = phaseTime < toTiming.rollStart ? 0.98 : 1.04;
         }
       } else if (flightMode === 'landing') {
         if (phaseTime < 5.8) {

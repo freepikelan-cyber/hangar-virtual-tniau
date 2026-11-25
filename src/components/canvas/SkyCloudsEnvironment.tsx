@@ -3,6 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
+import { getTakeOffTiming } from '../../utils/aircraftAudio';
 import {
   buildMountainRangeGeometry,
   buildOrganicIslandGeometry,
@@ -462,17 +463,21 @@ export function SkyCloudsEnvironment() {
         targetWorldY = THREE.MathUtils.lerp(-6.5, -0.02, p);
       }
     } else if (flightMode === 'takeoff') {
-      if (pt < 7.6) {
-        // Taxi keluar dari Hanggar TNI AU yang jauh -> Line-up di Runway 09 -> Spool-up full power
+      const to = getTakeOffTiming(selectedId);
+      const rollStart = isHeli ? 6.0 : to.rollStart;
+      const rotStart = isHeli ? 8.0 : to.rotStart;
+      const airborneStart = isHeli ? 10.2 : to.airborneStart;
+      if (pt < rollStart) {
+        // Taxi keluar dari Hanggar -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai!
         targetWorldY = -0.02;
         groundSpeed = 0;
         scrollZ.current = 0;
-      } else if (pt < 10.8) {
-        const p = (pt - 7.6) / 3.2;
+      } else if (pt < rotStart) {
+        const p = (pt - rollStart) / Math.max(0.5, rotStart - rollStart);
         targetWorldY = -0.02;
         groundSpeed = 52 * p * p;
-      } else if (pt < 14.8) {
-        const p = Math.min(1, (pt - 10.8) / 4.0);
+      } else if (pt < airborneStart) {
+        const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
         targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
         groundSpeed = 52;
       } else {

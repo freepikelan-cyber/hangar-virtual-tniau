@@ -7,7 +7,7 @@ import { getJupiterSpec, JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../.
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
 import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
-import { aircraftAudio } from '../../utils/aircraftAudio';
+import { aircraftAudio, getTakeOffTiming } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
@@ -286,7 +286,8 @@ export function AircraftModel() {
           setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
-        // TAKE OFF PESAWAT SAYAP TETAP: Keluar Hanggar (jauh) -> Belok masuk Runway 09 -> Spool-up -> Akselerasi -> Liftoff -> Climb
+        // TAKE OFF PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba suara kokpit Tempur, Angkut, & VVIP!):
+        const to = getTakeOffTiming(unit.id);
         if (pt < 4.2) {
           // Fase 0A: Taxi keluar perlahan dari Hanggar TNI AU menyusuri jalur taxiway kuning panjang
           const p = easeInOut(pt / 4.2);
@@ -295,45 +296,50 @@ export function AircraftModel() {
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('TAXI OUT • KELUAR DARI HANGGAR MENUJU RUNWAY 09');
+          setFlightLabel('TAXI OUT • KELUAR DARI HANGGAR MENUJU RUNWAY');
         } else if (pt < 6.0) {
-          // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway 09!
+          // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway!
           const p = easeInOut((pt - 4.2) / 1.8);
           targetX = THREE.MathUtils.lerp(-6.5, 0, p);
           targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
           targetGear = 0;
-          setFlightLabel('LINE UP • MASUK POSISI START RUNWAY 09');
-        } else if (pt < 7.6) {
-          // Fase 1: Posisi siap di Runway 09 + Izin ATC + Mesin Full Power
+          setFlightLabel('LINE UP • MASUK POSISI START RUNWAY');
+        } else if (pt < to.rollStart) {
+          // Fase 1: BERHENTI MANTAP di garis start Runway sambil komunikasi radio Tower & checklist selesai!
           targetX = 0;
           targetZ = -8.5;
           targetY = 0;
           targetYawOffset = 0;
-          targetPitch = Math.sin(t * 36) * 0.004;
+          const nearRoll = pt > to.rollStart - 1.4;
+          targetPitch = nearRoll ? Math.sin(t * 36) * 0.004 : 0;
           targetGear = 0;
-          setFlightLabel('📡 ATC: CLEARED FOR TAKE OFF RUNWAY 09 • FULL POWER');
-        } else if (pt < 10.8) {
-          // Fase 2: Akselerasi panjang di sepanjang aspal runway
-          const p = (pt - 7.6) / 3.2;
+          setFlightLabel(
+            nearRoll
+              ? '📡 ATC: CLEARED FOR TAKE OFF • FULL POWER / AFTERBURNER ON!'
+              : '🎙️ KOMUNIKASI KOKPIT & TOWER • PERSIAPAN LEPAS LANDAS DI RUNWAY',
+          );
+        } else if (pt < to.rotStart) {
+          // Fase 2: Akselerasi panjang di sepanjang aspal runway (tepat saat aba-aba "Rolling / Power Set"!)
+          const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
           targetZ = THREE.MathUtils.lerp(-8.5, 2.8, p * p);
           targetY = 0;
           targetPitch = -0.02 * p;
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • AKSELERASI PANJANG DI ASPAL RUNWAY');
-        } else if (pt < 12.5) {
-          // Fase 3: Rotation & Liftoff
-          const p = (pt - 10.8) / 1.7;
+          setFlightLabel('TAHAP 1 • TAKE OFF • ROLLING & AKSELERASI DI RUNWAY');
+        } else if (pt < to.climbStart) {
+          // Fase 3: Rotation & Liftoff (tepat saat aba-aba "Rotate / Airborne"!)
+          const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
           const ease = easeInOut(p);
           targetZ = THREE.MathUtils.lerp(2.8, 5.2, ease);
           targetY = THREE.MathUtils.lerp(0, 1.75, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • ROTATION & LIFTOFF');
-        } else if (pt < 14.8) {
+          setFlightLabel('TAHAP 1 • TAKE OFF • ROTATION & LIFTOFF (AIRBORNE!)');
+        } else if (pt < to.airborneStart) {
           // Fase 4: Initial Climb & Roda masuk otomatis
-          const p = easeInOut((pt - 12.5) / 2.3);
+          const p = easeInOut((pt - to.climbStart) / Math.max(0.5, to.airborneStart - to.climbStart));
           targetZ = THREE.MathUtils.lerp(5.2, 0, p);
           targetY = THREE.MathUtils.lerp(1.75, 3.05, p);
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.18 : -0.26, -0.04, p);
