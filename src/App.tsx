@@ -32,6 +32,12 @@ const JupiterManeuverPanel = lazy(() =>
 const SafetyStoryPanel = lazy(() =>
   import('./components/hud/SafetyStoryPanel').then((m) => ({ default: m.SafetyStoryPanel })),
 );
+const CockpitSimulatorScene = lazy(() =>
+  import('./components/canvas/CockpitSimulatorScene').then((m) => ({ default: m.CockpitSimulatorScene })),
+);
+const CockpitSimulatorHud = lazy(() =>
+  import('./components/hud/CockpitSimulatorHud').then((m) => ({ default: m.CockpitSimulatorHud })),
+);
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
 function FloatingQuizBanner() {
@@ -120,12 +126,13 @@ export function App() {
   const bgmVolume = useHangarStore((s) => s.bgmVolume);
   const flightMode = useHangarStore((s) => s.flightMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
+  const cockpitSimMode = useHangarStore((s) => s.cockpitSimMode);
 
-  // Musik latar belakang: aktif di halaman awal & eksplorasi hanggar, otomatis MATI total saat simulasi terbang/safety!
+  // Musik latar belakang: aktif di halaman awal & eksplorasi hanggar, otomatis MATI total saat simulasi terbang/safety/kokpit!
   useEffect(() => {
-    const shouldPlayBgm = bgmEnabled && (showWelcome || (flightMode === 'parked' && !safetyMode));
+    const shouldPlayBgm = bgmEnabled && !cockpitSimMode && (showWelcome || (flightMode === 'parked' && !safetyMode));
     bgmPlayer.sync(shouldPlayBgm);
-  }, [bgmEnabled, showWelcome, flightMode, safetyMode]);
+  }, [bgmEnabled, showWelcome, flightMode, safetyMode, cockpitSimMode]);
 
   useEffect(() => {
     bgmPlayer.setVolume(bgmVolume);
@@ -141,6 +148,23 @@ export function App() {
     }, 12000);
     return () => window.clearInterval(timer);
   }, [showcaseMode]);
+
+  if (cockpitSimMode) {
+    return (
+      <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#04101f]">
+        <Suspense
+          fallback={
+            <div className="flex h-full w-full items-center justify-center bg-[#061226] font-display text-sm font-bold tracking-[0.2em] text-emerald-300 uppercase">
+              MEMUAT SIMULATOR KOKPIT 3D...
+            </div>
+          }
+        >
+          <CockpitSimulatorScene />
+          <CockpitSimulatorHud />
+        </Suspense>
+      </main>
+    );
+  }
 
   return (
     <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#061226]">

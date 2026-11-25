@@ -3,6 +3,7 @@ import {
   Activity,
   Check,
   ChevronUp,
+  Crosshair,
   FileText,
   Flame,
   Fuel,
@@ -47,6 +48,7 @@ export function BottomDock() {
   const triggerAar = useHangarStore((s) => s.triggerAar);
   const triggerMission = useHangarStore((s) => s.triggerMission);
   const triggerJupiterShow = useHangarStore((s) => s.triggerJupiterShow);
+  const enterCockpitSim = useHangarStore((s) => s.enterCockpitSim);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const resetCamera = useHangarStore((s) => s.resetCamera);
@@ -125,6 +127,18 @@ export function BottomDock() {
                 onClick: () => setSimMenuOpen((v) => !v),
                 accent: 'amber' as const,
                 hasMenu: true,
+              },
+              {
+                id: 'cockpit-sim',
+                label: 'Masuk Kokpit',
+                short: 'Kokpit',
+                icon: Crosshair,
+                active: true,
+                accent: 'emerald' as const,
+                onClick: () => {
+                  setSimMenuOpen(false);
+                  enterCockpitSim();
+                },
               },
               {
                 id: 'aero',

@@ -96,6 +96,7 @@ interface HangarState {
   safetyNonce: number;
   safetyStep: number;
   oxygenMode: boolean;
+  cockpitSimMode: boolean;
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
   aeroManeuver: AeroManeuver;
@@ -139,6 +140,8 @@ interface HangarState {
   setAarProgress: (fuel: number, step: number) => void;
   triggerMission: () => void;
   triggerJupiterShow: () => void;
+  enterCockpitSim: () => void;
+  exitCockpitSim: () => void;
   cycleTimeOfDay: () => void;
   setTimeOfDay: (mode: TimeOfDay) => void;
   setBgmVolume: (vol: number) => void;
@@ -194,6 +197,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   safetyNonce: 0,
   safetyStep: 0,
   oxygenMode: false,
+  cockpitSimMode: false,
   flapAngle: 15,
   trimAngle: 8,
   aeroManeuver: 'liftDemo',
@@ -223,6 +227,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       safetyMode: false,
       aeroMode: false,
       oxygenMode: false,
+      cockpitSimMode: false,
       showcaseMode: false,
     });
   },
@@ -416,6 +421,24 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       leftOpen: mobile ? false : s.leftOpen,
       camRequest: { pos: [34, 18, 44] as Vec3, target: [0, 3.2, -13] as Vec3, nonce: nonce++ },
     });
+  },
+  enterCockpitSim: () => {
+    aircraftAudio.stop();
+    set({
+      cockpitSimMode: true,
+      flightMode: 'parked',
+      flightLabel: null,
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      showInfographic: false,
+      showcaseMode: false,
+      autoRotate: false,
+      activeHotspot: null,
+    });
+  },
+  exitCockpitSim: () => {
+    set({ cockpitSimMode: false });
   },
   cycleTimeOfDay: () =>
     set((s) => ({
