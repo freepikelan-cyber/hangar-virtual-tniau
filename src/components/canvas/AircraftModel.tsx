@@ -250,8 +250,11 @@ export function AircraftModel() {
 
     if (flightMode === 'takeoff') {
       if (isHeli) {
-        // TAKE OFF HELIKOPTER: Keluar Hanggar Skadron 8 -> Tepat ke tengah Helipad H (0,0,0) -> Tunggu suara Semplak Tower -> Hover Vertikal -> Menanjak!
+        // TAKE OFF HELIKOPTER:
+        // 1. Keluar hanggar ke Helipad H -> 2. Tunggu suara Semplak Tower selesai penuh ->
+        // 3. Naik vertikal perlahan & hover stabil DI TEMPAT di atas huruf H -> 4. Hidung menunduk halus & mulai maju perlahan!
         const to = getTakeOffTiming(unit.id);
+        const hoverDone = to.rollStart + 3.4; // 20.8..24.2s: naik vertikal perlahan; 24.2..25.4s: hover mantap di atas H
         if (pt < 4.2) {
           const p = easeInOut(pt / 4.2);
           targetX = THREE.MathUtils.lerp(-19.0, 0, p);
@@ -259,32 +262,46 @@ export function AircraftModel() {
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.65) / 0.35));
           targetGear = 0;
-          setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU HELIPAD SKADRON 8');
+          setFlightLabel('TAXI OUT // HELIKOPTER MENUJU HELIPAD SKADRON UDARA 8');
         } else if (pt < to.rollStart) {
           targetX = 0;
           targetZ = 0;
           targetY = 0;
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('📡 SEMPLAK TOWER • CARACAL 01 DI HELIPAD H — START ENGINE & ROTOR 100%');
-        } else if (pt < to.rotStart) {
-          const p = easeInOut((pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart));
+          setFlightLabel('SEMPLAK TOWER // CARACAL 01 DI HELIPAD H — ROTOR 100%');
+        } else if (pt < hoverDone) {
+          // Fase 3A: Naik vertikal PERLAHAN lurus ke atas di atas huruf H (belum maju!)
+          const p = easeInOut((pt - to.rollStart) / Math.max(0.5, hoverDone - to.rollStart));
+          targetX = 0;
           targetZ = 0;
-          targetY = THREE.MathUtils.lerp(0, 2.1, p);
-          targetPitch = -0.03 * Math.sin(p * Math.PI);
+          targetY = THREE.MathUtils.lerp(0, 2.55, p);
+          targetPitch = -0.02 * Math.sin(p * Math.PI);
+          targetRoll = Math.sin(t * 2.2) * 0.018;
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL DARI HELIPAD H (LIFTING OFF!)');
-        } else if (pt < to.airborneStart) {
-          const p = easeInOut((pt - to.rotStart) / Math.max(0.5, to.airborneStart - to.rotStart));
-          targetY = THREE.MathUtils.lerp(2.1, 3.0, p);
+          setFlightLabel('TAKE OFF // ANGKAT VERTIKAL PERLAHAN DI ATAS HELIPAD H');
+        } else if (pt < to.rotStart) {
+          // Fase 3B: Hover stabil sejenak di atas Helipad H sebelum dorong tuas siklik maju
+          targetX = 0;
           targetZ = 0;
-          targetPitch = 0.09 * Math.sin(p * Math.PI);
-          targetGear = p > 0.2 ? 1 : 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK MENUJU UTARA & RODA MASUK');
+          targetY = 2.55 + Math.sin(t * 2.4) * 0.06;
+          targetPitch = 0.01;
+          targetRoll = Math.sin(t * 1.8) * 0.015;
+          targetGear = 0;
+          setFlightLabel('TAKE OFF // HOVER STABIL — PERSIAPAN MAJU MENUJU UTARA');
+        } else if (pt < to.airborneStart) {
+          // Fase 4: Hidung menunduk halus (forward cyclic) -> melaju maju perlahan & menanjak + roda masuk
+          const p = easeInOut((pt - to.rotStart) / Math.max(0.5, to.airborneStart - to.rotStart));
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(0, 0.8, Math.sin(p * Math.PI));
+          targetY = THREE.MathUtils.lerp(2.55, 3.05, p);
+          targetPitch = 0.13 * Math.sin(Math.min(1, p * 1.35) * Math.PI);
+          targetGear = p > 0.35 ? 1 : 0;
+          setFlightLabel('TAKE OFF // MAJU PERLAHAN & MENANJAK — RODA MASUK');
         } else {
           targetY = 2.95;
           targetGear = 1;
-          setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+          setFlightState('airborne', 'TERBANG JELAJAH // SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
         // TAKE OFF PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba suara kokpit Tempur, Angkut, & VVIP!):

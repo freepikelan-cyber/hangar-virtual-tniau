@@ -46,8 +46,8 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'a330mrtt';
 
   if (profile === 'helicopter') {
-    // heli-voice-takeoff.wav (15.76s): 4.2s..19.96s suara selesai penuh + jeda -> 20.8s baru mulai Hover & Lift Off!
-    return { voiceStart: 4.2, rollStart: 20.8, rotStart: 23.0, climbStart: 23.2, airborneStart: 25.4 };
+    // heli-voice-takeoff.wav (15.76s): 4.2..19.96s suara selesai -> 20.8..25.4s naik vertikal perlahan & hover di tempat -> 25.4..29.8s baru maju perlahan & menanjak!
+    return { voiceStart: 4.2, rollStart: 20.8, rotStart: 25.4, climbStart: 26.8, airborneStart: 29.8 };
   }
   if (isFighter) {
     // fighter-voice-takeoff.wav (18.08s): 6.0s..24.08s suara selesai penuh -> 24.4s baru mulai Take Off roll!

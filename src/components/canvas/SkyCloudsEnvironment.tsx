@@ -525,7 +525,22 @@ export function SkyCloudsEnvironment() {
       const rollStart = to.rollStart;
       const rotStart = to.rotStart;
       const airborneStart = to.airborneStart;
-      if (pt < rollStart) {
+      if (isHeli) {
+        // Khusus Helikopter: Helipad DIAM DI TEMPAT selama naik vertikal & hover (pt < rotStart),
+        // baru mulai bergerak maju perlahan saat fase transisi maju (rotStart .. airborneStart)!
+        if (pt < rotStart) {
+          targetWorldY = -0.02;
+          groundSpeed = 0;
+          scrollZ.current = 0;
+        } else if (pt < airborneStart) {
+          const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
+          targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
+          groundSpeed = 46 * p * p;
+        } else {
+          targetWorldY = -19.5;
+          groundSpeed = 46;
+        }
+      } else if (pt < rollStart) {
         // Taxi keluar dari Hanggar -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai!
         targetWorldY = -0.02;
         groundSpeed = 0;
