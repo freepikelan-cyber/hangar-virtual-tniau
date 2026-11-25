@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
+import type { JupiterManeuverId } from '../data/jupiterManeuvers';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
@@ -86,6 +87,7 @@ interface HangarState {
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
   aeroManeuver: AeroManeuver;
+  jupiterManeuver: JupiterManeuverId;
   gForceLevel: 1 | 4 | 9;
   flightMode: FlightMode;
   flightNonce: number;
@@ -113,6 +115,7 @@ interface HangarState {
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
+  setJupiterManeuver: (m: JupiterManeuverId) => void;
   setGForceLevel: (g: 1 | 4 | 9) => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
@@ -172,6 +175,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   flapAngle: 15,
   trimAngle: 8,
   aeroManeuver: 'liftDemo',
+  jupiterManeuver: 'auto',
   gForceLevel: 4,
   flightMode: 'parked',
   flightNonce: 0,
@@ -280,6 +284,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
   setGForceLevel: (gForceLevel) => set({ gForceLevel }),
+  setJupiterManeuver: (jupiterManeuver) => set({ jupiterManeuver }),
   replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
   setSafetyStep: (safetyStep) => {
     if (get().safetyStep !== safetyStep) set({ safetyStep });
@@ -308,10 +313,15 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       flightMode: activating ? 'maneuver' : 'airborne',
       flightNonce: s.flightNonce + 1,
       flightLabel: activating
-        ? 'TAHAP 2 • MANUVER UDARA AKTIF'
+        ? s.selectedId === 'kt1b'
+          ? 'JUPITER AEROBATIC TEAM (6-SHIP) • FORMASI AKTIF'
+          : 'TAHAP 2 • MANUVER UDARA AKTIF'
         : 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING',
       autoRotate: false,
       activeHotspot: null,
+      ...(activating && s.selectedId === 'kt1b'
+        ? { camRequest: { pos: [16.5, 9.2, 22.5] as Vec3, target: [0, 3.2, -2.0] as Vec3, nonce: nonce++ } }
+        : {}),
     });
   },
   triggerLanding: () => {

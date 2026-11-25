@@ -9,6 +9,7 @@ import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { InfographicModal } from './components/hud/InfographicModal';
 import { AeroControlPanel } from './components/hud/AeroControlPanel';
 import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
+import { JupiterManeuverPanel } from './components/hud/JupiterManeuverPanel';
 import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
@@ -88,6 +89,7 @@ export function App() {
       <InfoPanel />
       <AeroControlPanel />
       <GSuitControlPanel />
+      <JupiterManeuverPanel />
       <SafetyStoryPanel />
       <FloatingQuizBanner />
       <HotspotCard />

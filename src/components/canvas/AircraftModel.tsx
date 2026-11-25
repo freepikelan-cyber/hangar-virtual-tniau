@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../../data/jupiterManeuvers';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
 import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
@@ -11,6 +12,7 @@ import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
 import { CockpitPilotLayer } from './CockpitPilotLayer';
 import { GSuitEduLayer } from './GSuitEduLayer';
+import { JupiterFormationLayer } from './JupiterFormationLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
 
@@ -99,6 +101,7 @@ export function AircraftModel() {
   const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
+  const jupiterManeuver = useHangarStore((s) => s.jupiterManeuver);
   const gForceLevel = useHangarStore((s) => s.gForceLevel);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
   const liveryId = useHangarStore((s) => s.selectedLivery[unit.id] ?? unit.liveries?.[0]?.id);
@@ -411,6 +414,45 @@ export function AircraftModel() {
             targetRoll = -0.12 * Math.sin(s * Math.PI);
           }
           setFlightLabel('TAHAP 2 • MANUVER TEMPUR • TACTICAL DIVE & AFTERBURNER PULL-UP');
+        }
+      } else if (unit.id === 'kt1b') {
+        // JUPITER AEROBATIC TEAM (6-SHIP): Gerakan Jupiter 1 (Leader) selaras dengan 21 manuver JAT!
+        const cycleLen = 7.0;
+        const activeJat: Exclude<JupiterManeuverId, 'auto'> =
+          jupiterManeuver === 'auto'
+            ? JUPITER_AUTO_ORDER[Math.floor(pt / cycleLen) % JUPITER_AUTO_ORDER.length]
+            : jupiterManeuver;
+        const p = (pt % cycleLen) / cycleLen;
+        const sWave = Math.sin(p * Math.PI);
+        const fullWave = Math.sin(p * Math.PI * 2);
+
+        targetX = 0;
+        targetY = baseH + 0.8 + sWave * 0.65;
+        targetZ = 0;
+        if (activeJat === 'jupiterRoll' || activeJat === 'barrelRoll') {
+          directRoll = -p * Math.PI * 2;
+        } else if (activeJat === 'jupiterRollBack') {
+          directRoll = p < 0.5 ? -(p * 2) * Math.PI * 2 : ((p - 0.5) * 2) * Math.PI * 2;
+        } else if (activeJat === 'arrowHead' || activeJat === 'diamond' || activeJat === 'delta' || activeJat === 'garuda' || activeJat === 'fiveCards') {
+          targetPitch = -fullWave * 0.4;
+          targetY = baseH + 0.9 + sWave * 1.4;
+        } else if (activeJat === 'bombBurst') {
+          const burst = Math.max(0, (p - 0.25) / 0.75);
+          targetY = baseH + 1.0 + burst * 3.8;
+          targetPitch = -0.38 * burst;
+        } else if (activeJat === 'snakeLoop') {
+          targetX = Math.sin(t * 2.6) * 3.8;
+          targetY = baseH + 0.9 + Math.cos(t * 2.6 * 0.8) * 1.35;
+          targetRoll = -Math.cos(t * 2.6) * 0.65;
+        } else if (activeJat === 'leaderBenefit') {
+          targetZ = 1.6 * sWave;
+          targetY = baseH + 1.1 + 0.6 * sWave;
+        } else if (activeJat === 'cloverLeaf') {
+          targetRoll = -Math.sin(p * Math.PI * 2) * 0.75;
+          targetPitch = -Math.cos(p * Math.PI * 2) * 0.3;
+        } else {
+          targetPitch = -0.04 + Math.sin(t * 1.4) * 0.04;
+          targetRoll = Math.sin(t * 1.1) * 0.08;
         }
       } else if (isTrainer) {
         // MANUVER AEROBATIK PESAWAT LATIH / COIN (KT-1B & Super Tucano)
@@ -986,6 +1028,7 @@ export function AircraftModel() {
         <HotspotMarkers hotspots={unit.hotspots} />
       </group>
       <SafetySystemLayer />
+      <JupiterFormationLayer sourceGroup={procedural.group} />
     </group>
   );
 }
