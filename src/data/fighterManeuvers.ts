@@ -8,14 +8,8 @@ export type FighterManeuverId =
   | 'immelmann'
   | 'chandelle'
   | 'cubanEight'
-  // 2. Dogfight / ACM
-  | 'highGTurn'
-  | 'highYoYo'
-  | 'lowYoYo'
-  | 'scissors'
-  | 'displacementRoll'
-  | 'circleFight'
-  | 'thachWeave'
+  // 2. Dogfight (Pertempuran Udara)
+  | 'dogfight'
   // 3. Supermaneuverability
   | 'cobra'
   | 'kulbit'
@@ -75,48 +69,12 @@ export const FIGHTER_MANEUVERS: FighterManeuverSpec[] = [
     desc: 'Gabungan dua loop dan half-roll membentuk lintasan angka delapan (∞) horizontal di udara.',
   },
 
-  // === 2. DOGFIGHT / ACM ===
+  // === 2. DOGFIGHT (PERTEMPURAN UDARA) ===
   {
-    id: 'highGTurn',
-    name: 'High-G Break Turn',
+    id: 'dogfight',
+    name: 'Dogfight (Pertempuran Udara)',
     group: 'acm',
-    desc: 'Belokan ekstrem beban G-Force tinggi untuk memotong sudut lawan atau menghindari rudal.',
-  },
-  {
-    id: 'highYoYo',
-    name: 'High Yo-Yo',
-    group: 'acm',
-    desc: 'Menanjak sementara di tengah belokan untuk mencegah overshoot lalu menukik ke ekor lawan.',
-  },
-  {
-    id: 'lowYoYo',
-    name: 'Low Yo-Yo',
-    group: 'acm',
-    desc: 'Menukik sementara di dalam radius belok untuk menambah kecepatan & memperkecil jarak.',
-  },
-  {
-    id: 'scissors',
-    name: 'Scissors (Rolling/Flat)',
-    group: 'acm',
-    desc: 'Serangkaian belokan tajam bolak-balik menyilang memaksa pengejar melampaui posisi tembak.',
-  },
-  {
-    id: 'displacementRoll',
-    name: 'Displacement Roll',
-    group: 'acm',
-    desc: 'Gulung kecil keluar/masuk bidang belok untuk mengatur sudut tembak & cegah overshoot.',
-  },
-  {
-    id: 'circleFight',
-    name: 'One & Two-Circle Fight',
-    group: 'acm',
-    desc: 'Pola pertempuran berputar ketat mengejar sudut tembak ekor lawan secara agresif.',
-  },
-  {
-    id: 'thachWeave',
-    name: 'Thach Weave',
-    group: 'acm',
-    desc: 'Taktik berbelok silang berpasangan memancing musuh masuk ke garis tembak rekan.',
+    desc: 'Drama pertempuran udara 1-vs-1: pengejaran, salvo flare, tembakan kanon & rudal hingga pesawat musuh meledak hancur dan jatuh!',
   },
 
   // === 3. SUPERMANEUVERABILITY ===
@@ -155,13 +113,14 @@ export const FIGHTER_MANEUVERS: FighterManeuverSpec[] = [
 export const FIGHTER_AUTO_ORDER: Exclude<FighterManeuverId, 'auto'>[] = [
   'cobra',
   'barrelRoll',
-  'highGTurn',
+  'dogfight',
   'kulbit',
   'splitS',
-  'scissors',
-  'tailslide',
+  'loop',
   'immelmann',
+  'herbst',
   'cubanEight',
+  'tailslide',
 ];
 
 export function getFighterManeuverSpec(id: Exclude<FighterManeuverId, 'auto'>): FighterManeuverSpec {

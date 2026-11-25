@@ -779,77 +779,16 @@ export function AircraftModel() {
             directRoll = Math.sin(a) * Math.PI;
             break;
           }
-          case 'highGTurn': {
-            // High-G Break Turn kiri -> kanan (bank, yaw, & lintasan lateral 100% searah!)
-            const s = Math.sin(p * Math.PI * 2);
-            targetX = 3.4 * s;
-            targetY = baseH + 0.45 * Math.abs(s);
-            targetRoll = -1.28 * s; // s>0 belok kiri (-roll, +yaw, +X); s<0 belok kanan (+roll, -yaw, -X)
-            targetPitch = -0.18 * Math.abs(s);
-            targetYawOffset = 0.42 * s;
-            break;
-          }
-          case 'highYoYo': {
-            // High Yo-Yo: Menanjak ke luar belokan untuk membuang kecepatan berlebih lalu menukik kembali ke ekor lawan
-            const s = Math.sin(p * Math.PI);
-            targetX = 2.6 * s;
-            targetY = baseH + 2.4 * Math.pow(s, 0.85);
-            targetZ = -1.2 * s;
-            targetRoll = -0.82 * s;
-            targetYawOffset = 0.34 * s;
-            targetPitch = -0.48 * Math.cos(p * Math.PI);
-            break;
-          }
-          case 'lowYoYo': {
-            // Low Yo-Yo: Menukik ke dalam belokan untuk menambah kecepatan & memotong sudut lawan
-            const s = Math.sin(p * Math.PI);
-            targetX = 2.4 * s;
-            targetY = baseH - 1.35 * s;
-            targetZ = 1.5 * s;
-            targetRoll = -0.78 * s;
-            targetYawOffset = 0.32 * s;
-            targetPitch = 0.42 * Math.cos(p * Math.PI);
-            break;
-          }
-          case 'scissors': {
-            // Rolling / Flat Scissors: Belok zig-zag tajam kiri <-> kanan saling memaksa overshoot
-            const w = Math.sin(p * Math.PI * 4);
-            targetX = 2.6 * w;
-            targetY = baseH + 0.5 * Math.cos(p * Math.PI * 4);
-            targetRoll = -1.18 * w;
-            targetYawOffset = 0.36 * w;
-            targetPitch = -0.12;
-            break;
-          }
-          case 'displacementRoll': {
-            // Lag / Displacement Roll: Barrel roll keluar bidang belokan agar tidak overshoot
-            const a = e * Math.PI * 2;
-            directRoll = -a;
-            targetX = Math.sin(a) * 1.9;
-            targetY = baseH + 1.05 * (1 - Math.cos(a));
-            targetZ = -0.85 * Math.sin(p * Math.PI);
-            targetPitch = -0.16 * Math.sin(a);
-            break;
-          }
-          case 'circleFight': {
-            // One-Circle Dogfight: Berputar melingkar rapat miring penuh (bank kanan +1.15 rad, hidung selalu tangensial!)
-            const a = p * Math.PI * 2;
-            targetX = -Math.cos(a) * 3.0;
-            targetZ = Math.sin(a) * 2.4;
-            targetY = baseH + 0.65;
-            targetRoll = 1.15; // Bank kanan konstan
-            targetYawOffset = -a; // Hidung selalu menghadap arah gerak melingkar!
-            targetPitch = -0.14;
-            break;
-          }
-          case 'thachWeave': {
-            // Thach Weave: Lintasan menyilang lebar kiri <-> kanan saling melindungi ekor wingman
-            const w = Math.sin(p * Math.PI * 2);
-            targetX = 3.8 * w;
-            targetY = baseH + 0.55 * Math.abs(w);
-            targetRoll = -1.02 * w;
-            targetYawOffset = 0.48 * w;
-            targetPitch = -0.08 * Math.abs(w);
+          case 'dogfight': {
+            // Drama Pertempuran Udara 1-vs-1 (Dogfight): pengejaran dinamis, belokan tajam mengunci ekor lawan & victory pull-up!
+            const s = Math.sin(pt * 0.72);
+            const c = Math.cos(pt * 0.55);
+            targetX = 3.2 * s;
+            targetY = baseH + 0.75 + 0.85 * Math.sin(pt * 0.65);
+            targetZ = 1.4 * c;
+            targetRoll = -0.92 * s;
+            targetYawOffset = 0.36 * s;
+            targetPitch = -0.14 * Math.cos(pt * 0.65);
             break;
           }
           case 'cobra': {

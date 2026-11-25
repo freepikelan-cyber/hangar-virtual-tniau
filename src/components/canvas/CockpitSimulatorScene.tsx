@@ -7,7 +7,10 @@ import {
   cockpitTelemetry,
   getFlightProfileSpec,
   resetCockpitSimState,
+  SIM_MISSIONS,
+  type SimCameraMode,
 } from '../../utils/cockpitSimState';
+import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { cockpitSimAudio } from '../../utils/cockpitSimAudio';
 import {
   buildMountainRangeGeometry,
@@ -169,18 +172,37 @@ function CockpitWorldAndPhysics() {
   const unit = useSelectedUnit();
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const timeOfDay = useHangarStore((s) => s.timeOfDay);
+  const liveryId = useHangarStore((s) => s.selectedLivery[unit.id] ?? unit.liveries?.[0]?.id);
 
   const profile = useMemo(() => getFlightProfileSpec(unit.category), [unit.category]);
+  const extAircraftGroup = useMemo(() => {
+    const clone = getProceduralAircraft(unit.id, liveryId).group.clone(true);
+    clone.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        child.castShadow = false;
+        child.receiveShadow = false;
+      }
+    });
+    return clone;
+  }, [unit.id, liveryId]);
 
   const cockpitRigRef = useRef<THREE.Group>(null);
+  const extAircraftRef = useRef<THREE.Group>(null);
+  const crashFireRef = useRef<THREE.Group>(null);
+  const crashSmokeRefs = useRef<(THREE.Mesh | null)[]>([]);
   const stickPivotRef = useRef<THREE.Group>(null);
   const throttleLeverRef = useRef<THREE.Group>(null);
   const ringRefs = useRef<(THREE.Mesh | null)[]>([]);
   const passedSetRef = useRef<Set<number>>(new Set());
+  const extGearLerp = useRef(0);
 
   const euler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const quat = useMemo(() => new THREE.Quaternion(), []);
+  const extEuler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
+  const extQuat = useMemo(() => new THREE.Quaternion(), []);
   const forwardVec = useMemo(() => new THREE.Vector3(), []);
+  const camOffset = useMemo(() => new THREE.Vector3(), []);
+  const lookTarget = useMemo(() => new THREE.Vector3(), []);
 
   // Tekstur & geometri dunia terbang 3D
   const skyTex = useMemo(() => makeSimSkyTexture(timeOfDay), [timeOfDay]);
@@ -252,11 +274,70 @@ function CockpitWorldAndPhysics() {
     oceanTex.map.offset.y -= dt * 0.06;
     oceanTex.bumpMap.offset.y -= dt * 0.06;
 
-    // Reset posisi ke Runway 09
-    if (inp.resetRequested) {
-      resetCockpitSimState(profile.isVtol);
+    // Ganti Misi Pelatihan jika dipilih
+    if (inp.requestedMissionId !== null) {
+      tel.missionId = inp.requestedMissionId;
+      inp.requestedMissionId = null;
+      resetCockpitSimState(profile.isVtol, true);
       passedSetRef.current.clear();
     }
+
+    // Ganti Mode Kamera (Kokpit -> Ekor Chase -> Sayap -> Orbit)
+    if (inp.cycleCameraRequested) {
+      inp.cycleCameraRequested = false;
+      const order: SimCameraMode[] = ['cockpit', 'chase', 'wing', 'orbit'];
+      const nextIdx = (order.indexOf(tel.cameraMode) + 1) % order.length;
+      tel.cameraMode = order[nextIdx];
+    }
+
+    // Reset posisi ke Runway 09
+    if (inp.resetRequested) {
+      resetCockpitSimState(profile.isVtol, true);
+      passedSetRef.current.clear();
+    }
+
+    // Mode Pesawat Jatuh & Terbakar -> Otomatis ulang dari awal setelah 3.2 detik!
+    if (tel.crashed) {
+      tel.crashTimer = Math.max(0, tel.crashTimer - dt);
+      if (cockpitRigRef.current) cockpitRigRef.current.visible = false;
+      if (extAircraftRef.current) {
+        extAircraftRef.current.visible = true;
+        extAircraftRef.current.position.set(tel.x, Math.max(0.6, tel.y - 1.5), tel.z);
+        extEuler.set(-tel.pitch * 0.4, tel.yaw, tel.roll * 0.7, 'YXZ');
+        extAircraftRef.current.quaternion.setFromEuler(extEuler);
+      }
+      if (crashFireRef.current) {
+        crashFireRef.current.visible = true;
+        crashFireRef.current.position.set(tel.x, Math.max(1.2, tel.y - 0.6), tel.z);
+        const flicker = 1.0 + Math.sin(t * 28) * 0.28 + Math.cos(t * 17) * 0.16;
+        crashFireRef.current.scale.set(flicker, flicker * 1.25, flicker);
+        crashSmokeRefs.current.forEach((sm, idx) => {
+          if (!sm) return;
+          const rise = ((t * 1.9 + idx * 0.35) % 2.4);
+          sm.position.set(Math.sin(t * 2 + idx) * (0.8 + rise), rise * 4.8, Math.cos(t * 1.7 + idx) * (0.8 + rise));
+          const sc = 0.7 + rise * 1.3;
+          sm.scale.set(sc, sc, sc);
+        });
+      }
+      // Kamera mundur menyaksikan pesawat terbakar dengan getaran dampak
+      const shake = tel.crashTimer > 2.4 ? (tel.crashTimer - 2.4) * 0.6 : 0.08;
+      camera.position.set(
+        tel.x - Math.sin(tel.yaw) * 16 + Math.sin(t * 45) * shake,
+        Math.max(4.5, tel.y + 6.5) + Math.cos(t * 40) * shake,
+        tel.z - Math.cos(tel.yaw) * 16,
+      );
+      lookTarget.set(tel.x, Math.max(1.5, tel.y), tel.z);
+      camera.lookAt(lookTarget);
+      cockpitSimAudio.update(unit.category, 0, 0, false, false, false);
+
+      if (tel.crashTimer <= 0) {
+        resetCockpitSimState(profile.isVtol, true);
+        passedSetRef.current.clear();
+      }
+      return;
+    }
+
+    if (crashFireRef.current) crashFireRef.current.visible = false;
 
     // Toggle roda pendarat (Gear)
     if (inp.toggleGearRequested) {
@@ -292,11 +373,20 @@ function CockpitWorldAndPhysics() {
       // Throttle > 0.48 mengangkat helikopter lurus vertikal!
       const vertCmd = (tel.throttle - 0.48) * 34;
       if (tel.y <= 2.45 && vertCmd <= 0) {
-        tel.y = 2.4;
-        tel.onGround = true;
-        tel.pitch = THREE.MathUtils.lerp(tel.pitch, 0, dt * 5);
-        tel.roll = THREE.MathUtils.lerp(tel.roll, 0, dt * 5);
-        tel.speedKts = THREE.MathUtils.lerp(tel.speedKts, 0, dt * 3);
+        if (!tel.onGround && (vertCmd < -14 || Math.abs(tel.roll) > 0.48)) {
+          tel.crashed = true;
+          tel.crashTimer = 3.2;
+          tel.crashReason = 'BENTURAN KERAS SAAT PENURUNAN HELIKOPTER';
+          tel.speedKts = 0;
+          tel.throttle = 0;
+          cockpitSimAudio.playExplosionSfx(soundEnabled);
+        } else {
+          tel.y = 2.4;
+          tel.onGround = true;
+          tel.pitch = THREE.MathUtils.lerp(tel.pitch, 0, dt * 5);
+          tel.roll = THREE.MathUtils.lerp(tel.roll, 0, dt * 5);
+          tel.speedKts = THREE.MathUtils.lerp(tel.speedKts, 0, dt * 3);
+        }
       } else {
         tel.onGround = false;
         tel.y = Math.max(2.4, tel.y + vertCmd * dt);
@@ -375,12 +465,32 @@ function CockpitWorldAndPhysics() {
         // Pull-Up warning jika menukik rendah dekat permukaan
         tel.pullUpWarn = tel.y < 24 && tel.pitch < -0.14;
 
-        // Sentuh daratan / mendarat kembali di Runway
-        if (tel.y <= 2.4) {
-          tel.y = 2.4;
-          tel.onGround = true;
-          tel.pitch = 0;
-          tel.roll = 0;
+        // Sentuh permukaan: cek apakah mendarat mulus di Runway atau JATUH TERBAKAR (Crash)!
+        if (tel.y <= 2.45) {
+          const overOceanOrOffBase = Math.abs(tel.z) > 220 || Math.abs(tel.x) > 42;
+          const badAttitude = tel.pitch < -0.2 || Math.abs(tel.roll) > 0.42;
+          const gearForgot = !tel.gearDown;
+          const tooFastImpact = tel.speedKts > profile.liftoffKts * 1.65;
+          if (overOceanOrOffBase || badAttitude || gearForgot || tooFastImpact) {
+            tel.y = 2.4;
+            tel.crashed = true;
+            tel.crashTimer = 3.2;
+            tel.crashReason = overOceanOrOffBase
+              ? 'PESAWAT MENABRAK LAUT / DARATAN DI LUAR RUNWAY'
+              : gearForgot
+                ? 'RODA PENDARAT BELUM DITURUNKAN (TEKAN G)'
+                : badAttitude
+                  ? 'SUDUT MENUKIK / MIRING TERLALU TAJAM SAAT SENTUH TANAH'
+                  : 'KECEPATAN MENDARAT TERLALU TINGGI!';
+            tel.speedKts = 0;
+            tel.throttle = 0;
+            cockpitSimAudio.playExplosionSfx(soundEnabled);
+          } else {
+            tel.y = 2.4;
+            tel.onGround = true;
+            tel.pitch = 0;
+            tel.roll = 0;
+          }
         }
 
         tel.gForce = THREE.MathUtils.clamp(
@@ -440,16 +550,154 @@ function CockpitWorldAndPhysics() {
       tel.nextRingBearingDeg = 0;
     }
 
-    // 4. Sinkronkan Kamera First-Person & Rig Kokpit 3D
-    // Kamera Three.js melihat ke -Z lokal, sedangkan pesawat menghadap +Z -> tambahkan Math.PI pada yaw kamera!
-    euler.set(tel.pitch, tel.yaw + Math.PI, -tel.roll, 'YXZ');
-    quat.setFromEuler(euler);
-    camera.position.set(tel.x, tel.y, tel.z);
-    camera.quaternion.copy(quat);
+    // 4. Evaluasi 5 Misi Pelatihan Progresif & Pilot Coach Interaktif
+    const activeMission = SIM_MISSIONS.find((m) => m.id === tel.missionId) ?? SIM_MISSIONS[0];
+    let doneNow = false;
+    if (activeMission.id === 1) {
+      const altOk = tel.altFt >= (activeMission.requireTakeOffAltFt ?? 280);
+      const gearOk = profile.isVtol || !tel.gearDown;
+      doneNow = altOk && gearOk;
+      tel.missionProgressText = `Alt: ${tel.altFt}/${activeMission.requireTakeOffAltFt ?? 280} ft • Gear: ${
+        profile.isVtol ? 'VTOL' : tel.gearDown ? 'Turun' : 'Masuk'
+      }`;
+      if (tel.onGround) {
+        tel.coachHint = profile.isVtol
+          ? 'Naikkan Collective (Shift / Slider Kiri) di atas 55% untuk terbang vertikal!'
+          : tel.throttle < 0.7
+            ? 'Langkah 1: Dorong Throttle ke 90–100% (tahan SHIFT / geser Slider Kiri ke atas).'
+            : tel.speedKts < profile.liftoffKts
+              ? `Langkah 2: Akselerasi di Runway (${Math.round(tel.speedKts)}/${profile.liftoffKts} KTS)...`
+              : 'Langkah 3: Kecepatan cukup! Tarik stik ke bawah (tekan S / Joystick Bawah) untuk mengudara!';
+      } else if (!altOk) {
+        tel.coachHint = `Tarik sedikit (S) untuk menanjak menuju ${activeMission.requireTakeOffAltFt ?? 280} FT!`;
+      } else if (!gearOk) {
+        tel.coachHint = 'Tekan tombol G (atau Gear) untuk melipat roda pendarat!';
+      } else {
+        tel.coachHint = 'Luar biasa! Misi 1 Selesai — Anda siap lanjut ke Misi 2!';
+      }
+    } else if (activeMission.id === 5) {
+      const ringsDone = tel.ringsPassed >= activeMission.targetRings;
+      const landedOk =
+        ringsDone && tel.onGround && tel.gearDown && tel.speedKts < 45 && Math.abs(tel.x) < 35 && Math.abs(tel.z) < 180;
+      doneNow = landedOk;
+      tel.missionProgressText = `Ring: ${Math.min(tel.ringsPassed, activeMission.targetRings)}/${activeMission.targetRings} • ${
+        ringsDone ? (tel.onGround ? `Rem ${Math.round(tel.speedKts)} KTS` : 'Siap Mendarat RWY 09') : 'Tembus Cincin'
+      }`;
+      if (tel.onGround && !ringsDone) {
+        tel.coachHint = 'Lepas landas dari Runway 09 lalu tembus 4 Cincin Target terlebih dahulu!';
+      } else if (!ringsDone) {
+        tel.coachHint = `Arahkan ke Cincin berikutnya (${tel.nextRingDistM}m) • Ring ${tel.ringsPassed}/4.`;
+      } else if (!tel.onGround) {
+        tel.coachHint = !tel.gearDown
+          ? 'Semua cincin tembus! Tekan G untuk turunkan roda, kurangi Throttle & arahkan ke Runway 09!'
+          : 'Roda turun! Jaga kecepatan < 140 KTS & sudut turun lembut menuju aspal Runway 09!';
+      } else if (tel.speedKts >= 45) {
+        tel.coachHint = `Sentuh landasan mulus! Tekan CTRL / turunkan Throttle ke 0% untuk mengerem (${Math.round(tel.speedKts)} KTS).`;
+      } else {
+        tel.coachHint = 'SEMPURNA! Sortie Penuh & Pendaratan Mulus di Runway 09 Selesai!';
+      }
+    } else {
+      const ringsDone = tel.ringsPassed >= activeMission.targetRings;
+      doneNow = ringsDone;
+      tel.missionProgressText = `Ring: ${Math.min(tel.ringsPassed, activeMission.targetRings)}/${activeMission.targetRings}`;
+      if (tel.onGround) {
+        tel.coachHint = profile.isVtol
+          ? 'Naikkan Collective > 55% lalu miringkan sedikit ke depan (W) menuju Cincin 1!'
+          : tel.speedKts < profile.liftoffKts
+            ? `Naikkan Throttle ke 90–100% di Runway 09 (${Math.round(tel.speedKts)}/${profile.liftoffKts} KTS)...`
+            : 'Tarik hidung (S / Joystick Bawah) untuk mengudara menuju Cincin Target!';
+      } else if (tel.stallWarn) {
+        tel.coachHint = 'PERINGATAN STALL! Dorong Throttle penuh (SHIFT) & turunkan sedikit hidung (W)!';
+      } else if (tel.pullUpWarn) {
+        tel.coachHint = 'AWAS RENDAH! Tarik stik (S) segera agar tidak menabrak & terbakar!';
+      } else if (!ringsDone) {
+        const dirHint =
+          Math.abs(tel.nextRingBearingDeg) < 12
+            ? 'Lurus ke depan'
+            : tel.nextRingBearingDeg > 0
+              ? 'Belok Kanan (D)'
+              : 'Belok Kiri (A)';
+        tel.coachHint = `${dirHint} menuju Ring berikut (${tel.nextRingDistM}m) • Cek panah oranye HUD.`;
+      } else {
+        tel.coachHint = `HEBAT! Misi ${activeMission.id} Selesai! Tekan lanjut untuk tantangan berikutnya!`;
+      }
+    }
 
-    if (cockpitRigRef.current) {
-      cockpitRigRef.current.position.copy(camera.position);
-      cockpitRigRef.current.quaternion.copy(camera.quaternion);
+    if (doneNow && !tel.missionCompleted) {
+      tel.missionCompleted = true;
+      cockpitSimAudio.playMissionCompleteChime(soundEnabled);
+    }
+
+    // 5. Sinkronkan Multi-Kamera (Kokpit 1st-Person, Ekor Chase, Sayap, Orbit) & Pesawat Eksternal
+    extEuler.set(-tel.pitch, tel.yaw, tel.roll, 'YXZ');
+    extQuat.setFromEuler(extEuler);
+
+    const shakeMag = tel.onGround
+      ? Math.min(0.015, (tel.speedKts / 220) * 0.014)
+      : (tel.stallWarn || tel.pullUpWarn ? 0.032 : 0) + Math.max(0, (tel.gForce - 2.2) * 0.004) + tel.throttle * 0.005;
+    const shakeX = Math.sin(t * 48) * shakeMag;
+    const shakeY = Math.cos(t * 53) * shakeMag;
+
+    if (tel.cameraMode === 'cockpit') {
+      euler.set(tel.pitch, tel.yaw + Math.PI, -tel.roll, 'YXZ');
+      quat.setFromEuler(euler);
+      camera.position.set(tel.x + shakeX, tel.y + shakeY, tel.z);
+      camera.quaternion.copy(quat);
+
+      if (cockpitRigRef.current) {
+        cockpitRigRef.current.visible = true;
+        cockpitRigRef.current.position.copy(camera.position);
+        cockpitRigRef.current.quaternion.copy(camera.quaternion);
+      }
+      if (extAircraftRef.current) {
+        extAircraftRef.current.visible = false;
+      }
+    } else {
+      if (cockpitRigRef.current) {
+        cockpitRigRef.current.visible = false;
+      }
+      if (extAircraftRef.current) {
+        extAircraftRef.current.visible = true;
+        extAircraftRef.current.position.set(tel.x, tel.y - 1.5, tel.z);
+        extAircraftRef.current.quaternion.copy(extQuat);
+
+        // Putar baling-baling / rotor utama pada pesawat eksternal
+        const propSpeed = dt * (8 + tel.throttle * 34);
+        extAircraftGroup.traverse((child) => {
+          const n = child.name.toLowerCase();
+          if (n.includes('prop') || n.includes('blade') || n.includes('fan') || n.includes('spinner')) {
+            child.rotation.z += propSpeed;
+          } else if (n.includes('rotor')) {
+            child.rotation.y += propSpeed;
+          }
+        });
+        extGearLerp.current = THREE.MathUtils.lerp(extGearLerp.current, tel.gearDown ? 0 : 1, Math.min(1, dt * 4));
+        const gearObj = extAircraftGroup.getObjectByName('landing-gear');
+        if (gearObj) {
+          const r = extGearLerp.current;
+          gearObj.visible = r < 0.96;
+          gearObj.position.y = r * 0.78;
+          gearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
+        }
+      }
+
+      if (tel.cameraMode === 'chase') {
+        camOffset.set(0, 5.2, -17.5).applyQuaternion(extQuat);
+        camera.position.set(tel.x + camOffset.x + shakeX, tel.y + camOffset.y + shakeY, tel.z + camOffset.z);
+        lookTarget.set(tel.x + Math.sin(tel.yaw) * 14, tel.y + Math.sin(tel.pitch) * 6, tel.z + Math.cos(tel.yaw) * 14);
+        camera.lookAt(lookTarget);
+      } else if (tel.cameraMode === 'wing') {
+        camOffset.set(13.5, 3.2, -8.5).applyQuaternion(extQuat);
+        camera.position.set(tel.x + camOffset.x, tel.y + camOffset.y, tel.z + camOffset.z);
+        lookTarget.set(tel.x, tel.y - 0.5, tel.z);
+        camera.lookAt(lookTarget);
+      } else {
+        // Orbit sinematik 360° mengelilingi pesawat sambil terbang!
+        const ang = t * 0.45;
+        camera.position.set(tel.x + Math.cos(ang) * 22, tel.y + 6.8, tel.z + Math.sin(ang) * 22);
+        lookTarget.set(tel.x, tel.y - 0.4, tel.z);
+        camera.lookAt(lookTarget);
+      }
     }
 
     // Animasi Joystick & Throttle 3D di dalam kokpit
@@ -584,6 +832,38 @@ function CockpitWorldAndPhysics() {
           <meshBasicMaterial color="#38bdf8" transparent opacity={0.65} />
         </mesh>
       ))}
+
+      {/* Model 3D Pesawat Eksternal (Aktif saat Kamera Ekor/Sayap/Orbit atau saat Pesawat Jatuh Terbakar!) */}
+      <group ref={extAircraftRef} name="sim-external-aircraft" visible={false}>
+        <primitive object={extAircraftGroup} />
+      </group>
+
+      {/* Efek Kebakaran & Ledakan 3D saat Pesawat Jatuh (Crash!) */}
+      <group ref={crashFireRef} name="sim-crash-fire" visible={false}>
+        <mesh>
+          <sphereGeometry args={[2.6, 14, 14]} />
+          <meshBasicMaterial color="#fff7ed" transparent opacity={0.92} />
+        </mesh>
+        <mesh position={[0, 1.2, 0]}>
+          <sphereGeometry args={[3.8, 14, 14]} />
+          <meshBasicMaterial color="#f97316" transparent opacity={0.74} />
+        </mesh>
+        <mesh position={[0, 2.2, 0]}>
+          <sphereGeometry args={[4.8, 12, 12]} />
+          <meshBasicMaterial color="#dc2626" transparent opacity={0.45} />
+        </mesh>
+        {[0, 1, 2, 3, 4, 5].map((idx) => (
+          <mesh
+            key={`crash-sm-${idx}`}
+            ref={(el) => {
+              crashSmokeRefs.current[idx] = el;
+            }}
+          >
+            <sphereGeometry args={[2.2, 10, 10]} />
+            <meshBasicMaterial color="#1f2937" transparent opacity={0.72} depthWrite={false} />
+          </mesh>
+        ))}
+      </group>
 
       {/* === INTERIOR KOKPIT 3D FIRST-PERSON (Menempel presisi pada kursi pilot / kamera) === */}
       <group ref={cockpitRigRef} name="first-person-cockpit-3d">

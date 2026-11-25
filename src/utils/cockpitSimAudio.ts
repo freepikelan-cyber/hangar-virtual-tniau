@@ -203,6 +203,58 @@ class CockpitSimAudio {
     });
   }
 
+  /** Efek ledakan & kobaran api saat pesawat jatuh (crash) di simulator. */
+  playExplosionSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.start();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const len = Math.floor(ctx.sampleRate * 1.8);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) {
+      ch[i] = Math.random() * 2 - 1;
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(540, now);
+    lp.frequency.exponentialRampToValueAtTime(48, now + 1.65);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.001, now);
+    g.gain.linearRampToValueAtTime(0.7, now + 0.025);
+    g.gain.exponentialRampToValueAtTime(0.001, now + 1.75);
+    src.connect(lp);
+    lp.connect(g);
+    g.connect(ctx.destination);
+    src.start(now);
+    src.stop(now + 1.78);
+  }
+
+  /** Nada selebrasi 3-nada saat Misi Pelatihan Simulator berhasil diselesaikan! */
+  playMissionCompleteChime(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.start();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    [523.25, 659.25, 1046.5].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.11);
+      g.gain.setValueAtTime(0.001, now + idx * 0.11);
+      g.gain.linearRampToValueAtTime(0.18, now + idx * 0.11 + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.11 + 0.38);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(now + idx * 0.11);
+      osc.stop(now + idx * 0.11 + 0.4);
+    });
+  }
+
   /** Bunyi mekanik servo roda pendarat (Gear Up / Gear Down). */
   playGearClick(soundEnabled: boolean) {
     if (!soundEnabled) return;

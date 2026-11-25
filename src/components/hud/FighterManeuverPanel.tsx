@@ -46,7 +46,7 @@ export function FighterManeuverPanel() {
             MANUVER TEMPUR • {unit.name}
           </div>
           <p className="mt-0.5 text-[10px] text-slate-300">
-            19 Manuver Dasar, Dogfight ACM &amp; Supermaneuverability
+            Manuver Dasar, Dogfight Pertempuran Udara &amp; Supermaneuverability
           </p>
         </div>
 
@@ -80,9 +80,9 @@ export function FighterManeuverPanel() {
 
           <div className="space-y-1.5">
             <div className="flex items-center gap-1 font-display text-[10px] font-bold tracking-[0.14em] text-[#ffb703] uppercase">
-              <Crosshair className="h-3 w-3" /> 2. Dogfight / ACM (7)
+              <Crosshair className="h-3 w-3" /> 2. Dogfight (Pertempuran Udara)
             </div>
-            <div className="grid grid-cols-2 gap-1.5">{acm.map((m) => renderBtn(m.id, m.name))}</div>
+            <div className="grid grid-cols-1 gap-1.5">{acm.map((m) => renderBtn(m.id, m.name))}</div>
           </div>
 
           <div className="space-y-1.5">

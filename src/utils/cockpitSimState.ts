@@ -1,5 +1,67 @@
 import type { AircraftCategory } from '../data/fleetData';
 
+export type SimCameraMode = 'cockpit' | 'chase' | 'wing' | 'orbit';
+
+export interface SimMissionSpec {
+  id: number;
+  title: string;
+  difficulty: 'MUDAH' | 'MENENGAH' | 'SULIT' | 'SANGAT SULIT';
+  badgeColor: string;
+  targetRings: number;
+  requireTakeOffAltFt?: number;
+  requireGearUp?: boolean;
+  requireLanding?: boolean;
+  minCruiseKts?: number;
+  brief: string;
+}
+
+export const SIM_MISSIONS: SimMissionSpec[] = [
+  {
+    id: 1,
+    title: 'Misi 1: Lepas Landas Dasar',
+    difficulty: 'MUDAH',
+    badgeColor: 'emerald',
+    targetRings: 0,
+    requireTakeOffAltFt: 280,
+    requireGearUp: true,
+    brief: 'Dorong Throttle ke 90–100%, tarik hidung (S / Joystick Bawah) saat kecepatan cukup, naik hingga 280 ft & masukkan roda (G).',
+  },
+  {
+    id: 2,
+    title: 'Misi 2: Terbang Lurus & Stabil',
+    difficulty: 'MUDAH',
+    badgeColor: 'emerald',
+    targetRings: 3,
+    brief: 'Lepas landas dari Runway 09 lalu tembus 3 Cincin Navigasi pertama secara stabil tanpa menabrak daratan.',
+  },
+  {
+    id: 3,
+    title: 'Misi 3: Sirkuit Manuver Belok',
+    difficulty: 'MENENGAH',
+    badgeColor: 'amber',
+    targetRings: 6,
+    brief: 'Kendalikan kemiringan sayap (A/D) secara halus melewati 6 Cincin Sirkuit berkelok di atas pegunungan & laut.',
+  },
+  {
+    id: 4,
+    title: 'Misi 4: Slalom Kecepatan Tinggi',
+    difficulty: 'SULIT',
+    badgeColor: 'orange',
+    targetRings: 8,
+    minCruiseKts: 170,
+    brief: 'Tembus 8 Cincin Target secara cepat dengan menjaga kecepatan tinggi & menghindari Stall Warning.',
+  },
+  {
+    id: 5,
+    title: 'Misi 5: Sortie Penuh & Mendarat Aman',
+    difficulty: 'SANGAT SULIT',
+    badgeColor: 'rose',
+    targetRings: 4,
+    requireLanding: true,
+    brief: 'Lepas landas, tembus 4 Cincin Target, turunkan roda (G), kurangi throttle & mendarat mulus di Runway 09 (< 45 KTS)!',
+  },
+];
+
 export interface CockpitTelemetry {
   x: number;
   y: number;
@@ -23,6 +85,14 @@ export interface CockpitTelemetry {
   stickX: number; // -1..1 (roll input)
   stickY: number; // -1..1 (pitch input)
   isVtol: boolean;
+  cameraMode: SimCameraMode;
+  crashed: boolean;
+  crashTimer: number;
+  crashReason: string;
+  missionId: number;
+  missionCompleted: boolean;
+  missionProgressText: string;
+  coachHint: string;
 }
 
 export interface CockpitInputState {
@@ -39,6 +109,8 @@ export interface CockpitInputState {
   };
   resetRequested: boolean;
   toggleGearRequested: boolean;
+  cycleCameraRequested: boolean;
+  requestedMissionId: number | null;
 }
 
 export interface FlightProfileSpec {
@@ -97,7 +169,6 @@ export function getFlightProfileSpec(category: AircraftCategory): FlightProfileS
       isVtol: true,
     };
   }
-  // Latih
   return {
     label: 'TRAINER • AGILE',
     maxSpeedKts: 285,
@@ -135,6 +206,14 @@ export const cockpitTelemetry: CockpitTelemetry = {
   stickX: 0,
   stickY: 0,
   isVtol: false,
+  cameraMode: 'cockpit',
+  crashed: false,
+  crashTimer: 0,
+  crashReason: '',
+  missionId: 1,
+  missionCompleted: false,
+  missionProgressText: 'Siap di Runway 09',
+  coachHint: 'Dorong Throttle (Shift / Slider Kiri) ke 90–100% untuk mulai melaju!',
 };
 
 export const cockpitInput: CockpitInputState = {
@@ -151,9 +230,11 @@ export const cockpitInput: CockpitInputState = {
   },
   resetRequested: false,
   toggleGearRequested: false,
+  cycleCameraRequested: false,
+  requestedMissionId: null,
 };
 
-export function resetCockpitSimState(isVtol: boolean) {
+export function resetCockpitSimState(isVtol: boolean, keepMission = true) {
   cockpitTelemetry.x = 0;
   cockpitTelemetry.y = 2.4;
   cockpitTelemetry.z = -125;
@@ -173,7 +254,13 @@ export function resetCockpitSimState(isVtol: boolean) {
   cockpitTelemetry.stickX = 0;
   cockpitTelemetry.stickY = 0;
   cockpitTelemetry.isVtol = isVtol;
-
+  cockpitTelemetry.crashed = false;
+  cockpitTelemetry.crashTimer = 0;
+  cockpitTelemetry.crashReason = '';
+  cockpitTelemetry.missionCompleted = false;
+  if (!keepMission) {
+    cockpitTelemetry.missionId = 1;
+  }
   cockpitInput.touchRoll = 0;
   cockpitInput.touchPitch = 0;
   cockpitInput.touchThrottle = 0;

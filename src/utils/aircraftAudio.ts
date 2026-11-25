@@ -939,6 +939,32 @@ class AircraftAudioEngine {
     }
   }
 
+  /** Efek ledakan udara dahsyat saat pesawat musuh tertembak rudal/kanon di mode Dogfight. */
+  playExplosionSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const src = this.createNoiseSource(1.65);
+    if (src) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(620, now);
+      lp.frequency.exponentialRampToValueAtTime(55, now + 1.5);
+      lp.Q.value = 1.1;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.65, now + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+      src.connect(lp);
+      lp.connect(g);
+      g.connect(ctx.destination);
+      src.start(now);
+      src.stop(now + 1.62);
+    }
+  }
+
   /** Efek letupan suar Flare Countermeasure yang tegas & singkat. */
   playFlarePopSfx(soundEnabled: boolean) {
     if (!soundEnabled) return;
