@@ -93,6 +93,8 @@ export function AircraftModel() {
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
+  const aeroMode = useHangarStore((s) => s.aeroMode);
+  const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
   const liveryId = useHangarStore((s) => s.selectedLivery[unit.id] ?? unit.liveries?.[0]?.id);
   const setFlightState = useHangarStore((s) => s.setFlightState);
@@ -187,13 +189,14 @@ export function AircraftModel() {
     applyVisualModes(activeGroup, false, wireframe);
   }, [activeGroup, wireframe]);
 
-  // Mesin & baling-baling/rotor TETAP berputar penuh selama seluruh fase terbang & landing sampai benar-benar parkir!
+  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, & demo aerodinamika!
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
     flightMode === 'airborne' ||
     flightMode === 'maneuver' ||
-    flightMode === 'landing';
+    flightMode === 'landing' ||
+    aeroMode;
 
   useFrame((state, delta) => {
     if (!rootRef.current) return;
@@ -675,6 +678,50 @@ export function AircraftModel() {
           targetRoll = Math.cos(t * 2) * 0.04;
           setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
         }
+      }
+    } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
+      // Animasi 3D Aerodinamika: Proses Lift Terbang, Menanjak, Menurun, Belok Kiri, & Belok Kanan!
+      if (aeroManeuver === 'liftDemo') {
+        const cyc = t % 12;
+        if (cyc < 3.5) {
+          targetY = 0;
+          targetPitch = 0;
+          targetGear = 0;
+        } else if (cyc < 7.5) {
+          const p = easeInOut((cyc - 3.5) / 4.0);
+          targetY = THREE.MathUtils.lerp(0, 2.1, p);
+          targetPitch = -0.14 * Math.sin(p * Math.PI * 0.7);
+          targetGear = p > 0.55 ? 1 : 0;
+        } else {
+          targetY = 2.15 + Math.sin(t * 2.2) * 0.12;
+          targetPitch = -0.08 + Math.sin(t * 1.5) * 0.02;
+          targetGear = 1;
+        }
+      } else if (aeroManeuver === 'climb') {
+        targetY = 2.4 + Math.sin(t * 1.6) * 0.35;
+        targetPitch = -0.26;
+        targetGear = 1;
+      } else if (aeroManeuver === 'descend') {
+        targetY = 1.45 + Math.sin(t * 1.6) * 0.25;
+        targetPitch = 0.22;
+        targetGear = 1;
+      } else if (aeroManeuver === 'turnLeft') {
+        targetX = -1.15 + Math.sin(t * 1.2) * 0.35;
+        targetY = 2.0 + Math.cos(t * 1.4) * 0.12;
+        targetRoll = 0.44;
+        targetYawOffset = 0.22;
+        targetPitch = -0.05;
+        targetGear = 1;
+      } else if (aeroManeuver === 'turnRight') {
+        targetX = 1.15 + Math.sin(t * 1.2) * 0.35;
+        targetY = 2.0 + Math.cos(t * 1.4) * 0.12;
+        targetRoll = -0.44;
+        targetYawOffset = -0.22;
+        targetPitch = -0.05;
+        targetGear = 1;
+      } else {
+        targetY = 1.9 + Math.sin(t * 1.8) * 0.08;
+        targetGear = 1;
       }
     } else {
       targetX = 0;

@@ -5,6 +5,7 @@ import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
 export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim';
+export type AeroManeuver = 'liftDemo' | 'climb' | 'descend' | 'turnLeft' | 'turnRight' | 'level';
 export type Vec3 = [number, number, number];
 
 export function isCompactViewport() {
@@ -82,6 +83,7 @@ interface HangarState {
   oxygenMode: boolean;
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
+  aeroManeuver: AeroManeuver;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -107,6 +109,7 @@ interface HangarState {
   toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'aeroMode' | 'safetyMode' | 'oxygenMode') => void;
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
+  setAeroManeuver: (m: AeroManeuver) => void;
 
   triggerTakeOff: () => void;
   triggerManeuver: () => void;
@@ -160,6 +163,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   oxygenMode: false,
   flapAngle: 15,
   trimAngle: 8,
+  aeroManeuver: 'liftDemo',
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -255,6 +259,11 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
   setFlapAngle: (flapAngle) => set({ flapAngle }),
   setTrimAngle: (trimAngle) => set({ trimAngle }),
+  setAeroManeuver: (aeroManeuver) =>
+    set((s) => ({
+      aeroManeuver,
+      trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
+    })),
 
   triggerTakeOff: () => {
     const s = get();
