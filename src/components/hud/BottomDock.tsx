@@ -45,6 +45,7 @@ export function BottomDock() {
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const triggerAar = useHangarStore((s) => s.triggerAar);
   const triggerMission = useHangarStore((s) => s.triggerMission);
+  const triggerJupiterShow = useHangarStore((s) => s.triggerJupiterShow);
   const openPilotRoom = useHangarStore((s) => s.openPilotRoom);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
@@ -303,6 +304,23 @@ export function BottomDock() {
             </button>
 
             <div className="mx-0.5 h-6 w-px bg-[#4da6ff]/25 hidden sm:block" />
+
+            <button
+              type="button"
+              title="Tampilkan Pertunjukan 6 Pesawat Jupiter Aerobatic Team (Masuk Satu Per Satu & Manuver Formasi)"
+              onClick={() => {
+                triggerJupiterShow();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                selectedId === 'kt1b' && flightMode === 'maneuver'
+                  ? 'border-rose-400 bg-rose-500 text-white shadow-[0_0_14px_rgba(251,113,133,0.5)]'
+                  : 'border-rose-400/65 bg-[#0e2a54] text-rose-300 hover:bg-rose-500/20'
+              }`}
+            >
+              <Flame className="h-4 w-4" />
+              Jupiter Aerobatic Show
+            </button>
 
             <button
               type="button"

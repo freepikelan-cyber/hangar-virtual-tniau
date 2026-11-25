@@ -131,6 +131,7 @@ interface HangarState {
   triggerAar: () => void;
   setAarProgress: (fuel: number, step: number) => void;
   triggerMission: () => void;
+  triggerJupiterShow: () => void;
   cycleTimeOfDay: () => void;
   toggleShowcase: () => void;
   openPilotRoom: () => void;
@@ -362,6 +363,29 @@ export const useHangarStore = create<HangarState>((set, get) => ({
         u.category === 'Helikopter'
           ? { pos: [14.5, 6.2, 16.5] as Vec3, target: [0, 1.8, 0] as Vec3, nonce: nonce++ }
           : { pos: [17.5, 7.5, 21.0] as Vec3, target: [0, 2.2, -2.5] as Vec3, nonce: nonce++ },
+    });
+  },
+  triggerJupiterShow: () => {
+    const s = get();
+    const mobile = isCompactViewport();
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
+    pinRegistry.clear();
+    set({
+      selectedId: 'kt1b',
+      flightMode: 'maneuver',
+      flightNonce: s.flightNonce + 1,
+      jupiterManeuver: 'auto',
+      flightLabel: 'JUPITER AEROBATIC SHOW • JUPITER 1 MEMIMPIN FORMASI',
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      showcaseMode: false,
+      pilotRoomOpen: false,
+      autoRotate: false,
+      activeHotspot: null,
+      leftOpen: mobile ? false : s.leftOpen,
+      camRequest: { pos: [34, 18, 44] as Vec3, target: [0, 3.2, -13] as Vec3, nonce: nonce++ },
     });
   },
   cycleTimeOfDay: () =>
