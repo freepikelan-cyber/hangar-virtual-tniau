@@ -24,12 +24,11 @@ import { buildDetailedC130J, buildDetailedKT1B } from './herculesKt1Builder';
 import { buildDetailedGSuit } from './gsuitBuilder';
 import { buildDetailedPilotHelmet } from './helmetBuilder';
 import { buildDetailedCaracal, buildDetailedColibri } from './helicoptersBuilder';
+import { buildAS365, buildAW101, buildH145, buildSuperPuma } from './helicoptersPackBuilder';
 import {
   buildA330MRTT,
   buildA400M,
   buildA4Skyhawk,
-  buildAS365,
-  buildAW101,
   buildC182,
   buildC212,
   buildCN235,
@@ -37,9 +36,7 @@ import {
   buildDG1000,
   buildFalcon8X,
   buildG120TP,
-  buildH145,
   buildSGS233,
-  buildSuperPuma,
   buildT41,
 } from './newFleetBuilder';
 

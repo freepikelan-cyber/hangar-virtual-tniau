@@ -12,13 +12,13 @@ import type { BuildResult, NavLightFx, SpinnerFx } from './proceduralBuilder';
 function makeHeliMaterials(livery: 'caracal' | 'colibri') {
   const camoTex =
     livery === 'caracal'
-      ? camoTexture('#4b5845', [{ c: '#354132', n: 16, r: 62 }, { c: '#5d6b54', n: 10, r: 44 }], 7206)
-      : solidNoiseTexture('#445342', 1208, 0.04);
+      ? camoTexture('#4a6132', [{ c: '#6e4b30', n: 18, r: 64 }, { c: '#232c20', n: 12, r: 44 }], 7220, { noise: 0.035 })
+      : solidNoiseTexture('#c4ccd4', 1201, 0.025);
 
   const skin = new THREE.MeshStandardMaterial({
     map: camoTex,
-    roughness: livery === 'caracal' ? 0.56 : 0.42,
-    metalness: 0.28,
+    roughness: livery === 'caracal' ? 0.54 : 0.32,
+    metalness: 0.26,
   });
   const darkMetal = new THREE.MeshStandardMaterial({
     color: '#232a32',
@@ -31,14 +31,14 @@ function makeHeliMaterials(livery: 'caracal' | 'colibri') {
     metalness: 0.88,
   });
   const glass = new THREE.MeshPhysicalMaterial({
-    color: '#0e243d',
-    roughness: 0.06,
-    metalness: 0.2,
+    color: '#091726',
+    roughness: 0.04,
+    metalness: 0.36,
     transparent: true,
-    opacity: 0.62,
+    opacity: 0.86,
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
-    depthWrite: false,
+    clearcoatRoughness: 0.03,
+    envMapIntensity: 1.9,
   });
   const blade = new THREE.MeshStandardMaterial({
     color: '#1e242b',
