@@ -7,9 +7,9 @@ import { buildDetailedC130J } from '../../utils/herculesKt1Builder';
 
 /**
  * Simulasi 3D Air-to-Air Refueling (AAR / Pengisian Bahan Bakar di Udara) TNI AU:
- * - Pesawat Tanker KC-130B Hercules (Skadron Udara 32) terbang di depan-atas dengan 4 baling-baling berputar
- * - Pod Refueling + Selang Fleksibel + Corong Drogue Basket menjulur ke belakang
- * - Pesawat penerima mendekat -> Probe masuk ke Drogue Basket (CONTACT!) -> Transfer Avtur/JP-8 menyala -> Break Away!
+ * - Pesawat Tanker KC-130B Hercules (Skadron Udara 32) dilengkapi 2 Pod Refueling Mk.32B di bawah sayap luar kiri & kanan
+ * - Selang fleksibel keluar dari ujung belakang Pod Sayap Kanan (x=0, y=6.61, z=17.82) menuju puncak corong Drogue Basket (z=6.12)
+ * - Mulut terbuka corong Drogue Basket menghadap ke belakang (-Z) menyambut hidung/probe pesawat penerima hingga CONTACT LOCKED!
  */
 export function AirRefuelingLayer() {
   const unit = useSelectedUnit();
@@ -35,19 +35,26 @@ export function AirRefuelingLayer() {
     return built;
   }, [isActive]);
 
-  // Kurva selang fleksibel dari pod belakang/sayap KC-130B (z = +13.0, y = +5.0) ke Drogue Basket (z = +5.6, y = +2.65)
+  // Kurva selang fleksibel keluar TEPAT dari nozzle belakang Pod Sayap Kanan KC-130B (0, 6.61, 17.82)
+  // menuju puncak kerucut Drogue Basket (0, 2.78, 6.12)!
   const hoseCurve = useMemo(
     () =>
       new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0.0, 6.61, 17.82),
         new THREE.Vector3(0.0, 5.15, 13.8),
-        new THREE.Vector3(0.0, 4.15, 11.2),
-        new THREE.Vector3(0.0, 3.18, 8.4),
-        new THREE.Vector3(0.0, 2.72, 5.65),
+        new THREE.Vector3(0.0, 3.45, 9.5),
+        new THREE.Vector3(0.0, 2.78, 6.12),
       ]),
     [],
   );
 
-  const hoseGeo = useMemo(() => new THREE.TubeGeometry(hoseCurve, 40, 0.08, 10, false), [hoseCurve]);
+  const hoseGeo = useMemo(() => new THREE.TubeGeometry(hoseCurve, 40, 0.075, 10, false), [hoseCurve]);
+
+  useEffect(() => {
+    return () => {
+      hoseGeo.dispose();
+    };
+  }, [hoseGeo]);
 
   useEffect(() => {
     timer.current = 0;
@@ -70,37 +77,37 @@ export function AirRefuelingLayer() {
       }
     }
 
-    // Gerakan halus KC-130B Tanker di udara (stabil terbang jelajah)
+    // Gerakan halus KC-130B Tanker di udara (stabil terbang jelajah, posisi x=-5.75 agar Pod Sayap Kanan tepat di x=0!)
     if (tankerRef.current) {
-      tankerRef.current.position.y = 4.65 + Math.sin(t * 1.1) * 0.12;
-      tankerRef.current.rotation.z = Math.sin(t * 0.7) * 0.015;
+      tankerRef.current.position.y = 4.45 + Math.sin(t * 1.1) * 0.08;
+      tankerRef.current.rotation.z = Math.sin(t * 0.7) * 0.012;
     }
 
-    // Animasi Drogue Basket sedikit bergoyang di aliran udara sebelum terkunci
+    // Animasi Drogue Basket sedikit bergoyang di aliran udara sebelum terkunci oleh Probe
     if (basketRef.current) {
       const locked = st >= 5.2 && st < 14.5;
-      basketRef.current.position.x = locked ? 0 : Math.sin(t * 3.2) * 0.14;
-      basketRef.current.position.y = 2.72 + (locked ? 0 : Math.cos(t * 2.6) * 0.08);
+      basketRef.current.position.x = locked ? 0 : Math.sin(t * 3.0) * 0.12;
+      basketRef.current.position.y = 2.78 + (locked ? 0 : Math.cos(t * 2.4) * 0.07);
     }
 
     // 4 Tahap Air-to-Air Refueling
     if (st < 4.0) {
       setAarProgress(35, 0);
-      setFlightLabel('AAR • TAHAP 1: PENDEKATAN KE TANKER KC-130B HERCULES (SKADRON 32)');
+      setFlightLabel('AAR // TAHAP 1: PENDEKATAN KE POD SAYAP TANKER KC-130B (SKADRON 32)');
     } else if (st < 5.8) {
       setAarProgress(35, 1);
-      setFlightLabel('AAR • TAHAP 2: PROBE MENYATU DENGAN DROGUE BASKET (CONTACT LOCKED!)');
+      setFlightLabel('AAR // TAHAP 2: PROBE MASUK KE DROGUE BASKET — CONTACT LOCKED');
     } else if (st < 14.5) {
       const p = Math.min(1, (st - 5.8) / 8.7);
       const pct = Math.round(35 + p * 65);
       setAarProgress(pct, 2);
-      setFlightLabel(`AAR • TAHAP 3: TRANSFER BAHAN BAKAR AVTUR AKTIF (${pct}%)`);
+      setFlightLabel(`AAR // TAHAP 3: TRANSFER BAHAN BAKAR AVTUR AKTIF (${pct}%)`);
     } else {
       setAarProgress(100, 3);
-      setFlightLabel('AAR • TAHAP 4: PENGISIAN 100% SELESAI — DISCONNECT & BREAK AWAY!');
+      setFlightLabel('AAR // TAHAP 4: PENGISIAN 100% SELESAI — DISCONNECT & BREAK AWAY');
     }
 
-    // Animasi partikel aliran bahan bakar hijau-biru menyala sepanjang selang saat Transfer aktif!
+    // Animasi partikel aliran bahan bakar hijau-biru menyala sepanjang selang saat Transfer aktif
     const flowing = st >= 5.6 && st < 14.5;
     fuelDotsRef.current.forEach((dot, i) => {
       if (!dot) return;
@@ -124,14 +131,36 @@ export function AirRefuelingLayer() {
 
   return (
     <group name="air-to-air-refueling-3d">
-      {/* 1. Pesawat Tanker KC-130B Hercules (Skadron Udara 32) di depan-atas */}
-      <group ref={tankerRef} position={[0, 4.65, 18.8]} scale={[1.15, 1.15, 1.15]}>
+      {/* 1. Pesawat Tanker KC-130B Hercules (Skadron Udara 32) — bergeser ke x=-5.75 agar Pod Sayap Kanan sejajar x=0! */}
+      <group ref={tankerRef} position={[-5.75, 4.45, 18.8]} scale={[1.15, 1.15, 1.15]}>
         <primitive object={tankerData.group} />
-        {/* Pod Refueling Hose Drum Unit di belakang-bawah */}
-        <mesh position={[0, 0.45, -4.4]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.26, 0.3, 1.6, 16]} />
-          <meshStandardMaterial color="#334155" roughness={0.45} metalness={0.5} />
-        </mesh>
+
+        {/* 2 Pod Refueling Mk.32B Hose-Drum Unit autentik di bawah sayap luar Kiri & Kanan */}
+        {[-5.0, 5.0].map((px, idx) => (
+          <group key={idx} position={[px, 1.88, 0.25]}>
+            {/* Pylon penyangga pod yang menyambung kokoh ke bagian bawah sayap */}
+            <mesh position={[0, 0.28, 0.05]}>
+              <boxGeometry args={[0.12, 0.42, 1.15]} />
+              <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.45} />
+            </mesh>
+            {/* Badan silinder Pod Mk.32B */}
+            <mesh rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.24, 0.26, 2.0, 16]} />
+              <meshStandardMaterial color="#334155" roughness={0.45} metalness={0.55} />
+            </mesh>
+            {/* Kerucut hidung depan pod */}
+            <mesh position={[0, 0, 1.18]} rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.24, 0.42, 14]} />
+              <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.6} />
+            </mesh>
+            {/* Corong keluar selang belakang pod */}
+            <mesh position={[0, 0, -1.08]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.14, 0.22, 0.28, 14]} />
+              <meshStandardMaterial color="#64748b" roughness={0.4} metalness={0.7} />
+            </mesh>
+          </group>
+        ))}
+
         <Html position={[0, 4.2, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
           <span className="whitespace-nowrap rounded-md border border-[#ffb703] bg-[#081933]/90 px-2 py-0.5 font-display text-[10px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
             TANKER KC-130B HERCULES • SKADRON UDARA 32
@@ -139,23 +168,30 @@ export function AirRefuelingLayer() {
         </Html>
       </group>
 
-      {/* 2. Selang Fleksibel Refueling + Corong Drogue Basket */}
+      {/* 2. Selang Fleksibel Refueling tersambung dari Pod Sayap Kanan ke puncak Drogue Basket */}
       <mesh geometry={hoseGeo}>
         <meshStandardMaterial color="#1e293b" roughness={0.55} metalness={0.25} />
       </mesh>
 
-      <group ref={basketRef} position={[0, 2.72, 5.65]}>
-        {/* Keranjang parasut Drogue Basket (putih-oranye) */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+      {/* 3. Corong Drogue Basket: puncak sempit (+Z = +0.52) tersambung ke selang, mulut lebar (-Z = -0.52) menghadap pesawat penerima! */}
+      <group ref={basketRef} position={[0, 2.78, 5.6]}>
+        {/* Kopling baja penghubung selang ke puncak basket */}
+        <mesh position={[0, 0, 0.52]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.13, 0.16, 0.28, 14]} />
+          <meshStandardMaterial color="#cbd5e1" roughness={0.3} metalness={0.85} />
+        </mesh>
+        {/* Corong parasut Drogue Basket (puncak di +Z, mulut terbuka lebar menghadap -Z ke arah probe!) */}
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.62, 1.05, 18, 1, true]} />
           <meshStandardMaterial color="#f97316" roughness={0.45} side={THREE.DoubleSide} />
         </mesh>
-        <mesh position={[0, 0, -0.45]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[0.6, 0.045, 10, 24]} />
+        {/* Cincin penstabil putih melingkari mulut terbuka corong di sisi belakang (-Z = -0.52) */}
+        <mesh position={[0, 0, -0.52]}>
+          <torusGeometry args={[0.62, 0.048, 10, 24]} />
           <meshStandardMaterial color="#f8fafc" roughness={0.4} />
         </mesh>
-        {/* Cincin indikator hijau menyala saat Probe terkunci (CONTACT!) */}
-        <mesh ref={contactRingRef} position={[0, 0, -0.5]} visible={false}>
+        {/* Cincin indikator hijau menyala saat Probe terkunci di dalam corong (CONTACT!) */}
+        <mesh ref={contactRingRef} position={[0, 0, -0.54]} visible={false}>
           <torusGeometry args={[0.76, 0.05, 10, 24]} />
           <meshBasicMaterial color="#10b981" transparent opacity={0.85} />
         </mesh>
@@ -166,7 +202,7 @@ export function AirRefuelingLayer() {
         </Html>
       </group>
 
-      {/* 3. Partikel Aliran Bahan Bakar Avtur / JP-8 Menyala sepanjang selang */}
+      {/* 4. Partikel Aliran Bahan Bakar Avtur / JP-8 Menyala sepanjang selang */}
       {Array.from({ length: 8 }, (_, i) => (
         <mesh
           key={`fuel-${i}`}
@@ -175,7 +211,7 @@ export function AirRefuelingLayer() {
           }}
           visible={false}
         >
-          <sphereGeometry args={[0.14, 12, 12]} />
+          <sphereGeometry args={[0.13, 12, 12]} />
           <meshBasicMaterial color="#34d399" />
         </mesh>
       ))}
