@@ -400,7 +400,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       flightMode,
       flightLabel,
       ...(flightMode === 'airborne' && isVvip
-        ? { camRequest: { pos: [23.0, 11.0, 31.5] as Vec3, target: [0, 3.2, -1.5] as Vec3, nonce: nonce++ } }
+        ? { camRequest: { pos: [30.0, 14.5, 42.0] as Vec3, target: [-2.0, 3.4, -4.5] as Vec3, nonce: nonce++ } }
         : {}),
     });
   },

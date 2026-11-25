@@ -75,33 +75,37 @@ export function VvipEscortLayer() {
     if (rightRef.current) rightRef.current.visible = true;
     if (leftRef.current) leftRef.current.visible = true;
 
-    // Fase 2: Kedua F-16 meluncur masuk dari belakang-samping ke posisi pengawalan lega (x = ±14.8)
+    // Fase 2: Kedua F-16 meluncur masuk ke posisi pengawalan yang jauh & aman (Pengawal 1 di +21.5, Pengawal 2 lebih jauh di -29.0!)
     const entry = Math.min(1, (st - ESCORT_APPEAR) / 4.0);
     const ease = entry * entry * (3 - 2 * entry);
 
-    const baseX = THREE.MathUtils.lerp(42.0, 14.8, ease);
-    const baseZ = THREE.MathUtils.lerp(-36.0, -4.2, ease);
-    const baseY = 0.65;
+    const p1X = THREE.MathUtils.lerp(52.0, 21.5, ease);
+    const p1Z = THREE.MathUtils.lerp(-44.0, -7.5, ease);
+    const p1Y = 1.0;
 
-    // Pengawal 2 (Kiri) tetap mengawal stabil di sayap kiri Pesawat Kepresidenan
+    const p2X = THREE.MathUtils.lerp(-60.0, -29.0, ease);
+    const p2Z = THREE.MathUtils.lerp(-54.0, -15.5, ease);
+    const p2Y = 2.2;
+
+    // Pengawal 2 (Kiri — posisi pengawalan overwatch agak jauh di kiri belakang)
     if (leftRef.current) {
       leftRef.current.position.set(
-        -baseX + Math.cos(t * 0.85) * 0.22,
-        baseY + Math.cos(t * 1.35) * 0.14,
-        baseZ + Math.sin(t * 0.75) * 0.18,
+        p2X + Math.cos(t * 0.85) * 0.28,
+        p2Y + Math.cos(t * 1.35) * 0.16,
+        p2Z + Math.sin(t * 0.75) * 0.22,
       );
       leftRef.current.rotation.z = -(1 - ease) * 0.34 + Math.cos(t * 1.05) * 0.025;
       leftRef.current.rotation.x = -0.02 + Math.cos(t * 1.15) * 0.015;
       leftRef.current.rotation.y = 0;
     }
 
-    // Pengawal 1 (Kanan): Mengawal rapi -> lalu saat st >= BOMB_BURST_START melakukan aksi BOMB BURST!
+    // Pengawal 1 (Kanan): Mengawal dengan jarak aman -> lalu saat st >= BOMB_BURST_START melakukan aksi BOMB BURST!
     if (rightRef.current) {
       if (st < BOMB_BURST_START) {
         rightRef.current.position.set(
-          baseX + Math.sin(t * 0.9) * 0.22,
-          baseY + Math.sin(t * 1.4) * 0.14,
-          baseZ + Math.cos(t * 0.8) * 0.18,
+          p1X + Math.sin(t * 0.9) * 0.24,
+          p1Y + Math.sin(t * 1.4) * 0.15,
+          p1Z + Math.cos(t * 0.8) * 0.2,
         );
         rightRef.current.rotation.z = (1 - ease) * 0.34 + Math.sin(t * 1.1) * 0.025;
         rightRef.current.rotation.x = -0.02 + Math.sin(t * 1.2) * 0.015;
@@ -113,9 +117,9 @@ export function VvipEscortLayer() {
         const bp = Math.min(1, (st - BOMB_BURST_START) / 5.5);
         const bEase = bp * bp * (3 - 2 * bp);
         rightRef.current.position.set(
-          THREE.MathUtils.lerp(14.8, 46.0, bEase),
-          THREE.MathUtils.lerp(0.65, 25.5, bEase * bEase),
-          THREE.MathUtils.lerp(-4.2, 16.0, bEase),
+          THREE.MathUtils.lerp(21.5, 58.0, bEase),
+          THREE.MathUtils.lerp(1.0, 29.0, bEase * bEase),
+          THREE.MathUtils.lerp(-7.5, 16.0, bEase),
         );
         rightRef.current.rotation.x = -0.68 * Math.sin(Math.min(1, bp * 1.3) * (Math.PI / 2));
         rightRef.current.rotation.z = -bp * Math.PI * 2.25;
