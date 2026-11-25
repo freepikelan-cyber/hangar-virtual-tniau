@@ -426,22 +426,22 @@ export function buildDetailedSu30(): BuildResult {
     const nx = s * 0.88;
     const ny = 1.32;
 
-    // Saluran intake kotak di bawah LERX dengan mulut miring (raked 28° seperti Flanker asli)
+    // Saluran intake aerodinamis membulat (bulat-oval halus menyatu dengan LERX & nacelle, tidak kotak!)
     const intakeDuct = mkMesh(
       buildLoftGeometry(
         Array.from({ length: 16 }, (_, i) => {
           const u = i / 15; // 0 belakang (z=0.4) -> 1 depan (z=2.85)
           const z = lerp(0.4, 2.85, u);
-          const hw = lerp(0.45, 0.37, u);
-          const hh = lerp(0.38, 0.3, u);
-          const yc = lerp(ny, ny - 0.14, u);
+          const hw = lerp(0.45, 0.36, u);
+          const hh = lerp(0.42, 0.31, u);
+          const yc = lerp(ny, ny - 0.1, u);
           return {
             z,
             point: (th) => {
               const cs = Math.cos(th);
               const sn = Math.sin(th);
-              const px = Math.sign(sn) * Math.pow(Math.abs(sn), 0.5) * hw;
-              const py = Math.sign(cs) * Math.pow(Math.abs(cs), 0.5) * hh;
+              const px = Math.sign(sn) * Math.pow(Math.abs(sn), 0.9) * hw;
+              const py = Math.sign(cs) * Math.pow(Math.abs(cs), 0.9) * hh;
               return [nx + px, yc + py];
             },
           };
@@ -452,19 +452,16 @@ export function buildDetailedSu30(): BuildResult {
     );
     g.add(intakeDuct);
 
-    // Bibir intake atas menonjol lebih maju (profil raked 28° khas Su-30) + rongga gelap miring
-    const hoodTop = mkMesh(new THREE.BoxGeometry(0.76, 0.055, 0.56), bellyMat);
-    hoodTop.position.set(nx, ny + 0.14, 2.98);
-    const sideWallOut = mkMesh(new THREE.BoxGeometry(0.05, 0.56, 0.44), bellyMat);
-    sideWallOut.position.set(nx + s * 0.36, ny - 0.14, 2.86);
-    sideWallOut.rotation.x = 0.42;
-    const sideWallIn = mkMesh(new THREE.BoxGeometry(0.05, 0.56, 0.44), bellyMat);
-    sideWallIn.position.set(nx - s * 0.36, ny - 0.14, 2.86);
-    sideWallIn.rotation.x = 0.42;
-    const mouth = mkMesh(new THREE.PlaneGeometry(0.68, 0.62), intakeInnerMat);
-    mouth.position.set(nx, ny - 0.14, 2.92);
-    mouth.rotation.x = -0.45;
-    g.add(hoodTop, sideWallOut, sideWallIn, mouth);
+    // Bibir intake oval melengkung halus + rongga gelap bulat-oval (tampak depan ramping & aerodinamis!)
+    const lip = mkMesh(new THREE.TorusGeometry(0.33, 0.032, 10, 28), bellyMat);
+    lip.scale.set(1.08, 0.92, 1);
+    lip.position.set(nx, ny - 0.1, 2.86);
+    lip.rotation.x = -0.32;
+    const mouth = mkMesh(new THREE.CircleGeometry(0.32, 24), intakeInnerMat);
+    mouth.scale.set(1.06, 0.9, 1);
+    mouth.position.set(nx, ny - 0.1, 2.83);
+    mouth.rotation.x = -0.32;
+    g.add(lip, mouth);
 
     // Nacelle mesin belakang (z = -5.1 .. +0.45)
     const nacMesh = mkMesh(

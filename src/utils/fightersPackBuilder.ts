@@ -912,14 +912,14 @@ export function buildDetailedSu27(): BuildResult {
         Array.from({ length: 16 }, (_, i) => {
           const u = i / 15;
           const z = lerp(0.4, 2.85, u);
-          const hw = lerp(0.44, 0.36, u);
-          const hh = lerp(0.37, 0.29, u);
-          const yc = lerp(ny, ny - 0.14, u);
+          const hw = lerp(0.44, 0.35, u);
+          const hh = lerp(0.41, 0.3, u);
+          const yc = lerp(ny, ny - 0.1, u);
           return {
             z,
             point: (th) => [
-              nx + Math.sign(Math.sin(th)) * Math.pow(Math.abs(Math.sin(th)), 0.5) * hw,
-              yc + Math.sign(Math.cos(th)) * Math.pow(Math.abs(Math.cos(th)), 0.5) * hh,
+              nx + Math.sign(Math.sin(th)) * Math.pow(Math.abs(Math.sin(th)), 0.9) * hw,
+              yc + Math.sign(Math.cos(th)) * Math.pow(Math.abs(Math.cos(th)), 0.9) * hh,
             ],
           };
         }),
@@ -927,11 +927,15 @@ export function buildDetailedSu27(): BuildResult {
       ),
       bellyMat,
     );
-    const hoodTop = mkMesh(new THREE.BoxGeometry(0.74, 0.05, 0.54), bellyMat);
-    hoodTop.position.set(nx, ny + 0.13, 2.96);
-    const mouth = mkMesh(new THREE.PlaneGeometry(0.66, 0.6), m.intakeInner);
-    mouth.position.set(nx, ny - 0.14, 2.9);
-    mouth.rotation.x = -0.45;
+    const lip = mkMesh(new THREE.TorusGeometry(0.32, 0.03, 10, 26), bellyMat);
+    lip.scale.set(1.08, 0.92, 1);
+    lip.position.set(nx, ny - 0.1, 2.86);
+    lip.rotation.x = -0.32;
+    const mouth = mkMesh(new THREE.CircleGeometry(0.31, 24), m.intakeInner);
+    mouth.scale.set(1.06, 0.9, 1);
+    mouth.position.set(nx, ny - 0.1, 2.83);
+    mouth.rotation.x = -0.32;
+    const hoodTop = lip;
     const nac = mkMesh(
       buildLoftGeometry(
         Array.from({ length: 18 }, (_, i) => {
