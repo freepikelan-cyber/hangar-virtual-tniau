@@ -216,7 +216,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     // Asap putih tebal untuk Jupiter 1 (Lead)
     if (leaderSmokeRef.current) {
       const inForegroundAir = flightMode === 'airborne' && !(pt >= 29.2 && pt < 46.5) && !(pt >= 54.0 && pt < 68.5);
-      const leaderSmokeOn = (inForegroundAir && pt < 86.5) || (flightMode === 'takeoff' && pt >= 31.8);
+      const leaderSmokeOn = (inForegroundAir && pt < 86.5) || (flightMode === 'takeoff' && pt >= 42.3);
       leaderSmokeRef.current.visible = leaderSmokeOn;
       if (leaderSmokeOn) {
         leaderSmokeRef.current.position.set(
@@ -252,12 +252,12 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       let useTangentQuat = false;
 
       if (flightMode === 'takeoff') {
-        // KELUAR HANGGAR SATU PER SATU DENGAN JEDA RAPI (0% TABRAKAN!):
-        // J1 sudah melintas duluan (0..5.4s) -> J2 (2.8s) -> J3 (5.8s) -> J4 (8.8s) -> J5 (11.8s) -> J6 (14.6s)
-        const taxiStart = 2.8 + i * 2.95;
-        const eastDur = 2.2;
-        const turnDur = 1.1;
-        const northDur = 1.8;
+        // KELUAR HANGGAR SATU PER SATU DENGAN JEDA TEPAT 5 DETIK (0% NUMPUK / TABRAKAN!):
+        // J1: 0s -> J2: 5s -> J3: 10s -> J4: 15s -> J5: 20s -> J6: 25s (semua sudah parkir rapi sebelum 29s!)
+        const taxiStart = 5.0 + i * 5.0;
+        const eastDur = 2.4;
+        const turnDur = 1.0;
+        const northDur = 1.4;
         const eastEnd = taxiStart + eastDur;
         const turnEnd = eastEnd + turnDur;
         const parkEnd = turnEnd + northDur;
@@ -267,10 +267,10 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         const taxiZ = -10.5;
 
         // Semua 6 pesawat Take Off SAMA-SAMA secara mulus & rapi!
-        const rollStart = 26.5;
-        const rotStart = 30.2;
-        const climbStart = 31.8;
-        const airborneEnd = 36.5;
+        const rollStart = 37.0;
+        const rotStart = 40.7;
+        const climbStart = 42.3;
+        const airborneEnd = 47.0;
 
         const airSlot = ARROWHEAD_SLOTS[i];
 

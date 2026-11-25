@@ -54,10 +54,11 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
   }
   if (unitId === 'kt1b') {
     // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
-    // 1. jupiter-takeoff-prep.wav (0.3..18.44s): J1–J6 keluar hanggar satu per satu menuju posisi formasi di Runway 09.
-    // 2. jupiter-checkin.wav (18.8..26.21s): Semua 6 pesawat bersiap rapi di formasi Take Off ("Jupiters, check in!").
-    // 3. Take Off SAMA-SAMA (26.5..36.5s): Brakes release (26.5) -> Rotate bersama (30.2) -> Gears up & Climb (31.8..36.5)!
-    return { voiceStart: 0.3, rollStart: 26.5, rotStart: 30.2, climbStart: 31.8, airborneStart: 36.5 };
+    // 1. Keluar hanggar satu per satu berjeda 5 detik (J1=0s, J2=5s, J3=10s, J4=15s, J5=20s, J6=25s -> selesai 28.4s).
+    //    jupiter-takeoff-prep.wav (10.5..28.64s) diputar selama taxi & holding point.
+    // 2. jupiter-checkin.wav (29.2..36.61s): Semua 6 pesawat sudah rapi di posisi start ("Jupiters, check in! 2..6").
+    // 3. Take Off SAMA-SAMA (37.0..47.0s): jupiter-airborne.wav (Brakes release 37.0 -> Rotate 40.7 -> Gears up 42.3 -> Airborne 47.0)!
+    return { voiceStart: 10.5, rollStart: 37.0, rotStart: 40.7, climbStart: 42.3, airborneStart: 47.0 };
   }
   if (isBasicTrainer) {
     // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
@@ -1179,11 +1180,11 @@ class AircraftAudioEngine {
         );
       }
 
-      if (unitId === 'kt1b' && phaseTime > 18.8 && !this.jupiterCheckinPlayed) {
+      if (unitId === 'kt1b' && phaseTime > 29.2 && !this.jupiterCheckinPlayed) {
         this.jupiterCheckinPlayed = true;
         this.playAtcRadio('jupiter-checkin');
       }
-      if (unitId === 'kt1b' && phaseTime > 26.5 && !this.jupiterAirbornePlayed) {
+      if (unitId === 'kt1b' && phaseTime > 37.0 && !this.jupiterAirbornePlayed) {
         this.jupiterAirbornePlayed = true;
         this.playAtcRadio('jupiter-airborne');
       }

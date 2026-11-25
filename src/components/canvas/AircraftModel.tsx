@@ -338,9 +338,9 @@ export function AircraftModel() {
           // 1. J1 keluar hanggar PALING DEPAN (0..4.4s) ke jalur tengah depan (X=0, Z=+16), jauh dari laut & memberi jalan J2–J6!
           // 2. Semua 6 pesawat membentuk formasi Take Off berjarak lega di Runway 09 saat "Jupiters, check in!" (18.5..26.5s)
           // 3. Semua 6 pesawat Take Off SAMA-SAMA dengan mulus & rapi! (26.5..36.5s)
-          if (pt < 2.2) {
-            // Tahap 1A: Keluar lurus dari Hanggar menuju jalur tengah Runway (X: -34 -> 0, Z = -10.5)
-            const p = easeInOut(pt / 2.2);
+          if (pt < 2.4) {
+            // Tahap 1A: J1 keluar lurus dari Hanggar menuju jalur tengah Runway (X: -34 -> 0, Z = -10.5)
+            const p = easeInOut(pt / 2.4);
             targetX = THREE.MathUtils.lerp(-34.0, 0, p);
             targetZ = -10.5;
             targetY = 0;
@@ -349,29 +349,33 @@ export function AircraftModel() {
             setFlightLabel('JUPITER 1 • KELUAR DARI HANGGAR MENUJU RUNWAY 09');
           } else if (pt < 3.4) {
             // Tahap 1B: Belok mulus ke Utara (+Z) masuk jalur tengah Runway 09
-            const p = easeInOut((pt - 2.2) / 1.2);
+            const p = easeInOut((pt - 2.4) / 1.0);
             targetX = 0;
             targetZ = THREE.MathUtils.lerp(-10.5, -4.0, p);
             targetY = 0;
             targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
             targetGear = 0;
-            setFlightLabel('JUPITER 1 • LINE UP JALUR TENGAH • JUPITER 2–6 MENYUSUL SATU PER SATU');
-          } else if (pt < 5.4) {
+            setFlightLabel('JUPITER 1 • LINE UP JALUR TENGAH • JUPITER 2–6 MENYUSUL TIAP 5 DETIK');
+          } else if (pt < 5.2) {
             // Tahap 1C: Maju ke posisi start paling depan (Z = +16) jauh dari tepi laut!
-            const p = easeInOut((pt - 3.4) / 2.0);
+            const p = easeInOut((pt - 3.4) / 1.8);
             targetX = 0;
             targetZ = THREE.MathUtils.lerp(-4.0, 16.0, p);
             targetY = 0;
             targetYawOffset = 0;
             targetGear = 0;
-            setFlightLabel('JUPITER 1–6 • TAXI SATU PER SATU KE POSISI START RUNWAY 09');
-          } else if (pt < 18.5) {
+            setFlightLabel('JUPITER 1–6 • TAXI SATU PER SATU (JEDA 5 DETIK) KE RUNWAY 09');
+          } else if (pt < 29.0) {
             targetX = 0;
             targetZ = 16.0;
             targetY = 0;
             targetYawOffset = 0;
             targetGear = 0;
-            setFlightLabel('🎙️ ADISUTJIPTO TOWER • PERMOHONAN & IZIN TAKE-OFF RUNWAY 09');
+            setFlightLabel(
+              pt < 10.5
+                ? 'JUPITER 1–6 • KELUAR HANGGAR SATU PER SATU (JEDA 5 DETIK)'
+                : '🎙️ ADISUTJIPTO TOWER • PERMOHONAN & IZIN TAKE-OFF RUNWAY 09',
+            );
           } else if (pt < to.rollStart) {
             targetX = 0;
             targetZ = 16.0;
