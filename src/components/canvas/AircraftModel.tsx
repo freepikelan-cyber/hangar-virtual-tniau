@@ -10,6 +10,7 @@ import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
 import { CockpitPilotLayer } from './CockpitPilotLayer';
+import { GSuitEduLayer } from './GSuitEduLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
 
@@ -98,6 +99,7 @@ export function AircraftModel() {
   const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
+  const gForceLevel = useHangarStore((s) => s.gForceLevel);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
   const liveryId = useHangarStore((s) => s.selectedLivery[unit.id] ?? unit.liveries?.[0]?.id);
   const setFlightState = useHangarStore((s) => s.setFlightState);
@@ -877,13 +879,28 @@ export function AircraftModel() {
       gearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
     }
 
-    // Animasi khusus Simulasi 9G pada G-Suit (5 kantung udara & saluran selang mengembang + berpendar)
+    // Animasi hidup & Simulasi G-Force pada G-Suit (nafas halus, kepala menoleh natural, & 5 kantung mengembang sesuai 1G/4G/9G!)
     if (unit.id === 'gsuit') {
       const bladders = procedural.group.getObjectByName('gsuit-bladders');
+      const upperBody = procedural.group.getObjectByName('gsuit-upper-body');
+      const headObj = procedural.group.getObjectByName('gsuit-head');
       const simActive = flightMode === 'engineSim';
-      const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.4) : 0;
+      const activeG = simActive ? 9 : gForceLevel;
+      const pulse = 0.5 + 0.5 * Math.sin(t * (activeG === 9 ? 4.2 : 2.6));
+
+      // Efek bernafas halus & kepala menoleh natural agar figur 3D tidak kaku!
+      if (upperBody) {
+        const breath = Math.sin(t * 1.8) * 0.012;
+        upperBody.scale.set(1 + breath * 0.6, 1 + breath * 0.3, 1 + breath);
+      }
+      if (headObj) {
+        headObj.rotation.y = Math.sin(t * 0.65) * 0.18;
+        headObj.rotation.x = Math.sin(t * 0.9) * 0.04;
+      }
+
       if (bladders) {
-        const targetInflate = simActive ? 1.045 + pulse * 0.035 : 1.0;
+        const inflateBase = activeG === 1 ? 0.96 : activeG === 4 ? 1.04 : 1.11;
+        const targetInflate = inflateBase + (activeG > 1 ? pulse * (activeG === 9 ? 0.055 : 0.025) : 0);
         bladders.children.forEach((child) => {
           const mesh = child as THREE.Mesh;
           const isTube = mesh.name.includes('tube');
@@ -893,12 +910,28 @@ export function AircraftModel() {
           }
           const mat = mesh.material as THREE.MeshStandardMaterial;
           if (mat && 'emissive' in mat) {
-            mat.emissive.set(simActive ? (isTube ? '#ffb703' : '#00d8ff') : isTube ? '#000000' : '#0284c7');
-            mat.emissiveIntensity = THREE.MathUtils.lerp(
-              mat.emissiveIntensity,
-              simActive ? (isTube ? 0.55 + pulse * 0.45 : 0.45 + pulse * 0.45) : isTube ? 0 : 0.28,
-              Math.min(1, dt * 6),
-            );
+            const targetEmissive = isTube
+              ? activeG > 1
+                ? '#ffb703'
+                : '#000000'
+              : activeG === 9
+                ? '#00e5ff'
+                : activeG === 4
+                  ? '#38bdf8'
+                  : '#0369a1';
+            const targetInt = isTube
+              ? activeG === 9
+                ? 0.5 + pulse * 0.45
+                : activeG === 4
+                  ? 0.25 + pulse * 0.25
+                  : 0
+              : activeG === 9
+                ? 0.55 + pulse * 0.45
+                : activeG === 4
+                  ? 0.35 + pulse * 0.2
+                  : 0.12;
+            mat.emissive.set(targetEmissive);
+            mat.emissiveIntensity = THREE.MathUtils.lerp(mat.emissiveIntensity, targetInt, Math.min(1, dt * 6));
           }
         });
       }
@@ -948,6 +981,7 @@ export function AircraftModel() {
           rotorWash={procedural.rotorWash}
         />
         <AerodynamicsLayer />
+        <GSuitEduLayer />
         <OxygenSystemLayer />
         <HotspotMarkers hotspots={unit.hotspots} />
       </group>

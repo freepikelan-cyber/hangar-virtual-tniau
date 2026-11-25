@@ -8,6 +8,7 @@ import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { InfographicModal } from './components/hud/InfographicModal';
 import { AeroControlPanel } from './components/hud/AeroControlPanel';
+import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
 import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
@@ -86,6 +87,7 @@ export function App() {
       <FleetSidebar />
       <InfoPanel />
       <AeroControlPanel />
+      <GSuitControlPanel />
       <SafetyStoryPanel />
       <FloatingQuizBanner />
       <HotspotCard />

@@ -86,6 +86,7 @@ interface HangarState {
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
   aeroManeuver: AeroManeuver;
+  gForceLevel: 1 | 4 | 9;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -112,6 +113,7 @@ interface HangarState {
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
+  setGForceLevel: (g: 1 | 4 | 9) => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
 
@@ -170,6 +172,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   flapAngle: 15,
   trimAngle: 8,
   aeroManeuver: 'liftDemo',
+  gForceLevel: 4,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -276,6 +279,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       aeroManeuver,
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
+  setGForceLevel: (gForceLevel) => set({ gForceLevel }),
   replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
   setSafetyStep: (safetyStep) => {
     if (get().safetyStep !== safetyStep) set({ safetyStep });
