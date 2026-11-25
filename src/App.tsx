@@ -8,6 +8,8 @@ import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { InfographicModal } from './components/hud/InfographicModal';
 import { AeroControlPanel } from './components/hud/AeroControlPanel';
+import { AarStatusPanel } from './components/hud/AarStatusPanel';
+import { FighterManeuverPanel } from './components/hud/FighterManeuverPanel';
 import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
 import { JupiterManeuverPanel } from './components/hud/JupiterManeuverPanel';
 import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
@@ -88,6 +90,8 @@ export function App() {
       <FleetSidebar />
       <InfoPanel />
       <AeroControlPanel />
+      <AarStatusPanel />
+      <FighterManeuverPanel />
       <GSuitControlPanel />
       <JupiterManeuverPanel />
       <SafetyStoryPanel />

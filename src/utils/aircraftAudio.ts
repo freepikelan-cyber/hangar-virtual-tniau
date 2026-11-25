@@ -583,7 +583,7 @@ class AircraftAudioEngine {
           throttle = Math.max(0.03, 0.16 * (1 - idleP * 0.8));
         }
       }
-    } else if (flightMode === 'airborne') {
+    } else if (flightMode === 'airborne' || flightMode === 'aar') {
       throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
       speedMod = 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {

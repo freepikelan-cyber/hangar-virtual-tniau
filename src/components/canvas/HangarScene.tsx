@@ -6,6 +6,7 @@ import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
+import { AirRefuelingLayer } from './AirRefuelingLayer';
 import { SkyCloudsEnvironment } from './SkyCloudsEnvironment';
 
 function RadarPlatform() {
@@ -153,7 +154,7 @@ function CameraRig() {
       dampingFactor={0.07}
       enablePan
       minDistance={3.2}
-      maxDistance={40}
+      maxDistance={85}
       maxPolarAngle={Math.PI / 2 - 0.03}
       target={initial.target}
       onStart={() => {
@@ -202,6 +203,7 @@ export function HangarScene() {
           />
         )}
         <AircraftModel />
+        <AirRefuelingLayer />
         <CameraRig />
       </Canvas>
     </div>

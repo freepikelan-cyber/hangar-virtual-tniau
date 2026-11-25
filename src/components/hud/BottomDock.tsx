@@ -5,6 +5,7 @@ import {
   ChevronUp,
   FileText,
   Flame,
+  Fuel,
   Lock,
   Mail,
   MapPin,
@@ -39,6 +40,7 @@ export function BottomDock() {
   const triggerTakeOff = useHangarStore((s) => s.triggerTakeOff);
   const triggerManeuver = useHangarStore((s) => s.triggerManeuver);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
+  const triggerAar = useHangarStore((s) => s.triggerAar);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const resetCamera = useHangarStore((s) => s.resetCamera);
@@ -275,6 +277,23 @@ export function BottomDock() {
             </button>
 
             <div className="mx-0.5 h-6 w-px bg-[#4da6ff]/25 hidden sm:block" />
+
+            <button
+              type="button"
+              title="Air-to-Air Refueling (Pengisian Bahan Bakar di Udara dengan Tanker KC-130B Skadron 32)"
+              onClick={() => {
+                triggerAar();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                flightMode === 'aar'
+                  ? 'border-emerald-400 bg-emerald-400 text-[#0a1e3c]'
+                  : 'border-emerald-400/55 bg-[#0e2a54] text-emerald-300 hover:bg-emerald-400/20'
+              }`}
+            >
+              <Fuel className="h-4 w-4" />
+              AAR Refueling
+            </button>
 
             <button
               type="button"

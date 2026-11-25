@@ -1,11 +1,12 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
+import type { FighterManeuverId } from '../data/fighterManeuvers';
 import type { JupiterManeuverId } from '../data/jupiterManeuvers';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
-export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim';
+export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim' | 'aar';
 export type AeroManeuver = 'liftDemo' | 'climb' | 'descend' | 'turnLeft' | 'turnRight' | 'level';
 export type Vec3 = [number, number, number];
 
@@ -87,8 +88,11 @@ interface HangarState {
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
   aeroManeuver: AeroManeuver;
+  fighterManeuver: FighterManeuverId;
   jupiterManeuver: JupiterManeuverId;
   gForceLevel: 1 | 4 | 9;
+  aarFuel: number;
+  aarStep: number;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -115,8 +119,11 @@ interface HangarState {
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
+  setFighterManeuver: (m: FighterManeuverId) => void;
   setJupiterManeuver: (m: JupiterManeuverId) => void;
   setGForceLevel: (g: 1 | 4 | 9) => void;
+  triggerAar: () => void;
+  setAarProgress: (fuel: number, step: number) => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
 
@@ -175,8 +182,11 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   flapAngle: 15,
   trimAngle: 8,
   aeroManeuver: 'liftDemo',
+  fighterManeuver: 'auto',
   jupiterManeuver: 'auto',
   gForceLevel: 4,
+  aarFuel: 35,
+  aarStep: 0,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -284,7 +294,32 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
   setGForceLevel: (gForceLevel) => set({ gForceLevel }),
+  setFighterManeuver: (fighterManeuver) => set({ fighterManeuver }),
   setJupiterManeuver: (jupiterManeuver) => set({ jupiterManeuver }),
+  triggerAar: () => {
+    const s = get();
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
+    set({
+      flightMode: 'aar',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: 'AAR • PENGISIAN BAHAN BAKAR DI UDARA (KC-130B SKADRON 32)',
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      autoRotate: false,
+      activeHotspot: null,
+      aarFuel: 35,
+      aarStep: 0,
+      camRequest: { pos: [19.5, 8.8, 25.0] as Vec3, target: [0, 3.6, 8.5] as Vec3, nonce: nonce++ },
+    });
+  },
+  setAarProgress: (aarFuel, aarStep) => {
+    const s = get();
+    if (s.aarFuel !== aarFuel || s.aarStep !== aarStep) {
+      set({ aarFuel, aarStep });
+    }
+  },
   replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
   setSafetyStep: (safetyStep) => {
     if (get().safetyStep !== safetyStep) set({ safetyStep });

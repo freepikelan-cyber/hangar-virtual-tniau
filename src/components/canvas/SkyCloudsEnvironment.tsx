@@ -359,9 +359,10 @@ export function SkyCloudsEnvironment() {
       sunGroupRef.current.visible = mix > 0.05;
     }
 
-    // Awan 3D muncul saat terbang tinggi (airborne / maneuver) atau Safety Tempur di udara!
+    // Awan 3D muncul saat terbang tinggi (airborne / maneuver / aar) atau Safety Tempur di udara!
     const showClouds =
-      isOutdoorSim && (flightMode === 'airborne' || flightMode === 'maneuver' || (safetyMode && isEjectionSafety));
+      isOutdoorSim &&
+      (flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'aar' || (safetyMode && isEjectionSafety));
     cloudOpacity.current = THREE.MathUtils.lerp(cloudOpacity.current, showClouds ? 1 : 0, Math.min(1, dt * 2.2));
     const cMix = cloudOpacity.current;
 
@@ -410,7 +411,7 @@ export function SkyCloudsEnvironment() {
         targetWorldY = -19.5;
         groundSpeed = 46;
       }
-    } else if (flightMode === 'airborne') {
+    } else if (flightMode === 'airborne' || flightMode === 'aar') {
       targetWorldY = -19.5;
       groundSpeed = 46;
     } else if (flightMode === 'maneuver') {

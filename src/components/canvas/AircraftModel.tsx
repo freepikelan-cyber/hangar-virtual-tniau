@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { FIGHTER_AUTO_ORDER, getFighterManeuverSpec, type FighterManeuverId } from '../../data/fighterManeuvers';
 import { getJupiterSpec, JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../../data/jupiterManeuvers';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
@@ -101,6 +102,7 @@ export function AircraftModel() {
   const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
+  const fighterManeuver = useHangarStore((s) => s.fighterManeuver);
   const jupiterManeuver = useHangarStore((s) => s.jupiterManeuver);
   const gForceLevel = useHangarStore((s) => s.gForceLevel);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
@@ -210,13 +212,14 @@ export function AircraftModel() {
     applyVisualModes(activeGroup, false, wireframe, isAnySimActive);
   }, [activeGroup, wireframe, isAnySimActive]);
 
-  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, safety, & demo aerodinamika!
+  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, AAR, safety, & demo aerodinamika!
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
     flightMode === 'airborne' ||
     flightMode === 'maneuver' ||
     flightMode === 'landing' ||
+    flightMode === 'aar' ||
     safetyMode ||
     aeroMode;
 
@@ -235,6 +238,7 @@ export function AircraftModel() {
     let targetY = 0;
     let targetZ = 0;
     let targetPitch = 0;
+    let directPitch: number | null = null;
     let targetRoll = 0;
     let directRoll: number | null = null;
     let targetYawOffset = 0;
@@ -350,70 +354,239 @@ export function AircraftModel() {
       targetRoll = Math.cos(t * 1.1) * 0.04;
       targetGear = 1;
       setFlightLabel('TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+    } else if (flightMode === 'aar') {
+      // AIR-TO-AIR REFUELING (AAR) dengan Tanker KC-130B Hercules Skadron Udara 32
+      targetGear = 1;
+      if (pt < 4.0) {
+        // Tahap 1: Pendekatan stabil dari belakang-bawah menuju Drogue Basket
+        const p = easeInOut(pt / 4.0);
+        targetX = 0;
+        targetY = THREE.MathUtils.lerp(0.35, 1.38, p);
+        targetZ = THREE.MathUtils.lerp(-6.8, -1.6, p);
+        targetPitch = -0.04 * (1 - p);
+        targetRoll = Math.sin(t * 1.4) * 0.02;
+      } else if (pt < 5.8) {
+        // Tahap 2: Docking presisi Probe masuk ke Drogue Basket (z = +5.65, y = +2.72)
+        const p = easeInOut((pt - 4.0) / 1.8);
+        targetX = 0;
+        targetY = THREE.MathUtils.lerp(1.38, 1.46, p);
+        targetZ = THREE.MathUtils.lerp(-1.6, -0.55, p);
+        targetPitch = 0;
+        targetRoll = 0;
+      } else if (pt < 14.5) {
+        // Tahap 3: Terkunci stabil menerima transfer bahan bakar Avtur (35% -> 100%)
+        targetX = Math.sin(t * 1.1) * 0.04;
+        targetY = 1.46 + Math.sin(t * 1.3) * 0.04;
+        targetZ = -0.55;
+        targetPitch = 0;
+        targetRoll = Math.sin(t * 0.9) * 0.012;
+      } else {
+        // Tahap 4: Disconnect & Break Away elegan ke kanan-bawah
+        const p = easeInOut(Math.min(1, (pt - 14.5) / 3.5));
+        targetX = THREE.MathUtils.lerp(0, 8.2, p);
+        targetY = THREE.MathUtils.lerp(1.46, 0.25, p);
+        targetZ = THREE.MathUtils.lerp(-0.55, -5.2, p);
+        targetRoll = -0.62 * Math.sin(p * Math.PI * 0.85);
+        targetPitch = 0.08 * Math.sin(p * Math.PI);
+        targetYawOffset = -0.22 * p;
+      }
     } else if (flightMode === 'maneuver') {
       const baseH = Math.max(2.6, procedural.hoverHeight + 1.15);
       targetGear = 1;
 
       if (isFighter) {
-        // MANUVER KHUSUS PESAWAT TEMPUR (Siklus 20 detik: Barrel Roll 360° -> High-G Break -> Cobra Climb -> Dive & Pull-Up)
-        const cycle = pt % 20;
-        if (cycle < 5) {
-          // 1. 360° BARREL ROLL
-          const p = easeInOut(cycle / 5);
-          directRoll = -p * Math.PI * 2;
-          targetX = Math.sin(p * Math.PI * 2) * 1.15;
-          targetY = baseH + (1 - Math.cos(p * Math.PI * 2)) * 0.75;
-          targetZ = Math.sin(p * Math.PI) * 0.5;
-          targetPitch = -0.08 * Math.sin(p * Math.PI);
-          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • 360° BARREL ROLL');
-        } else if (cycle < 10) {
-          // 2. HIGH-G COMBAT BREAK (Kanan 68° lalu Kiri 68°)
-          const local = cycle - 5;
-          if (local < 2.5) {
-            const s = Math.sin((local / 2.5) * Math.PI);
-            targetX = 2.6 * s;
-            targetY = baseH + 0.45 * s;
-            targetRoll = -1.18 * s;
-            targetPitch = -0.14 * s;
-            targetYawOffset = -0.28 * s;
-            setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-G COMBAT BREAK KANAN');
-          } else {
-            const s = Math.sin(((local - 2.5) / 2.5) * Math.PI);
-            targetX = -2.6 * s;
-            targetY = baseH + 0.45 * s;
-            targetRoll = 1.18 * s;
-            targetPitch = -0.14 * s;
-            targetYawOffset = 0.28 * s;
-            setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-G COMBAT BREAK KIRI');
+        // 19 MANUVER PESAWAT TEMPUR (Dasar, Dogfight ACM, & Supermaneuverability)
+        const cycleLen = 6.0;
+        const activeF: Exclude<FighterManeuverId, 'auto'> =
+          fighterManeuver === 'auto'
+            ? FIGHTER_AUTO_ORDER[Math.floor(pt / cycleLen) % FIGHTER_AUTO_ORDER.length]
+            : fighterManeuver;
+        const fSpec = getFighterManeuverSpec(activeF);
+        const p = (pt % cycleLen) / cycleLen;
+        const e = easeInOut(p);
+        setFlightLabel(`MANUVER TEMPUR • ${fSpec.name.toUpperCase()}`);
+
+        switch (activeF) {
+          case 'loop': {
+            directPitch = -p * Math.PI * 2;
+            targetY = baseH + (1 - Math.cos(p * Math.PI * 2)) * 2.2;
+            targetZ = Math.sin(p * Math.PI * 2) * 2.2;
+            break;
           }
-        } else if (cycle < 15) {
-          // 3. PUGACHEV'S COBRA / HIGH-AoA CLIMB (Hidung mendongak ekstrem ~62° lalu recovery)
-          const p = (cycle - 10) / 5;
-          const cobra = Math.sin(p * Math.PI);
-          const sharp = Math.pow(cobra, 0.72);
-          targetX = 0;
-          targetY = baseH + 1.85 * cobra;
-          targetZ = -1.1 * Math.sin(p * Math.PI) + 0.8 * Math.max(0, p - 0.55);
-          targetPitch = -1.08 * sharp;
-          targetRoll = Math.sin(t * 2.5) * 0.04;
-          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • HIGH-AoA COBRA CLIMB');
-        } else {
-          // 4. TACTICAL DIVE & AFTERBURNER PULL-UP
-          const p = (cycle - 15) / 5;
-          if (p < 0.48) {
-            const s = easeInOut(p / 0.48);
-            targetY = THREE.MathUtils.lerp(baseH, baseH - 1.35, s);
-            targetZ = THREE.MathUtils.lerp(0, 1.4, s);
-            targetPitch = 0.46 * Math.sin(s * Math.PI);
-            targetRoll = 0.16 * Math.sin(s * Math.PI);
-          } else {
-            const s = easeInOut((p - 0.48) / 0.52);
-            targetY = THREE.MathUtils.lerp(baseH - 1.35, baseH + 1.1, Math.sin(s * Math.PI * 0.85));
-            targetZ = THREE.MathUtils.lerp(1.4, 0, s);
-            targetPitch = -0.48 * Math.sin(s * Math.PI);
-            targetRoll = -0.12 * Math.sin(s * Math.PI);
+          case 'barrelRoll': {
+            directRoll = -e * Math.PI * 2;
+            targetX = Math.sin(e * Math.PI * 2) * 1.45;
+            targetY = baseH + (1 - Math.cos(e * Math.PI * 2)) * 0.95;
+            targetPitch = -0.09 * Math.sin(e * Math.PI);
+            break;
           }
-          setFlightLabel('TAHAP 2 • MANUVER TEMPUR • TACTICAL DIVE & AFTERBURNER PULL-UP');
+          case 'aileronRoll': {
+            directRoll = -p * Math.PI * 2;
+            targetY = baseH + 0.15;
+            break;
+          }
+          case 'splitS': {
+            if (p < 0.28) {
+              const q = easeInOut(p / 0.28);
+              directRoll = q * Math.PI;
+              targetY = baseH + 2.4;
+            } else {
+              const q = easeInOut((p - 0.28) / 0.72);
+              directRoll = Math.PI * (1 - q);
+              targetPitch = Math.sin(q * Math.PI) * 1.25;
+              targetY = THREE.MathUtils.lerp(baseH + 2.4, baseH - 1.1, q);
+              targetZ = Math.sin(q * Math.PI) * 1.6;
+            }
+            break;
+          }
+          case 'immelmann': {
+            if (p < 0.65) {
+              const q = easeInOut(p / 0.65);
+              directPitch = -q * Math.PI;
+              targetY = THREE.MathUtils.lerp(baseH - 0.6, baseH + 2.6, q);
+              targetZ = Math.sin(q * Math.PI) * 1.8;
+            } else {
+              const q = easeInOut((p - 0.65) / 0.35);
+              directPitch = -Math.PI * (1 - q);
+              directRoll = q * Math.PI;
+              targetY = baseH + 2.6;
+            }
+            break;
+          }
+          case 'chandelle': {
+            const s = Math.sin(p * Math.PI);
+            targetX = 2.8 * s;
+            targetY = baseH + 2.3 * e;
+            targetRoll = -0.88 * s;
+            targetPitch = -0.42 * s;
+            targetYawOffset = -0.65 * s;
+            break;
+          }
+          case 'cubanEight': {
+            const a = p * Math.PI * 2;
+            targetX = Math.sin(a) * 2.8;
+            targetY = baseH + 0.9 + Math.sin(a * 2) * 1.5;
+            targetPitch = -Math.cos(a * 2) * 0.65;
+            directRoll = Math.sin(a) * Math.PI;
+            break;
+          }
+          case 'highGTurn': {
+            const s = Math.sin(p * Math.PI * 2);
+            targetX = 3.2 * s;
+            targetY = baseH + 0.45 * Math.abs(s);
+            targetRoll = -1.32 * s;
+            targetPitch = -0.18 * Math.abs(s);
+            targetYawOffset = -0.35 * s;
+            break;
+          }
+          case 'highYoYo': {
+            const s = Math.sin(p * Math.PI);
+            targetX = 2.4 * s;
+            targetY = baseH + 2.2 * Math.pow(s, 0.85);
+            targetZ = -1.1 * s;
+            targetRoll = -0.85 * s;
+            targetPitch = -0.52 * Math.cos(p * Math.PI);
+            break;
+          }
+          case 'lowYoYo': {
+            const s = Math.sin(p * Math.PI);
+            targetX = 2.2 * s;
+            targetY = baseH - 1.35 * s;
+            targetZ = 1.4 * s;
+            targetRoll = -0.78 * s;
+            targetPitch = 0.46 * Math.cos(p * Math.PI);
+            break;
+          }
+          case 'scissors': {
+            const w = Math.sin(p * Math.PI * 4);
+            targetX = 2.5 * w;
+            targetY = baseH + 0.45 * Math.cos(p * Math.PI * 4);
+            targetRoll = -1.22 * w;
+            targetYawOffset = -0.32 * w;
+            targetPitch = -0.14;
+            break;
+          }
+          case 'displacementRoll': {
+            const a = p * Math.PI * 2;
+            directRoll = -a;
+            targetX = Math.sin(a) * 1.85;
+            targetY = baseH + 0.95 * (1 - Math.cos(a));
+            targetZ = -0.8 * Math.sin(p * Math.PI);
+            break;
+          }
+          case 'circleFight': {
+            const a = p * Math.PI * 2;
+            targetX = Math.cos(a) * 2.9;
+            targetZ = Math.sin(a) * 2.2;
+            targetY = baseH + 0.6;
+            targetRoll = -1.18;
+            targetYawOffset = -a;
+            targetPitch = -0.16;
+            break;
+          }
+          case 'thachWeave': {
+            const w = Math.sin(p * Math.PI * 2);
+            targetX = 3.6 * w;
+            targetY = baseH + 0.5 * Math.abs(w);
+            targetRoll = -1.05 * w;
+            targetYawOffset = -0.45 * w;
+            break;
+          }
+          case 'cobra': {
+            // Pugachev's Cobra: Hidung mendongak mendadak hingga ~108° (-1.88 rad) lalu kembali!
+            const cobra = Math.sin(p * Math.PI);
+            const sharp = Math.pow(cobra, 0.62);
+            targetX = 0;
+            targetY = baseH + 0.95 * cobra;
+            targetZ = -1.6 * cobra;
+            directPitch = -1.88 * sharp;
+            targetRoll = Math.sin(t * 2.4) * 0.03;
+            break;
+          }
+          case 'kulbit': {
+            // Kulbit / Frolov's Chakra: Salto vertikal 360° super ketat di tempat!
+            directPitch = -e * Math.PI * 2;
+            targetY = baseH + 0.85 * Math.sin(e * Math.PI);
+            targetZ = -0.9 * Math.sin(e * Math.PI);
+            break;
+          }
+          case 'herbst': {
+            // Herbst J-Turn: Mendongak tinggi melewati stall lalu berputar yaw/roll cepat 180°!
+            const s = Math.sin(p * Math.PI);
+            targetPitch = -1.35 * Math.pow(s, 0.7);
+            targetYawOffset = e * Math.PI;
+            targetRoll = -0.95 * s;
+            targetY = baseH + 1.2 * s;
+            break;
+          }
+          case 'fallingLeaf': {
+            // Falling Leaf: Melayang turun perlahan dari sisi ke sisi
+            targetX = Math.sin(p * Math.PI * 4) * 2.6;
+            targetY = baseH + 1.8 - p * 2.4;
+            targetRoll = Math.sin(p * Math.PI * 4) * 0.92;
+            targetPitch = 0.12 + Math.cos(p * Math.PI * 4) * 0.22;
+            targetYawOffset = Math.cos(p * Math.PI * 4) * 0.35;
+            break;
+          }
+          case 'tailslide': {
+            // Tailslide (Bell Maneuver): Menanjak vertikal -90° -> berhenti -> meluncur mundur -> jatuh hidung!
+            if (p < 0.42) {
+              const q = easeInOut(p / 0.42);
+              targetY = THREE.MathUtils.lerp(baseH - 0.5, baseH + 3.2, q);
+              directPitch = -q * (Math.PI / 2);
+            } else if (p < 0.65) {
+              // Meluncur mundur (tail-first slide!)
+              const q = (p - 0.42) / 0.23;
+              targetY = THREE.MathUtils.lerp(baseH + 3.2, baseH + 1.8, q);
+              directPitch = -(Math.PI / 2) + q * 0.15;
+            } else {
+              // Hidung jatuh ke bawah lalu recovery datar
+              const q = easeInOut((p - 0.65) / 0.35);
+              targetY = THREE.MathUtils.lerp(baseH + 1.8, baseH, q);
+              directPitch = THREE.MathUtils.lerp(0.95, 0, q);
+            }
+            break;
+          }
         }
       } else if (unit.id === 'kt1b') {
         // JUPITER AEROBATIC TEAM: Jika manuver hanya melibatkan Synchro (J5-J6) atau Solo (J5), Jupiter 1 menyingkir keluar pandangan!
@@ -916,7 +1089,13 @@ export function AircraftModel() {
     rootRef.current.position.x = currentX.current;
     rootRef.current.position.y = currentY.current;
     rootRef.current.position.z = currentZ.current;
-    rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 4.5));
+    if (directPitch !== null) {
+      rootRef.current.rotation.x = directPitch;
+    } else {
+      if (rootRef.current.rotation.x < -Math.PI) rootRef.current.rotation.x += Math.PI * 2;
+      if (rootRef.current.rotation.x > Math.PI) rootRef.current.rotation.x -= Math.PI * 2;
+      rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 4.5));
+    }
     if (directRoll !== null) {
       rootRef.current.rotation.z = directRoll;
     } else {

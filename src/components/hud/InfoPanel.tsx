@@ -46,7 +46,9 @@ export function InfoPanel() {
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
   const isJupiterManeuver = unit.id === 'kt1b' && flightMode === 'maneuver';
-  if ((aeroMode || safetyMode || isJupiterManeuver) && !isEquipment) return null;
+  const isFighterManeuver = unit.category === 'Tempur' && flightMode === 'maneuver';
+  const isAar = flightMode === 'aar';
+  if ((aeroMode || safetyMode || isJupiterManeuver || isFighterManeuver || isAar) && !isEquipment) return null;
 
   return (
     <aside
