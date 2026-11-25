@@ -303,9 +303,14 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   setGForceLevel: (gForceLevel) => set({ gForceLevel }),
   setFighterManeuver: (fighterManeuver) => {
     const s = get();
-    set({ fighterManeuver });
+    const isCombat = fighterManeuver !== 'auto' && getFighterManeuverSpec(fighterManeuver).group === 'acm';
+    set({
+      fighterManeuver,
+      ...(s.flightMode === 'maneuver' && isCombat
+        ? { camRequest: { pos: [24.0, 12.5, 29.0] as Vec3, target: [0, 4.2, 0] as Vec3, nonce: nonce++ } }
+        : {}),
+    });
     if (s.flightMode === 'maneuver') {
-      const isCombat = fighterManeuver !== 'auto' && getFighterManeuverSpec(fighterManeuver).group === 'acm';
       if (isCombat) {
         aircraftAudio.playFighterCombatVoice(s.soundEnabled);
       } else {

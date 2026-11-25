@@ -7,6 +7,7 @@ import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
 import { AirRefuelingLayer } from './AirRefuelingLayer';
+import { DogfightCombatLayer } from './DogfightCombatLayer';
 import { SkyCloudsEnvironment } from './SkyCloudsEnvironment';
 
 function RadarPlatform() {
@@ -226,6 +227,7 @@ export function HangarScene() {
         )}
         <AircraftModel />
         {flightMode === 'aar' && <AirRefuelingLayer />}
+        {flightMode === 'maneuver' && <DogfightCombatLayer />}
         <CameraRig />
       </Canvas>
     </div>
