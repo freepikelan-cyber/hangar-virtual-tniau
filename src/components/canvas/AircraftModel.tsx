@@ -462,8 +462,12 @@ export function AircraftModel() {
       targetGear = 1;
 
       if (isFighter) {
-        // 19 MANUVER PESAWAT TEMPUR (Dasar, Dogfight ACM, & Supermaneuverability)
-        const cycleLen = 6.0;
+        // 19 MANUVER PESAWAT TEMPUR AKURAT SECARA AERODINAMIKA (Dasar, Dogfight ACM, & Supermaneuverability)
+        // Konvensi sumbu Three.js pesawat (+Z = Hidung, +Y = Atas, +X = Sayap Kiri, -X = Sayap Kanan):
+        // - Pitch < 0 = Hidung naik (climb), Pitch > 0 = Hidung turun (dive)
+        // - Roll < 0 = Miring kiri (bank left) -> Yaw > 0 (belok kiri ke +X)
+        // - Roll > 0 = Miring kanan (bank right) -> Yaw < 0 (belok kanan ke -X)
+        const cycleLen = 8.0;
         const activeF: Exclude<FighterManeuverId, 'auto'> =
           fighterManeuver === 'auto'
             ? FIGHTER_AUTO_ORDER[Math.floor(pt / cycleLen) % FIGHTER_AUTO_ORDER.length]
@@ -471,186 +475,246 @@ export function AircraftModel() {
         const fSpec = getFighterManeuverSpec(activeF);
         const p = (pt % cycleLen) / cycleLen;
         const e = easeInOut(p);
-        setFlightLabel(`MANUVER TEMPUR • ${fSpec.name.toUpperCase()}`);
+        setFlightLabel(`MANUVER TEMPUR // ${fSpec.name.toUpperCase()}`);
 
         switch (activeF) {
           case 'loop': {
-            directPitch = -p * Math.PI * 2;
-            targetY = baseH + (1 - Math.cos(p * Math.PI * 2)) * 2.2;
-            targetZ = Math.sin(p * Math.PI * 2) * 2.2;
+            // 360° Vertical Loop sejati: menanjak vertikal -> terbalik di puncak -> menukik -> rata kembali
+            const a = p * Math.PI * 2;
+            directPitch = -a;
+            targetY = baseH + (1 - Math.cos(a)) * 2.8;
+            targetZ = Math.sin(a) * 2.8;
             break;
           }
           case 'barrelRoll': {
-            directRoll = -e * Math.PI * 2;
-            targetX = Math.sin(e * Math.PI * 2) * 1.45;
-            targetY = baseH + (1 - Math.cos(e * Math.PI * 2)) * 0.95;
-            targetPitch = -0.09 * Math.sin(e * Math.PI);
+            // Helical Barrel Roll: gulingan 360° kiri sambil menyusuri lintasan melingkar spiral di udara
+            const a = e * Math.PI * 2;
+            directRoll = -a;
+            targetX = Math.sin(a) * 1.85;
+            targetY = baseH + (1 - Math.cos(a)) * 1.35;
+            targetPitch = -0.18 * Math.sin(a);
             break;
           }
           case 'aileronRoll': {
-            directRoll = -p * Math.PI * 2;
-            targetY = baseH + 0.15;
+            // Pure Aileron Roll 360° pada poros longitudinal tanpa melenceng dari jalur lurus
+            directRoll = -e * Math.PI * 2;
+            targetY = baseH + 0.2;
+            targetPitch = -0.05;
             break;
           }
           case 'splitS': {
-            if (p < 0.28) {
-              const q = easeInOut(p / 0.28);
+            // Split-S sejati: Guling 180° terbalik di ketinggian -> Tarik setengah loop menukik tajam -> Recovery rata di bawah!
+            if (p < 0.26) {
+              const q = easeInOut(p / 0.26);
               directRoll = q * Math.PI;
-              targetY = baseH + 2.4;
+              targetY = baseH + 2.8;
+              targetPitch = 0;
+            } else if (p < 0.78) {
+              const q = easeInOut((p - 0.26) / 0.52);
+              const a = q * Math.PI;
+              directRoll = Math.PI;
+              directPitch = a; // Dari terbalik (0) -> menukik vertikal (+PI/2) -> kembali tegak (+PI)
+              targetY = baseH + 2.8 - (1 - Math.cos(a)) * 1.9;
+              targetZ = Math.sin(a) * 2.1;
             } else {
-              const q = easeInOut((p - 0.28) / 0.72);
+              const q = easeInOut((p - 0.78) / 0.22);
               directRoll = Math.PI * (1 - q);
-              targetPitch = Math.sin(q * Math.PI) * 1.25;
-              targetY = THREE.MathUtils.lerp(baseH + 2.4, baseH - 1.1, q);
-              targetZ = Math.sin(q * Math.PI) * 1.6;
+              directPitch = Math.PI * (1 - q);
+              targetY = THREE.MathUtils.lerp(baseH - 1.0, baseH + 2.8, q);
             }
             break;
           }
           case 'immelmann': {
-            if (p < 0.65) {
-              const q = easeInOut(p / 0.65);
-              directPitch = -q * Math.PI;
-              targetY = THREE.MathUtils.lerp(baseH - 0.6, baseH + 2.6, q);
-              targetZ = Math.sin(q * Math.PI) * 1.8;
+            // Immelmann Turn sejati: Setengah loop menanjak -> Guling 180° tegak di puncak -> Terbang rata di ketinggian!
+            if (p < 0.52) {
+              const q = easeInOut(p / 0.52);
+              const a = q * Math.PI;
+              directPitch = -a;
+              directRoll = 0;
+              targetY = baseH - 0.5 + (1 - Math.cos(a)) * 1.8;
+              targetZ = Math.sin(a) * 2.0;
+            } else if (p < 0.8) {
+              const q = easeInOut((p - 0.52) / 0.28);
+              directPitch = -Math.PI;
+              directRoll = q * Math.PI; // Guling 180° dari terbalik menjadi tegak lurus!
+              targetY = baseH + 3.1;
             } else {
-              const q = easeInOut((p - 0.65) / 0.35);
-              directPitch = -Math.PI * (1 - q);
-              directRoll = q * Math.PI;
-              targetY = baseH + 2.6;
+              const q = easeInOut((p - 0.8) / 0.2);
+              targetY = THREE.MathUtils.lerp(baseH + 3.1, baseH - 0.5, q);
+              targetPitch = 0;
+              targetRoll = 0;
             }
             break;
           }
           case 'chandelle': {
+            // Chandelle: Belokan menanjak 180° ke KIRI dengan bank, yaw, pitch, & X selaras 100%!
             const s = Math.sin(p * Math.PI);
-            targetX = 2.8 * s;
-            targetY = baseH + 2.3 * e;
-            targetRoll = -0.88 * s;
-            targetPitch = -0.42 * s;
-            targetYawOffset = -0.65 * s;
+            targetX = 3.2 * s;
+            targetY = baseH - 0.3 + 2.6 * e;
+            targetRoll = -0.82 * s; // Bank kiri
+            targetPitch = -0.36 * s; // Hidung menanjak
+            targetYawOffset = 0.62 * s; // Hidung mengarah masuk ke belokan kiri (+X)
             break;
           }
           case 'cubanEight': {
+            // Cuban Eight: Lintasan angka 8 vertikal di bidang Y-Z dengan setengah guling saat melintas turun!
             const a = p * Math.PI * 2;
-            targetX = Math.sin(a) * 2.8;
-            targetY = baseH + 0.9 + Math.sin(a * 2) * 1.5;
-            targetPitch = -Math.cos(a * 2) * 0.65;
+            const zPos = Math.sin(a) * 3.2;
+            const yPos = Math.sin(a * 2) * 1.6;
+            const dz = Math.cos(a) * 3.2;
+            const dy = Math.cos(a * 2) * 3.2;
+            targetZ = zPos;
+            targetY = baseH + 1.2 + yPos;
+            targetPitch = -Math.atan2(dy, Math.abs(dz) + 0.6) * 0.85;
             directRoll = Math.sin(a) * Math.PI;
             break;
           }
           case 'highGTurn': {
+            // High-G Break Turn kiri -> kanan (bank, yaw, & lintasan lateral 100% searah!)
             const s = Math.sin(p * Math.PI * 2);
-            targetX = 3.2 * s;
+            targetX = 3.4 * s;
             targetY = baseH + 0.45 * Math.abs(s);
-            targetRoll = -1.32 * s;
+            targetRoll = -1.28 * s; // s>0 belok kiri (-roll, +yaw, +X); s<0 belok kanan (+roll, -yaw, -X)
             targetPitch = -0.18 * Math.abs(s);
-            targetYawOffset = -0.35 * s;
+            targetYawOffset = 0.42 * s;
             break;
           }
           case 'highYoYo': {
+            // High Yo-Yo: Menanjak ke luar belokan untuk membuang kecepatan berlebih lalu menukik kembali ke ekor lawan
             const s = Math.sin(p * Math.PI);
-            targetX = 2.4 * s;
-            targetY = baseH + 2.2 * Math.pow(s, 0.85);
-            targetZ = -1.1 * s;
-            targetRoll = -0.85 * s;
-            targetPitch = -0.52 * Math.cos(p * Math.PI);
+            targetX = 2.6 * s;
+            targetY = baseH + 2.4 * Math.pow(s, 0.85);
+            targetZ = -1.2 * s;
+            targetRoll = -0.82 * s;
+            targetYawOffset = 0.34 * s;
+            targetPitch = -0.48 * Math.cos(p * Math.PI);
             break;
           }
           case 'lowYoYo': {
+            // Low Yo-Yo: Menukik ke dalam belokan untuk menambah kecepatan & memotong sudut lawan
             const s = Math.sin(p * Math.PI);
-            targetX = 2.2 * s;
+            targetX = 2.4 * s;
             targetY = baseH - 1.35 * s;
-            targetZ = 1.4 * s;
+            targetZ = 1.5 * s;
             targetRoll = -0.78 * s;
-            targetPitch = 0.46 * Math.cos(p * Math.PI);
+            targetYawOffset = 0.32 * s;
+            targetPitch = 0.42 * Math.cos(p * Math.PI);
             break;
           }
           case 'scissors': {
+            // Rolling / Flat Scissors: Belok zig-zag tajam kiri <-> kanan saling memaksa overshoot
             const w = Math.sin(p * Math.PI * 4);
-            targetX = 2.5 * w;
-            targetY = baseH + 0.45 * Math.cos(p * Math.PI * 4);
-            targetRoll = -1.22 * w;
-            targetYawOffset = -0.32 * w;
-            targetPitch = -0.14;
+            targetX = 2.6 * w;
+            targetY = baseH + 0.5 * Math.cos(p * Math.PI * 4);
+            targetRoll = -1.18 * w;
+            targetYawOffset = 0.36 * w;
+            targetPitch = -0.12;
             break;
           }
           case 'displacementRoll': {
-            const a = p * Math.PI * 2;
+            // Lag / Displacement Roll: Barrel roll keluar bidang belokan agar tidak overshoot
+            const a = e * Math.PI * 2;
             directRoll = -a;
-            targetX = Math.sin(a) * 1.85;
-            targetY = baseH + 0.95 * (1 - Math.cos(a));
-            targetZ = -0.8 * Math.sin(p * Math.PI);
+            targetX = Math.sin(a) * 1.9;
+            targetY = baseH + 1.05 * (1 - Math.cos(a));
+            targetZ = -0.85 * Math.sin(p * Math.PI);
+            targetPitch = -0.16 * Math.sin(a);
             break;
           }
           case 'circleFight': {
+            // One-Circle Dogfight: Berputar melingkar rapat miring penuh (bank kanan +1.15 rad, hidung selalu tangensial!)
             const a = p * Math.PI * 2;
-            targetX = Math.cos(a) * 2.9;
-            targetZ = Math.sin(a) * 2.2;
-            targetY = baseH + 0.6;
-            targetRoll = -1.18;
-            targetYawOffset = -a;
-            targetPitch = -0.16;
+            targetX = -Math.cos(a) * 3.0;
+            targetZ = Math.sin(a) * 2.4;
+            targetY = baseH + 0.65;
+            targetRoll = 1.15; // Bank kanan konstan
+            targetYawOffset = -a; // Hidung selalu menghadap arah gerak melingkar!
+            targetPitch = -0.14;
             break;
           }
           case 'thachWeave': {
+            // Thach Weave: Lintasan menyilang lebar kiri <-> kanan saling melindungi ekor wingman
             const w = Math.sin(p * Math.PI * 2);
-            targetX = 3.6 * w;
-            targetY = baseH + 0.5 * Math.abs(w);
-            targetRoll = -1.05 * w;
-            targetYawOffset = -0.45 * w;
+            targetX = 3.8 * w;
+            targetY = baseH + 0.55 * Math.abs(w);
+            targetRoll = -1.02 * w;
+            targetYawOffset = 0.48 * w;
+            targetPitch = -0.08 * Math.abs(w);
             break;
           }
           case 'cobra': {
-            // Pugachev's Cobra: Hidung mendongak mendadak hingga ~108° (-1.88 rad) lalu kembali!
-            const cobra = Math.sin(p * Math.PI);
-            const sharp = Math.pow(cobra, 0.62);
+            // Pugachev's Cobra sejati: Mendongak cepat melewati 90° hingga ~106° (-1.85 rad), jeda singkat, lalu kembali rata & akselerasi!
+            let cobraPitch = 0;
+            let zDrift = 0;
+            let yLift = 0;
+            if (p < 0.35) {
+              const q = easeInOut(p / 0.35);
+              cobraPitch = -1.85 * q;
+              yLift = 0.75 * q;
+              zDrift = -1.4 * q;
+            } else if (p < 0.58) {
+              cobraPitch = -1.85;
+              yLift = 0.75;
+              zDrift = -1.4 - ((p - 0.35) / 0.23) * 0.45;
+            } else {
+              const q = easeInOut((p - 0.58) / 0.42);
+              cobraPitch = -1.85 * (1 - q);
+              yLift = 0.75 * (1 - q);
+              zDrift = THREE.MathUtils.lerp(-1.85, 0.5, q);
+            }
             targetX = 0;
-            targetY = baseH + 0.95 * cobra;
-            targetZ = -1.6 * cobra;
-            directPitch = -1.88 * sharp;
-            targetRoll = Math.sin(t * 2.4) * 0.03;
+            targetY = baseH + yLift;
+            targetZ = zDrift;
+            directPitch = cobraPitch;
+            targetRoll = Math.sin(t * 2.0) * 0.02;
             break;
           }
           case 'kulbit': {
-            // Kulbit / Frolov's Chakra: Salto vertikal 360° super ketat di tempat!
-            directPitch = -e * Math.PI * 2;
-            targetY = baseH + 0.85 * Math.sin(e * Math.PI);
-            targetZ = -0.9 * Math.sin(e * Math.PI);
+            // Kulbit / Frolov's Chakra: Salto vertikal 360° super ketat di poros ekor (radius kecil!)
+            const a = e * Math.PI * 2;
+            directPitch = -a;
+            targetY = baseH + (1 - Math.cos(a)) * 0.75;
+            targetZ = Math.sin(a) * 0.75 - 0.6 * Math.sin(e * Math.PI);
             break;
           }
           case 'herbst': {
-            // Herbst J-Turn: Mendongak tinggi melewati stall lalu berputar yaw/roll cepat 180°!
+            // Herbst J-Turn: Mendongak tinggi melewati stall (~72°) -> Pivot yaw/roll cepat 180° -> Akselerasi rata!
             const s = Math.sin(p * Math.PI);
-            targetPitch = -1.35 * Math.pow(s, 0.7);
+            targetPitch = -1.25 * Math.pow(s, 0.72);
             targetYawOffset = e * Math.PI;
-            targetRoll = -0.95 * s;
-            targetY = baseH + 1.2 * s;
+            targetRoll = -0.88 * s;
+            targetY = baseH + 1.25 * s;
             break;
           }
           case 'fallingLeaf': {
-            // Falling Leaf: Melayang turun perlahan dari sisi ke sisi
-            targetX = Math.sin(p * Math.PI * 4) * 2.6;
-            targetY = baseH + 1.8 - p * 2.4;
-            targetRoll = Math.sin(p * Math.PI * 4) * 0.92;
-            targetPitch = 0.12 + Math.cos(p * Math.PI * 4) * 0.22;
-            targetYawOffset = Math.cos(p * Math.PI * 4) * 0.35;
+            // Falling Leaf: Pesawat stall melayang turun berayun seperti daun jatuh dari kiri ke kanan
+            const sway = Math.sin(p * Math.PI * 4);
+            targetX = sway * 2.5;
+            targetY = baseH + 1.9 - p * 2.5;
+            targetRoll = -sway * 0.82;
+            targetPitch = 0.14 + Math.cos(p * Math.PI * 4) * 0.2;
+            targetYawOffset = sway * 0.38;
             break;
           }
           case 'tailslide': {
-            // Tailslide (Bell Maneuver): Menanjak vertikal -90° -> berhenti -> meluncur mundur -> jatuh hidung!
-            if (p < 0.42) {
-              const q = easeInOut(p / 0.42);
-              targetY = THREE.MathUtils.lerp(baseH - 0.5, baseH + 3.2, q);
+            // Tailslide (Bell Maneuver) halus tanpa lompatan sudut:
+            // Menanjak vertikal -90° -> Berhenti & meluncur mundur ekor dulu -> Hidung jatuh menukik mulus -> Pull-out rata!
+            if (p < 0.38) {
+              const q = easeInOut(p / 0.38);
+              targetY = THREE.MathUtils.lerp(baseH - 0.4, baseH + 3.2, q);
               directPitch = -q * (Math.PI / 2);
-            } else if (p < 0.65) {
-              // Meluncur mundur (tail-first slide!)
-              const q = (p - 0.42) / 0.23;
-              targetY = THREE.MathUtils.lerp(baseH + 3.2, baseH + 1.8, q);
-              directPitch = -(Math.PI / 2) + q * 0.15;
+            } else if (p < 0.58) {
+              const q = (p - 0.38) / 0.2;
+              targetY = THREE.MathUtils.lerp(baseH + 3.2, baseH + 1.9, q);
+              directPitch = -(Math.PI / 2);
+            } else if (p < 0.8) {
+              const q = easeInOut((p - 0.58) / 0.22);
+              targetY = THREE.MathUtils.lerp(baseH + 1.9, baseH + 0.3, q);
+              directPitch = THREE.MathUtils.lerp(-(Math.PI / 2), 0.78, q);
             } else {
-              // Hidung jatuh ke bawah lalu recovery datar
-              const q = easeInOut((p - 0.65) / 0.35);
-              targetY = THREE.MathUtils.lerp(baseH + 1.8, baseH, q);
-              directPitch = THREE.MathUtils.lerp(0.95, 0, q);
+              const q = easeInOut((p - 0.8) / 0.2);
+              targetY = THREE.MathUtils.lerp(baseH + 0.3, baseH - 0.4, q);
+              directPitch = THREE.MathUtils.lerp(0.78, 0, q);
             }
             break;
           }
@@ -736,7 +800,7 @@ export function AircraftModel() {
           }
         }
       } else if (isTrainer) {
-        // MANUVER AEROBATIK PESAWAT LATIH / COIN (KT-1B & Super Tucano)
+        // MANUVER AEROBATIK PESAWAT LATIH / COIN (Super Tucano, G120TP, dll. — arah bank/yaw/X 100% akurat!)
         const cycle = pt % 16;
         if (cycle < 4.5) {
           const p = easeInOut(cycle / 4.5);
@@ -744,92 +808,92 @@ export function AircraftModel() {
           targetX = Math.sin(p * Math.PI * 2) * 0.75;
           targetY = baseH + 0.45 * Math.sin(p * Math.PI);
           targetPitch = -0.06 * Math.sin(p * Math.PI);
-          setFlightLabel('TAHAP 2 • MANUVER AEROBATIK • 360° AILERON ROLL');
+          setFlightLabel('MANUVER AEROBATIK // 360° AILERON ROLL');
         } else if (cycle < 8.5) {
           const s = Math.sin(((cycle - 4.5) / 4) * Math.PI);
-          targetX = 2.1 * s;
+          targetX = 2.1 * s; // Belok kiri (+X)
           targetY = baseH + 0.9 * s;
-          targetRoll = -0.78 * s;
+          targetRoll = -0.76 * s; // Bank kiri
           targetPitch = -0.22 * s;
-          targetYawOffset = -0.22 * s;
-          setFlightLabel('TAHAP 2 • MANUVER AEROBATIK • CHANDELLE CLIMB');
+          targetYawOffset = 0.28 * s; // Hidung mengarah kiri (+X)
+          setFlightLabel('MANUVER AEROBATIK // CHANDELLE CLIMB KIRI');
         } else if (cycle < 12.5) {
           const s = Math.sin(((cycle - 8.5) / 4) * Math.PI);
-          targetX = -2.1 * s;
+          targetX = -2.1 * s; // Belok kanan (-X)
           targetY = baseH + 0.35 * s;
-          targetRoll = 0.78 * s;
+          targetRoll = 0.76 * s; // Bank kanan
           targetPitch = -0.08 * s;
-          targetYawOffset = 0.22 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BREAK TURN KIRI');
+          targetYawOffset = -0.28 * s; // Hidung mengarah kanan (-X)
+          setFlightLabel('MANUVER TAKTIS // BREAK TURN KANAN');
         } else {
           const s = Math.sin(((cycle - 12.5) / 3.5) * Math.PI);
           targetY = baseH - 0.85 * s;
           targetPitch = 0.28 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • DIVE & RECOVERY');
+          setFlightLabel('MANUVER TAKTIS // DIVE & RECOVERY');
         }
       } else if (isHeli) {
-        // MANUVER TAKTIS HELIKOPTER (Caracal & Colibri)
+        // MANUVER TAKTIS HELIKOPTER (Caracal & Colibri — arah bank/yaw/X 100% akurat!)
         const cycle = pt % 16;
         if (cycle < 4) {
           const s = Math.sin((cycle / 4) * Math.PI);
-          targetX = 1.9 * s;
+          targetX = -1.9 * s; // Belok kanan (-X)
           targetY = baseH + 0.25 * s;
-          targetRoll = -0.34 * s;
+          targetRoll = 0.34 * s; // Bank kanan
           targetPitch = 0.1 * s;
-          targetYawOffset = -0.2 * s;
-          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • BANKING KANAN');
+          targetYawOffset = -0.24 * s; // Hidung menghadap kanan (-X)
+          setFlightLabel('MANUVER HELIKOPTER // COORDINATED BANK KANAN');
         } else if (cycle < 8) {
           const s = Math.sin(((cycle - 4) / 4) * Math.PI);
-          targetX = -1.9 * s;
+          targetX = 1.9 * s; // Belok kiri (+X)
           targetY = baseH + 0.25 * s;
-          targetRoll = 0.34 * s;
+          targetRoll = -0.34 * s; // Bank kiri
           targetPitch = 0.1 * s;
-          targetYawOffset = 0.2 * s;
-          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • BANKING KIRI');
+          targetYawOffset = 0.24 * s; // Hidung menghadap kiri (+X)
+          setFlightLabel('MANUVER HELIKOPTER // COORDINATED BANK KIRI');
         } else if (cycle < 12) {
           const s = Math.sin(((cycle - 8) / 4) * Math.PI);
           targetY = baseH - 0.45 * s;
           targetZ = 1.15 * s;
-          targetPitch = 0.24 * s; // hidung menunduk tajam melaju cepat
-          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • HIGH-SPEED FORWARD DASH');
+          targetPitch = 0.22 * s; // Hidung menunduk tajam (forward cyclic dash)
+          setFlightLabel('MANUVER HELIKOPTER // HIGH-SPEED FORWARD DASH');
         } else {
           const s = Math.sin(((cycle - 12) / 4) * Math.PI);
           targetY = baseH + 0.95 * s;
           targetZ = -0.75 * s;
-          targetPitch = -0.24 * s; // rapid combat flare
-          setFlightLabel('TAHAP 2 • MANUVER HELIKOPTER • RAPID COMBAT FLARE');
+          targetPitch = -0.24 * s; // Rapid quick-stop combat flare
+          setFlightLabel('MANUVER HELIKOPTER // RAPID COMBAT FLARE');
         }
       } else {
-        // MANUVER TAKTIS PESAWAT ANGKUT & VIP (C-130J & B737)
+        // MANUVER TAKTIS PESAWAT ANGKUT & VIP (C-130J, A400M, B737 — arah bank/yaw/X 100% akurat!)
         const cycle = pt % 16;
         if (cycle < 4) {
           const s = Math.sin((cycle / 4) * Math.PI);
-          targetX = 1.8 * s;
+          targetX = -1.8 * s; // Belok kanan (-X)
           targetY = baseH + 0.25 * s;
-          targetRoll = -0.3 * s;
+          targetRoll = 0.3 * s; // Bank kanan
           targetPitch = -0.05 * s;
-          targetYawOffset = -0.16 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BANKING KANAN');
+          targetYawOffset = -0.2 * s; // Hidung menghadap kanan (-X)
+          setFlightLabel('MANUVER TAKTIS // COORDINATED BANK KANAN');
         } else if (cycle < 8) {
           const s = Math.sin(((cycle - 4) / 4) * Math.PI);
-          targetX = -1.8 * s;
+          targetX = 1.8 * s; // Belok kiri (+X)
           targetY = baseH + 0.25 * s;
-          targetRoll = 0.3 * s;
+          targetRoll = -0.3 * s; // Bank kiri
           targetPitch = -0.05 * s;
-          targetYawOffset = 0.16 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • BANKING KIRI');
+          targetYawOffset = 0.2 * s; // Hidung menghadap kiri (+X)
+          setFlightLabel('MANUVER TAKTIS // COORDINATED BANK KIRI');
         } else if (cycle < 12) {
           const s = Math.sin(((cycle - 8) / 4) * Math.PI);
           targetY = baseH + 1.25 * s;
           targetZ = 0.6 * s;
           targetPitch = -0.2 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • TACTICAL CLIMB');
+          setFlightLabel('MANUVER TAKTIS // TACTICAL CLIMB');
         } else {
           const s = Math.sin(((cycle - 12) / 4) * Math.PI);
           targetY = Math.max(1.5, baseH - 0.85 * s);
           targetZ = -0.5 * s;
           targetPitch = 0.14 * s;
-          setFlightLabel('TAHAP 2 • MANUVER TAKTIS • TACTICAL DESCENT');
+          setFlightLabel('MANUVER TAKTIS // TACTICAL DESCENT');
         }
       }
     } else if (flightMode === 'landing') {

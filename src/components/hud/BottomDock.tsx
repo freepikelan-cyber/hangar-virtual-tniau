@@ -61,6 +61,7 @@ export function BottomDock() {
         ? 'Drop Barang & Terjun Payung'
         : 'Flare Tempur';
   const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
+  const isFlightActive = !isEquipment && flightMode !== 'parked';
 
   const canTakeOff = flightMode === 'parked';
   const isAirborneReady =
@@ -83,82 +84,95 @@ export function BottomDock() {
     onClick: () => void;
     accent?: 'amber' | 'emerald' | 'rose';
     hasMenu?: boolean;
-  }[] = [
-    ...(isEquipment
-      ? [
-          {
-            id: 'sim-equip',
-            label: isGSuit ? 'Simulasi 9G' : 'Simulasi HMDS',
-            short: isGSuit ? 'Sim 9G' : 'HMDS',
-            icon: Activity,
-            active: flightMode === 'engineSim',
-            onClick: toggleEngineSim,
-            accent: (isGSuit ? 'amber' : 'emerald') as 'amber' | 'emerald',
+  }[] = isFlightActive
+    ? [
+        {
+          id: 'simulasi',
+          label: 'Simulasi',
+          short: 'Simulasi',
+          icon: Flame,
+          active: true,
+          onClick: () => setSimMenuOpen((v) => !v),
+          accent: 'amber' as const,
+          hasMenu: true,
+        },
+      ]
+    : [
+        ...(isEquipment
+          ? [
+              {
+                id: 'sim-equip',
+                label: isGSuit ? 'Simulasi 9G' : 'Simulasi HMDS',
+                short: isGSuit ? 'Sim 9G' : 'HMDS',
+                icon: Activity,
+                active: flightMode === 'engineSim',
+                onClick: toggleEngineSim,
+                accent: (isGSuit ? 'amber' : 'emerald') as 'amber' | 'emerald',
+              },
+            ]
+          : [
+              {
+                id: 'simulasi',
+                label: 'Simulasi',
+                short: 'Simulasi',
+                icon: Flame,
+                active: simMenuOpen || flightMode !== 'parked' || oxygenMode,
+                onClick: () => setSimMenuOpen((v) => !v),
+                accent: 'amber' as const,
+                hasMenu: true,
+              },
+              {
+                id: 'aero',
+                label: 'Aerodinamika',
+                short: 'Aero',
+                icon: Wind,
+                active: aeroMode,
+                onClick: () => {
+                  setSimMenuOpen(false);
+                  toggle('aeroMode');
+                },
+              },
+              {
+                id: 'safety',
+                label: 'Safety',
+                short: 'Safety',
+                icon: ShieldAlert,
+                active: safetyMode,
+                accent: 'rose' as const,
+                onClick: () => {
+                  setSimMenuOpen(false);
+                  toggle('safetyMode');
+                },
+              },
+            ]),
+        {
+          id: 'infographic',
+          label: 'Spesifikasi',
+          short: 'Spek',
+          icon: FileText,
+          active: showInfographic,
+          onClick: () => {
+            setSimMenuOpen(false);
+            toggleInfographic();
           },
-        ]
-      : [
-          {
-            id: 'simulasi',
-            label: 'Simulasi',
-            short: 'Simulasi',
-            icon: Flame,
-            active: simMenuOpen || flightMode !== 'parked' || oxygenMode,
-            onClick: () => setSimMenuOpen((v) => !v),
-            accent: 'amber' as const,
-            hasMenu: true,
-          },
-          {
-            id: 'aero',
-            label: 'Aerodinamika',
-            short: 'Aero',
-            icon: Wind,
-            active: aeroMode,
-            onClick: () => {
-              setSimMenuOpen(false);
-              toggle('aeroMode');
-            },
-          },
-          {
-            id: 'safety',
-            label: 'Safety',
-            short: 'Safety',
-            icon: ShieldAlert,
-            active: safetyMode,
-            accent: 'rose' as const,
-            onClick: () => {
-              setSimMenuOpen(false);
-              toggle('safetyMode');
-            },
-          },
-        ]),
-    {
-      id: 'infographic',
-      label: 'Spesifikasi',
-      short: 'Spek',
-      icon: FileText,
-      active: showInfographic,
-      onClick: () => {
-        setSimMenuOpen(false);
-        toggleInfographic();
-      },
-    },
-    {
-      id: 'pins',
-      label: 'Pin Hotspot',
-      short: 'Pin',
-      icon: MapPin,
-      active: showPins,
-      onClick: () => toggle('showPins'),
-    },
-    {
-      id: 'rotate',
-      label: 'Putar 360°',
-      short: '360°',
-      icon: Rotate3d,
-      active: autoRotate,
-      onClick: () => toggle('autoRotate'),
-    },
-  ];
+        },
+        {
+          id: 'pins',
+          label: 'Pin Hotspot',
+          short: 'Pin',
+          icon: MapPin,
+          active: showPins,
+          onClick: () => toggle('showPins'),
+        },
+        {
+          id: 'rotate',
+          label: 'Putar 360°',
+          short: '360°',
+          icon: Rotate3d,
+          active: autoRotate,
+          onClick: () => toggle('autoRotate'),
+        },
+      ];
 
   return (
     <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
@@ -169,8 +183,8 @@ export function BottomDock() {
         </div>
       )}
 
-      {/* Pilihan Warna / Livery untuk pesawat yang memiliki 2 versi cat TNI AU */}
-      {unit.liveries && unit.liveries.length > 1 && !simMenuOpen && (
+      {/* Pilihan Warna / Livery untuk pesawat yang memiliki 2 versi cat TNI AU (hanya saat parkir) */}
+      {unit.liveries && unit.liveries.length > 1 && !simMenuOpen && !isFlightActive && (
         <div className="hud-panel pointer-events-auto flex items-center gap-1.5 rounded-full border-[#4da6ff]/40 bg-[#091c3a]/90 px-2.5 py-1 text-[10px] sm:text-xs">
           <span className="font-display font-bold tracking-wider text-slate-300 uppercase px-1">Warna:</span>
           {unit.liveries.map((lv) => {
@@ -413,21 +427,35 @@ export function BottomDock() {
           );
         })}
 
-        <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#4da6ff]/25" />
+        {!isFlightActive ? (
+          <>
+            <div className="mx-0.5 h-7 sm:h-8 w-px shrink-0 bg-[#4da6ff]/25" />
 
-        <button
-          type="button"
-          onClick={() => {
-            setSimMenuOpen(false);
-            resetCamera();
-          }}
-          title="Reset Kamera"
-          className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-700/80 bg-[#0e2a54]/80 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#4da6ff]/60 hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
-        >
-          <RotateCcw className="h-4 w-4 shrink-0 text-[#4da6ff]" />
-          <span className="sm:hidden whitespace-nowrap leading-none">Reset</span>
-          <span className="hidden sm:inline whitespace-nowrap">Reset Kamera</span>
-        </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSimMenuOpen(false);
+                resetCamera();
+              }}
+              title="Reset Kamera"
+              className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-700/80 bg-[#0e2a54]/80 px-2 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-[#4da6ff]/60 hover:text-white transition-all duration-200 cursor-pointer active:scale-95"
+            >
+              <RotateCcw className="h-4 w-4 shrink-0 text-[#4da6ff]" />
+              <span className="sm:hidden whitespace-nowrap leading-none">Reset</span>
+              <span className="hidden sm:inline whitespace-nowrap">Reset Kamera</span>
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={stopAllSim}
+            title="Hentikan Simulasi & Kembali ke Hanggar"
+            className="min-h-[44px] min-w-[44px] sm:min-h-[48px] sm:min-w-[48px] flex flex-col sm:flex-row items-center justify-center shrink-0 gap-0.5 sm:gap-2 rounded-lg border border-slate-600/80 bg-[#0e2a54]/85 px-2.5 sm:px-3.5 py-1 font-display text-[10px] sm:text-sm font-bold tracking-wider text-slate-200 uppercase hover:border-rose-400/70 hover:text-rose-200 transition-all duration-200 cursor-pointer active:scale-95"
+          >
+            <Square className="h-3.5 w-3.5 shrink-0 text-rose-400" />
+            <span className="whitespace-nowrap leading-none">Stop</span>
+          </button>
+        )}
       </nav>
 
       {/* Footer Kredit & Kontak di Bagian Bawah Aplikasi */}
