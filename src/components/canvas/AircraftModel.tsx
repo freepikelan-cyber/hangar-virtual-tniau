@@ -910,7 +910,7 @@ export function AircraftModel() {
       const pulse = simActive ? 0.5 + 0.5 * Math.sin(t * 3.2) : 0;
       const visorPivot = procedural.group.getObjectByName('helmet-visor-pivot');
       if (visorPivot) {
-        const targetRotX = simActive ? 0.16 : -0.18;
+        const targetRotX = simActive ? 0.04 : 0.0;
         visorPivot.rotation.x = THREE.MathUtils.lerp(visorPivot.rotation.x, targetRotX, Math.min(1, dt * 4.5));
       }
       const nvgPivot = procedural.group.getObjectByName('helmet-nvg-pivot');
