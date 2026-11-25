@@ -22,6 +22,15 @@ const ARROWHEAD_SLOTS: [number, number, number][] = [
   [-14.0, 2.6, -13.0], // Jupiter 6 (Synchro Kiri)
 ];
 
+// Formasi Arrowhead RAPAT saat "Tighten up into Arrowhead formation!"
+const TIGHT_ARROW_SLOTS: [number, number, number][] = [
+  [5.4, 2.85, -5.0],
+  [-5.4, 2.85, -5.0],
+  [0.0, 2.65, -10.0],
+  [10.8, 2.75, -10.0],
+  [-10.8, 2.75, -10.0],
+];
+
 // Formasi 6-Ship SIAP TAKE OFF di Runway 09 saat "Jupiters, check in! Two! Three! Four! Five! Six!"
 const RUNWAY_FORM_SPOTS: [number, number][] = [
   [4.8, -11.5],  // Jupiter 2 (Kanan belakang J1)
@@ -32,11 +41,9 @@ const RUNWAY_FORM_SPOTS: [number, number][] = [
 ];
 
 /**
- * Menampilkan 5 pesawat pendamping Jupiter Aerobatic Team (Jupiter 2 s/d Jupiter 6)
- * saat simulasi Take Off KT-1B Wong Bee:
- * 1. Keluar dari hanggar satu per satu menuju titik Take Off (0..18.5s)
- * 2. Semua 6 pesawat berbaris rapi membentuk Formasi Take Off di Runway 09 saat Check-In ("Jupiters, check in! 2..6") (18.5..26.5s)
- * 3. Take Off bergantian SATU PER SATU (26.5..46.5s) hingga semua mengudara dalam formasi Arrowhead
+ * Menampilkan 5 pesawat pendamping Jupiter Aerobatic Team (Jupiter 2 s/d Jupiter 6) + asap putih tebal:
+ * 1. Take Off: keluar hanggar satu per satu -> formasi Take Off ("check in!") -> Take Off bergantian satu per satu
+ * 2. Airborne: jeda 10 dtk -> Tighten Arrowhead & Jupiter Roll -> Jupiter 5 & 6 Opposing Pass Crossing!
  */
 export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -47,6 +54,8 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
 
   const phaseTime = useRef(0);
   const wingRefs = useRef<(THREE.Group | null)[]>([]);
+  const smokeRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const leaderSmokeRef = useRef<THREE.Mesh>(null);
   const gearStates = useRef<number[]>([0, 0, 0, 0, 0]);
 
   useEffect(() => {
@@ -57,6 +66,31 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       gearStates.current = [1, 1, 1, 1, 1];
     }
   }, [flightMode, flightNonce, isActive]);
+
+  const smokeMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#f8fafc',
+        transparent: true,
+        opacity: 0.42,
+        depthWrite: false,
+      }),
+    [],
+  );
+
+  const smokeGeo = useMemo(() => {
+    const geo = new THREE.CylinderGeometry(0.14, 0.95, 22, 10, 1, true);
+    geo.rotateX(Math.PI / 2);
+    geo.translate(0, 0, -13.5);
+    return geo;
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      smokeMat.dispose();
+      smokeGeo.dispose();
+    };
+  }, [smokeMat, smokeGeo]);
 
   const wingClones = useMemo(() => {
     if (selectedId !== 'kt1b') return [];
@@ -81,6 +115,21 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     const pt = phaseTime.current;
     const t = state.clock.getElapsedTime();
 
+    // Asap putih tebal menyala saat airborne atau setelah aba-aba "Smoke on!" di takeoff (pt >= 31s)
+    if (leaderSmokeRef.current) {
+      const leaderSmokeOn = flightMode === 'airborne' || (flightMode === 'takeoff' && pt >= 31.0);
+      leaderSmokeRef.current.visible = leaderSmokeOn;
+      if (leaderSmokeOn) {
+        leaderSmokeRef.current.position.set(
+          Math.sin(t * 0.45) * 0.22,
+          flightMode === 'airborne' ? 2.95 + Math.sin(t * 1.4) * 0.1 : 3.0,
+          0,
+        );
+        const pulse = 1 + Math.sin(t * 14) * 0.06;
+        leaderSmokeRef.current.scale.set(pulse, pulse, 1);
+      }
+    }
+
     for (let i = 0; i < 5; i++) {
       const grp = wingRefs.current[i];
       if (!grp) continue;
@@ -99,19 +148,17 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       let tr = 0;
       let tyaw = 0;
       let targetGear = 0;
+      let smokeOn = false;
 
       if (flightMode === 'takeoff') {
-        // Tahap 1 (0..18.5s): Keluar dari hanggar satu per satu menuju posisi formasi Take Off di Runway 09
-        const taxiStart = 2.0 + i * 2.2; // J2: 2.0s, J3: 4.2s, J4: 6.4s, J5: 8.6s, J6: 10.8s
+        const taxiStart = 2.0 + i * 2.2;
         const taxiEnd = taxiStart + 4.4;
         const turnEnd = taxiEnd + 1.8;
         const spawnX = -35.0 - i * 3.8;
         const spawnZ = -10.5;
         const formSpot = RUNWAY_FORM_SPOTS[i];
 
-        // Tahap 2 (18.5..26.5s): Semua 6 pesawat berada di formasi Take Off di Runway 09 ("Jupiters, check in!")
-        // Tahap 3 (26.5..46.5s): Take Off bergantian SATU PER SATU setelah J1 (J1 roll 26.5..28.6s)
-        const rollStart = 29.0 + i * 2.5; // J2: 29.0s, J3: 31.5s, J4: 34.0s, J5: 36.5s, J6: 39.0s
+        const rollStart = 29.0 + i * 2.5;
         const rotStart = rollStart + 1.9;
         const climbEnd = rotStart + 2.4;
 
@@ -131,7 +178,6 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tyaw = Math.PI / 2;
           targetGear = 0;
         } else if (pt < turnEnd) {
-          // Belok rapi masuk posisi formasi Take Off di Runway 09
           const p = easeInOut((pt - taxiEnd) / (turnEnd - taxiEnd));
           tx = THREE.MathUtils.lerp(formSpot[0] - 4.0, formSpot[0], p);
           tz = formSpot[1];
@@ -139,14 +185,12 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tyaw = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
           targetGear = 0;
         } else if (pt < rollStart) {
-          // Siap di posisi formasi Take Off sambil menunggu "Jupiters, check in!" & giliran lepas landas satu per satu
           tx = formSpot[0];
           tz = formSpot[1];
           ty = 0;
           tyaw = 0;
           targetGear = 0;
         } else if (pt < rotStart) {
-          // Akselerasi penuh di runway!
           const p = (pt - rollStart) / (rotStart - rollStart);
           tx = formSpot[0];
           tz = THREE.MathUtils.lerp(formSpot[1], 4.0, p * p);
@@ -155,7 +199,6 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tyaw = 0;
           targetGear = 0;
         } else if (pt < climbEnd) {
-          // Rotate, Liftoff & Gear Up menuju posisi formasi udara
           const p = easeInOut((pt - rotStart) / (climbEnd - rotStart));
           tx = THREE.MathUtils.lerp(formSpot[0], airSlot[0], p);
           tz = THREE.MathUtils.lerp(4.0, airSlot[2], p);
@@ -163,6 +206,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tp = -0.25 * Math.sin(p * Math.PI);
           tr = (airSlot[0] > 0 ? -0.14 : airSlot[0] < 0 ? 0.14 : 0) * Math.sin(p * Math.PI);
           targetGear = p > 0.35 ? 1 : 0;
+          smokeOn = p > 0.45;
         } else {
           tx = airSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
           ty = airSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
@@ -170,23 +214,117 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tp = -0.025;
           tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
           targetGear = 1;
+          smokeOn = true;
         }
       } else {
-        const airSlot = ARROWHEAD_SLOTS[i];
-        tx = airSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
-        ty = airSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
-        tz = airSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
-        tp = -0.025;
-        tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
+        // MODE AIRBORNE:
+        // 0..10s: Jeda 10 detik jelajah formasi Arrowhead + asap putih tebal
+        // 10..21s: Tighten up into Arrowhead formation
+        // 21..25.5s: Pull up 20 degrees
+        // 25.5..28.8s: JUPITER ROLL 360° serempak!
+        // 29.5..46.5s: J5 & J6 Opposing Pass Crossing!
         targetGear = 1;
+        smokeOn = true;
+
+        const baseSlot = ARROWHEAD_SLOTS[i];
+        const tightSlot = TIGHT_ARROW_SLOTS[i];
+
+        if (pt < 10.0) {
+          tx = baseSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
+          ty = baseSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
+          tz = baseSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
+          tp = -0.025;
+          tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
+        } else if (pt < 21.0) {
+          const p = easeInOut(Math.min(1, (pt - 10.0) / 5.0));
+          tx = THREE.MathUtils.lerp(baseSlot[0], tightSlot[0], p);
+          ty = THREE.MathUtils.lerp(baseSlot[1], tightSlot[1], p);
+          tz = THREE.MathUtils.lerp(baseSlot[2], tightSlot[2], p);
+          tp = -0.03;
+          tr = 0;
+        } else if (pt < 25.5) {
+          const p = easeInOut((pt - 21.0) / 4.5);
+          tx = tightSlot[0];
+          ty = tightSlot[1] + 1.2 * p;
+          tz = tightSlot[2];
+          tp = -0.03 - 0.32 * p;
+          tr = 0;
+        } else if (pt < 28.8) {
+          // JUPITER ROLL 360° mengelilingi poros formasi!
+          const p = easeInOut((pt - 25.5) / 3.3);
+          const angle = p * Math.PI * 2;
+          const rx = tightSlot[0];
+          const ry = tightSlot[1] - 2.95;
+          const cosA = Math.cos(angle);
+          const sinA = Math.sin(angle);
+          tx = rx * cosA + ry * sinA;
+          ty = 4.15 - 1.2 * p + (-rx * sinA + ry * cosA);
+          tz = tightSlot[2];
+          tp = -0.25 * Math.sin(p * Math.PI);
+          tr = -angle;
+        } else if (pt < 46.5 && (i === 3 || i === 4)) {
+          // J5 (i=3) & J6 (i=4): OPPOSING PASS CROSSING!
+          const isJ5 = i === 3;
+          const dir = isJ5 ? 1 : -1;
+          if (pt < 38.0) {
+            // Breaking off ke kiri & kanan lalu berbalik arah saling berhadapan!
+            const p = easeInOut((pt - 29.5) / 8.5);
+            tx = THREE.MathUtils.lerp(tightSlot[0], dir * 32.0, p);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 1.6, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], -4.5, p);
+            tyaw = dir * -Math.PI * 0.5 * easeInOut(Math.min(1, p * 1.4));
+            tr = dir * 0.45 * Math.sin(p * Math.PI);
+          } else if (pt < 45.2) {
+            // Melaju 400 knots saling berhadapan & CROSSING di titik tengah (pt ~ 44.0s)!
+            const p = easeInOut((pt - 38.0) / 7.2);
+            tx = THREE.MathUtils.lerp(dir * 32.0, -dir * 26.0, p);
+            ty = 1.6 + (isJ5 ? 0.35 : -0.35) * Math.sin(p * Math.PI);
+            tz = -4.5 + (isJ5 ? 0.6 : -0.6);
+            tyaw = dir * -Math.PI * 0.5;
+            tr = dir * 0.12 * Math.sin(p * Math.PI);
+          } else {
+            // Rejoin kembali ke posisi Arrowhead
+            const p = easeInOut((pt - 45.2) / 1.3);
+            tx = THREE.MathUtils.lerp(-dir * 26.0, baseSlot[0], p);
+            ty = THREE.MathUtils.lerp(1.6, baseSlot[1], p);
+            tz = THREE.MathUtils.lerp(-4.5, baseSlot[2], p);
+            tyaw = THREE.MathUtils.lerp(dir * -Math.PI * 0.5, 0, p);
+          }
+        } else if (pt < 46.5) {
+          tx = tightSlot[0];
+          ty = tightSlot[1];
+          tz = tightSlot[2];
+          tp = -0.025;
+        } else {
+          tx = baseSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
+          ty = baseSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
+          tz = baseSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
+          tp = -0.025;
+          tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
+        }
       }
 
-      grp.position.x = THREE.MathUtils.lerp(grp.position.x, tx, Math.min(1, dt * 6));
-      grp.position.y = THREE.MathUtils.lerp(grp.position.y, ty, Math.min(1, dt * 6));
-      grp.position.z = THREE.MathUtils.lerp(grp.position.z, tz, Math.min(1, dt * 6));
-      grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 5));
-      grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 5));
-      grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * 5));
+      grp.position.x = THREE.MathUtils.lerp(grp.position.x, tx, Math.min(1, dt * 7));
+      grp.position.y = THREE.MathUtils.lerp(grp.position.y, ty, Math.min(1, dt * 7));
+      grp.position.z = THREE.MathUtils.lerp(grp.position.z, tz, Math.min(1, dt * 7));
+      grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 6));
+      grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 6));
+      if (flightMode === 'airborne' && pt >= 25.5 && pt < 28.8) {
+        grp.rotation.z = tr;
+      } else {
+        if (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;
+        if (grp.rotation.z > Math.PI) grp.rotation.z -= Math.PI * 2;
+        grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * 6));
+      }
+
+      const smokeMesh = smokeRefs.current[i];
+      if (smokeMesh) {
+        smokeMesh.visible = smokeOn;
+        if (smokeOn) {
+          const pulse = 1 + Math.sin(t * 14 + i) * 0.07;
+          smokeMesh.scale.set(pulse, pulse, 1);
+        }
+      }
 
       gearStates.current[i] = THREE.MathUtils.lerp(gearStates.current[i], targetGear, Math.min(1, dt * 3));
       const gearObj = clone.getObjectByName('landing-gear');
@@ -203,6 +341,9 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
 
   return (
     <group>
+      {/* Asap putih tebal untuk Jupiter 1 (Lead) */}
+      <mesh ref={leaderSmokeRef} geometry={smokeGeo} material={smokeMat} visible={false} />
+
       {wingClones.map((clone, i) => (
         <group
           key={i}
@@ -213,6 +354,14 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           rotation={[0, Math.PI / 2, 0]}
         >
           <primitive object={clone} />
+          <mesh
+            ref={(el) => {
+              smokeRefs.current[i] = el;
+            }}
+            geometry={smokeGeo}
+            material={smokeMat}
+            visible={false}
+          />
           <Html position={[0, 2.35, 0]} center distanceFactor={28}>
             <div className="pointer-events-none select-none whitespace-nowrap rounded border border-rose-400/70 bg-slate-950/80 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-rose-200 shadow">
               JUPITER {i + 2}

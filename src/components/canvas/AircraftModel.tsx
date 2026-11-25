@@ -487,14 +487,62 @@ export function AircraftModel() {
         }
       }
     } else if (flightMode === 'airborne') {
-      // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
-      targetX = Math.sin(t * 0.55) * 0.35;
-      targetY = 2.95 + Math.sin(t * 1.8) * 0.14;
-      targetZ = 0;
-      targetPitch = (isHeli ? 0.04 : -0.025) + Math.sin(t * 1.2) * 0.015;
-      targetRoll = Math.cos(t * 1.1) * 0.04;
-      targetGear = 1;
-      setFlightLabel('TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+      if (unit.id === 'kt1b') {
+        // JUPITER AEROBATIC SHOW (Mengudara):
+        // 0..10s: Terbang jelajah jeda 10 detik
+        // 10..21s: Tighten up into Arrowhead formation
+        // 21..25.5s: Pull up 20 degrees
+        // 25.5..28.8s: JUPITER ROLL 360°!
+        // 29.5..46.5s: J5 & J6 Opposing Pass Crossing!
+        targetX = Math.sin(t * 0.45) * 0.22;
+        targetY = 2.95 + Math.sin(t * 1.4) * 0.1;
+        targetZ = 0;
+        targetGear = 1;
+        if (pt < 10.0) {
+          targetPitch = -0.025;
+          targetRoll = Math.cos(t * 0.9) * 0.03;
+          setFlightLabel('JUPITER AEROBATIC TEAM • MENUJU AEROBATIC BOX (5.000 FT)');
+        } else if (pt < 21.0) {
+          targetPitch = -0.03;
+          targetRoll = 0;
+          setFlightLabel('🎙️ JUPITERS, TIGHTEN UP INTO ARROWHEAD FORMATION • STEADY ON MY WING');
+        } else if (pt < 25.5) {
+          const p = easeInOut((pt - 21.0) / 4.5);
+          targetPitch = -0.03 - 0.32 * p;
+          targetY = 2.95 + 1.2 * p;
+          targetRoll = 0;
+          setFlightLabel('🎙️ STANDBY FOR JUPITER ROLL • PULLING UP 20 DEGREES...');
+        } else if (pt < 28.8) {
+          const p = easeInOut((pt - 25.5) / 3.3);
+          targetPitch = -0.25 * Math.sin(p * Math.PI);
+          targetY = 4.15 - 1.2 * p;
+          directRoll = -p * Math.PI * 2;
+          setFlightLabel('🔥 JUPITER ROLL! • ASAP PUTIH TEBAL MEMBELAH LANGIT');
+        } else if (pt < 46.5) {
+          targetPitch = -0.025;
+          targetRoll = 0;
+          setFlightLabel(
+            pt < 38.0
+              ? '🎙️ JUPITER 5 & 6 BREAKING OFF FOR OPPOSING PASS (500 FT)'
+              : pt < 44.8
+                ? '⚡ CLOSING SPEED 400 KNOTS... THREE, TWO, ONE... CROSSING!'
+                : '🔥 OPPOSING PASS CROSSING SUKSES! • REJOIN FORMASI',
+          );
+        } else {
+          targetPitch = -0.025 + Math.sin(t * 1.2) * 0.015;
+          targetRoll = Math.cos(t * 1.1) * 0.035;
+          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • ASAP PUTIH AKTIF');
+        }
+      } else {
+        // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
+        targetX = Math.sin(t * 0.55) * 0.35;
+        targetY = 2.95 + Math.sin(t * 1.8) * 0.14;
+        targetZ = 0;
+        targetPitch = (isHeli ? 0.04 : -0.025) + Math.sin(t * 1.2) * 0.015;
+        targetRoll = Math.cos(t * 1.1) * 0.04;
+        targetGear = 1;
+        setFlightLabel('TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
+      }
     } else if (flightMode === 'aar') {
       // AIR-TO-AIR REFUELING (AAR) dengan Tanker KC-130B Hercules Skadron Udara 32
       targetGear = 1;
