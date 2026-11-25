@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore } from '../../store/useHangarStore';
+import { getUnit } from '../../data/fleetData';
 import {
   buildMountainRangeGeometry,
   buildOrganicIslandGeometry,
@@ -52,8 +53,9 @@ interface HouseData {
   rotY: number;
 }
 
-const CHUNK_LEN = 220;
+const CHUNK_LEN = 340;
 const LOOP_LEN = CHUNK_LEN * 3; // 3 zona dinamis: Runway/Kota -> Pegunungan -> Laut & Kepulauan
+const RUNWAY_OFFSET = 141.5;
 
 function makeBlueSkyTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
@@ -108,6 +110,7 @@ export function SkyCloudsEnvironment() {
   const selectedId = useHangarStore((s) => s.selectedId);
 
   const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
+  const isHeli = getUnit(selectedId).category === 'Helikopter';
   const isOutdoorSim = !isEquipment && flightMode !== 'parked';
 
   const skyOpacity = useRef(0);
@@ -260,8 +263,8 @@ export function SkyCloudsEnvironment() {
     const tints = ['#ffffff', '#e0f2fe', '#e2e8f0', '#dbeafe', '#f1f5f9'];
     for (let i = 0; i < 18; i++) {
       list.push({
-        x: -68 - rand() * 44,
-        z: -92 + rand() * 184,
+        x: -88 - rand() * 44,
+        z: -145 + rand() * 290,
         w: 4.8 + rand() * 3.8,
         d: 4.8 + rand() * 3.8,
         h: 10.5 + rand() * 13.5,
@@ -282,10 +285,10 @@ export function SkyCloudsEnvironment() {
     };
     const walls = ['#ffffff', '#fef9e7', '#f4f4f5', '#fff7ed'];
     const roofs = ['#ffffff', '#d97757', '#b84a32', '#64748b'];
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 42; i++) {
       list.push({
-        x: -24 - rand() * 36,
-        z: -94 + rand() * 188,
+        x: -48 - rand() * 34,
+        z: -148 + rand() * 296,
         w: 3.4 + rand() * 1.8,
         d: 3.2 + rand() * 1.6,
         h: 2.2 + rand() * 1.0,
@@ -305,10 +308,10 @@ export function SkyCloudsEnvironment() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 42; i++) {
+    for (let i = 0; i < 52; i++) {
       list.push({
-        x: -21 - rand() * 42,
-        z: -98 + rand() * 196,
+        x: -46 - rand() * 38,
+        z: -152 + rand() * 304,
         s: 0.75 + rand() * 0.65,
       });
     }
@@ -317,7 +320,7 @@ export function SkyCloudsEnvironment() {
 
   const runwayLightZ = useMemo(() => {
     const arr: number[] = [];
-    for (let z = -98; z <= 98; z += 14) arr.push(z);
+    for (let z = -160; z <= 160; z += 16) arr.push(z);
     return arr;
   }, []);
 
@@ -370,22 +373,22 @@ export function SkyCloudsEnvironment() {
     let groundSpeed = 0;
 
     if (flightMode === 'takeoff') {
-      if (pt < 5.8) {
-        // Taxi keluar dari Hanggar TNI AU -> Line-up di Runway 09 -> Spool-up full power (dunia diam agar sejajar hanggar!)
+      if (pt < 7.6) {
+        // Taxi keluar dari Hanggar TNI AU yang jauh -> Line-up di Runway 09 -> Spool-up full power
         targetWorldY = -0.02;
         groundSpeed = 0;
         scrollZ.current = 0;
-      } else if (pt < 8.8) {
-        const p = (pt - 5.8) / 3.0;
+      } else if (pt < 10.8) {
+        const p = (pt - 7.6) / 3.2;
         targetWorldY = -0.02;
-        groundSpeed = 44 * p * p;
-      } else if (pt < 12.8) {
-        const p = Math.min(1, (pt - 8.8) / 4.0);
+        groundSpeed = 52 * p * p;
+      } else if (pt < 14.8) {
+        const p = Math.min(1, (pt - 10.8) / 4.0);
         targetWorldY = THREE.MathUtils.lerp(-0.02, -19.5, p * p);
-        groundSpeed = 48;
+        groundSpeed = 52;
       } else {
         targetWorldY = -19.5;
-        groundSpeed = 44;
+        groundSpeed = 46;
       }
     } else if (flightMode === 'airborne') {
       targetWorldY = -19.5;
@@ -394,28 +397,40 @@ export function SkyCloudsEnvironment() {
       targetWorldY = -19.5;
       groundSpeed = 58;
     } else if (flightMode === 'landing') {
-      const stopScroll = LOOP_LEN - 14; // Tepat menyelaraskan pintu Hanggar TNI AU di world z = +3.5 (di depan hidung pesawat saat berhenti!)
-      if (pt < 6.0) {
-        // Long Final Approach & Flare -> Runway naik mulus mendekati roda sambil melaju kencang
-        const p = Math.min(1, pt / 6.0);
-        targetWorldY = THREE.MathUtils.lerp(-13.0, -0.02, p);
-        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 330, stopScroll - 135, p);
+      // Menyelaraskan Hanggar Landing (local z = +145) tepat di world z = +3.5 saat berhenti!
+      const stopScroll = LOOP_LEN + 283.0;
+      if (isHeli) {
+        if (pt < 6.0) {
+          const p = Math.min(1, pt / 6.0);
+          targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
+          scrollZ.current = THREE.MathUtils.lerp(stopScroll - 220, stopScroll, 1 - (1 - p) * (1 - p));
+          groundSpeed = 0;
+        } else {
+          targetWorldY = -0.02;
+          scrollZ.current = stopScroll;
+          groundSpeed = 0;
+        }
+      } else if (pt < 5.8) {
+        // Long Final Approach & Flare: mendekati awal Runway 09 dengan kecepatan tinggi (~47 u/s)
+        const p = Math.min(1, pt / 5.8);
+        targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
+        scrollZ.current = 740.0 + 273.5 * p;
         groundSpeed = 0;
-      } else if (pt < 7.8) {
-        // Touchdown: pesawat masih melaju CEPAT di atas aspal runway!
-        const p = (pt - 6.0) / 1.8;
+      } else if (pt < 10.2) {
+        // Touchdown & High-Speed Runway Rollout (4,4 detik melaju kencang lurus di atas aspal runway!)
+        const p = (pt - 5.8) / 4.4;
         targetWorldY = -0.02;
-        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 135, stopScroll - 72, p);
+        scrollZ.current = 1013.5 + 186.0 * (1.14 * p - 0.14 * p * p);
         groundSpeed = 0;
-      } else if (pt < 12.2) {
-        // Pengereman panjang & halus (deselerasi kuadratik mulus sampai benar-benar berhenti!)
-        const p = Math.min(1, (pt - 7.8) / 4.4);
+      } else if (pt < 16.0) {
+        // Pengereman panjang & halus di runway (5,8 detik deselerasi mulus sampai benar-benar berhenti!)
+        const p = Math.min(1, (pt - 10.2) / 5.8);
         const decel = 1 - (1 - p) * (1 - p);
         targetWorldY = -0.02;
-        scrollZ.current = THREE.MathUtils.lerp(stopScroll - 72, stopScroll, decel);
+        scrollZ.current = 1199.5 + 103.5 * decel;
         groundSpeed = 0;
       } else {
-        // Berhenti total di runway -> Taxi perlahan masuk ke dalam Hanggar TNI AU
+        // Berhenti total di runway -> Taxi pelan menyusuri jalur panjang menuju Hanggar TNI AU
         targetWorldY = -0.02;
         scrollZ.current = stopScroll;
         groundSpeed = 0;
@@ -436,9 +451,9 @@ export function SkyCloudsEnvironment() {
         if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
         return z;
       };
-      if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(92);
-      if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(92 + CHUNK_LEN);
-      if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(92 + CHUNK_LEN * 2);
+      if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
+      if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
+      if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
     }
 
     if (cMix > 0.01) {
@@ -521,9 +536,9 @@ export function SkyCloudsEnvironment() {
       <group ref={worldGroupRef} visible={false} position={[0, -0.02, 0]} name="outdoor-world-3d">
         {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN REALISTIS + GEDUNG KACA BERTINGKAT + LAUT PESISIR === */}
         <group ref={runwayChunkRef} name="biome-runway-city">
-          {/* Rumput pangkalan udara */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-4, -0.08, 0]} receiveShadow>
-            <planeGeometry args={[42, CHUNK_LEN]} />
+          {/* Rumput pangkalan udara yang luas (jarak runway ke hanggar lebih jauh & realistis) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14, -0.08, 0]} receiveShadow>
+            <planeGeometry args={[64, CHUNK_LEN]} />
             <meshStandardMaterial color="#3c6e47" roughness={0.95} metalness={0} />
           </mesh>
 
@@ -533,7 +548,7 @@ export function SkyCloudsEnvironment() {
             <meshStandardMaterial map={runwayTex} roughness={0.86} metalness={0.05} />
           </mesh>
 
-          {/* Bahu aspal & taxiway */}
+          {/* Bahu aspal & parallel taxiway */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6.4, -0.02, 0]}>
             <planeGeometry args={[1.6, CHUNK_LEN]} />
             <meshStandardMaterial color="#3a404a" roughness={0.92} />
@@ -542,12 +557,12 @@ export function SkyCloudsEnvironment() {
             <planeGeometry args={[1.6, CHUNK_LEN]} />
             <meshStandardMaterial color="#3a404a" roughness={0.92} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, -0.01, 0]}>
-            <planeGeometry args={[3.4, CHUNK_LEN]} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, -0.01, 0]}>
+            <planeGeometry args={[3.6, CHUNK_LEN]} />
             <meshStandardMaterial color="#333942" roughness={0.9} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.01, 0]}>
-            <planeGeometry args={[0.22, CHUNK_LEN]} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, 0.01, 0]}>
+            <planeGeometry args={[0.24, CHUNK_LEN]} />
             <meshBasicMaterial color="#fbbf24" />
           </mesh>
 
@@ -556,55 +571,57 @@ export function SkyCloudsEnvironment() {
             <group key={i} position={[0, 0.14, lz]}>
               <mesh position={[-5.9, 0, 0]}>
                 <sphereGeometry args={[0.16, 8, 8]} />
-                <meshBasicMaterial color={lz < -80 ? '#22c55e' : '#fde68a'} />
+                <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
               </mesh>
               <mesh position={[5.9, 0, 0]}>
                 <sphereGeometry args={[0.16, 8, 8]} />
-                <meshBasicMaterial color={lz < -80 ? '#22c55e' : '#fde68a'} />
+                <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
               </mesh>
             </group>
           ))}
 
-          {/* Hanggar TNI AU Terbuka + Apron Beton + Jalur Taxiway Kuning tepat sejajar titik keluar/masuk pesawat (local z = -102.5 -> world z = -10.5) */}
-          <group position={[-19.5, 0, -102.5]}>
-            {/* Apron beton penghubung dari dalam hanggar ke runway */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[8.5, 0.01, 0]} receiveShadow>
-              <planeGeometry args={[20, 14]} />
-              <meshStandardMaterial color="#475569" roughness={0.88} />
-            </mesh>
-            {/* Garis kuning taxiway penghubung hanggar <-> runway */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[9.2, 0.03, 0]}>
-              <planeGeometry args={[18, 0.32]} />
-              <meshBasicMaterial color="#fbbf24" />
-            </mesh>
-            {/* Dinding belakang & samping Hanggar (bagian depan +X terbuka lebar agar pesawat bisa keluar/masuk!) */}
-            <mesh position={[-5.5, 3.6, 0]}>
-              <boxGeometry args={[0.6, 7.2, 16.4]} />
-              <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
-            </mesh>
-            <mesh position={[0, 3.6, -8.0]}>
-              <boxGeometry args={[11.4, 7.2, 0.5]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
-            </mesh>
-            <mesh position={[0, 3.6, 8.0]}>
-              <boxGeometry args={[11.4, 7.2, 0.5]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
-            </mesh>
-            {/* Atap lengkung baja Biru TNI AU + lis kuning */}
-            <mesh position={[0, 7.45, 0]}>
-              <boxGeometry args={[12.0, 0.7, 17.0]} />
-              <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
-            </mesh>
-            <mesh position={[5.95, 7.45, 0]}>
-              <boxGeometry args={[0.25, 0.5, 16.8]} />
-              <meshBasicMaterial color="#ffb703" />
-            </mesh>
-            {/* Lampu hangat di langit-langit hanggar */}
-            <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
-          </group>
+          {/* Hanggar TNI AU Terbuka (diletakkan lebih jauh di x = -36) — 1 di sisi Take Off (z = -152) & 1 di ujung Landing (z = +145) */}
+          {[-152.0, 145.0].map((hz, hIdx) => (
+            <group key={hIdx} position={[-36.0, 0, hz]}>
+              {/* Apron beton panjang penghubung dari dalam hanggar hingga tepi runway */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
+                <planeGeometry args={[32, 14]} />
+                <meshStandardMaterial color="#475569" roughness={0.88} />
+              </mesh>
+              {/* Garis kuning taxiway panjang penghubung hanggar <-> runway */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
+                <planeGeometry args={[30, 0.34]} />
+                <meshBasicMaterial color="#fbbf24" />
+              </mesh>
+              {/* Dinding belakang & samping Hanggar (bagian depan +X terbuka lebar agar pesawat bisa keluar/masuk!) */}
+              <mesh position={[-5.5, 3.6, 0]}>
+                <boxGeometry args={[0.6, 7.2, 16.4]} />
+                <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+              </mesh>
+              <mesh position={[0, 3.6, -8.0]}>
+                <boxGeometry args={[11.4, 7.2, 0.5]} />
+                <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+              </mesh>
+              <mesh position={[0, 3.6, 8.0]}>
+                <boxGeometry args={[11.4, 7.2, 0.5]} />
+                <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+              </mesh>
+              {/* Atap lengkung baja Biru TNI AU + lis kuning */}
+              <mesh position={[0, 7.45, 0]}>
+                <boxGeometry args={[12.0, 0.7, 17.0]} />
+                <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
+              </mesh>
+              <mesh position={[5.95, 7.45, 0]}>
+                <boxGeometry args={[0.25, 0.5, 16.8]} />
+                <meshBasicMaterial color="#ffb703" />
+              </mesh>
+              {/* Lampu hangat di langit-langit hanggar */}
+              <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
+            </group>
+          ))}
 
           {/* Hanggar cadangan & Menara ATC */}
-          <group position={[-18.5, 0, -28]}>
+          <group position={[-36.0, 0, -32]}>
             <mesh position={[0, 2.2, 0]}>
               <boxGeometry args={[7.5, 4.4, 14]} />
               <meshStandardMaterial color="#cbd5e1" roughness={0.75} metalness={0.2} />
@@ -614,7 +631,7 @@ export function SkyCloudsEnvironment() {
               <meshStandardMaterial color="#1d4ed8" roughness={0.6} />
             </mesh>
           </group>
-          <group position={[-17.8, 0, 12]}>
+          <group position={[-27.5, 0, 18]}>
             <mesh position={[0, 4.5, 0]}>
               <boxGeometry args={[2.2, 9.0, 2.2]} />
               <meshStandardMaterial color="#e2e8f0" roughness={0.7} />
@@ -630,16 +647,16 @@ export function SkyCloudsEnvironment() {
           </group>
 
           {/* Daratan hijau pemukiman & jaringan jalan raya kota */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-78, -0.1, 0]}>
-            <planeGeometry args={[116, CHUNK_LEN]} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-104, -0.1, 0]}>
+            <planeGeometry args={[124, CHUNK_LEN]} />
             <meshStandardMaterial color="#466e4a" roughness={0.95} />
           </mesh>
           {/* Jalan raya aspal bermarka */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-42, -0.05, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-56, -0.05, 0]}>
             <planeGeometry args={[3.2, CHUNK_LEN]} />
             <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-76, -0.05, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-92, -0.05, 0]}>
             <planeGeometry args={[3.8, CHUNK_LEN]} />
             <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>

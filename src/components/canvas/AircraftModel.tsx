@@ -158,8 +158,8 @@ export function AircraftModel() {
     const isHeli = unit.category === 'Helikopter';
 
     if (flightMode === 'takeoff') {
-      // Mulai dari dalam/depan Hanggar TNI AU di sisi kiri landasan, menghadap keluar menuju taxiway & runway!
-      const startX = -15.0;
+      // Mulai dari dalam Hanggar TNI AU yang agak jauh di sisi kiri landasan, menghadap keluar menuju taxiway & runway!
+      const startX = -31.5;
       const startZ = -10.5;
       currentX.current = startX;
       currentY.current = 0;
@@ -221,31 +221,31 @@ export function AircraftModel() {
 
     if (flightMode === 'takeoff') {
       if (isHeli) {
-        // TAKE OFF HELIKOPTER: Keluar hanggar ke helipad runway -> Spool-up -> Hover vertikal -> Menanjak
-        if (pt < 2.6) {
-          const p = easeInOut(pt / 2.6);
-          targetX = THREE.MathUtils.lerp(-15.0, 0, p);
+        // TAKE OFF HELIKOPTER: Keluar hanggar yang jauh ke helipad runway -> Spool-up -> Hover vertikal -> Menanjak
+        if (pt < 4.2) {
+          const p = easeInOut(pt / 4.2);
+          targetX = THREE.MathUtils.lerp(-31.5, 0, p);
           targetZ = THREE.MathUtils.lerp(-10.5, -2.0, p);
           targetY = 0;
-          targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.5) * 2));
+          targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.65) / 0.35));
           targetGear = 0;
           setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU LANDASAN');
-        } else if (pt < 4.4) {
+        } else if (pt < 6.0) {
           targetX = 0;
           targetZ = -2.0;
           targetY = 0;
           targetYawOffset = 0;
           targetGear = 0;
           setFlightLabel('📡 ATC: CLEARED FOR TAKE OFF • ROTOR SPOOL-UP FULL POWER');
-        } else if (pt < 6.4) {
-          const p = easeInOut((pt - 4.4) / 2.0);
+        } else if (pt < 8.0) {
+          const p = easeInOut((pt - 6.0) / 2.0);
           targetZ = -2.0;
           targetY = THREE.MathUtils.lerp(0, 1.8, p);
           targetPitch = -0.03 * Math.sin(p * Math.PI);
           targetGear = 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL (HOVER)');
-        } else if (pt < 8.6) {
-          const p = easeInOut((pt - 6.4) / 2.2);
+        } else if (pt < 10.2) {
+          const p = easeInOut((pt - 8.0) / 2.2);
           targetY = THREE.MathUtils.lerp(1.8, 3.0, p);
           targetZ = THREE.MathUtils.lerp(-2.0, 0, p);
           targetPitch = 0.09 * Math.sin(p * Math.PI);
@@ -257,26 +257,26 @@ export function AircraftModel() {
           setFlightState('airborne', 'TERBANG JELAJAH • SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
-        // TAKE OFF PESAWAT SAYAP TETAP: Keluar Hanggar -> Belok masuk Runway 09 -> Spool-up -> Akselerasi -> Liftoff -> Climb
-        if (pt < 2.4) {
-          // Fase 0A: Taxi keluar perlahan dari dalam Hanggar TNI AU menyusuri taxiway kuning
-          const p = easeInOut(pt / 2.4);
-          targetX = THREE.MathUtils.lerp(-15.0, -4.2, p);
+        // TAKE OFF PESAWAT SAYAP TETAP: Keluar Hanggar (jauh) -> Belok masuk Runway 09 -> Spool-up -> Akselerasi -> Liftoff -> Climb
+        if (pt < 4.2) {
+          // Fase 0A: Taxi keluar perlahan dari Hanggar TNI AU menyusuri jalur taxiway kuning panjang
+          const p = easeInOut(pt / 4.2);
+          targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
           targetZ = -10.5;
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
           setFlightLabel('TAXI OUT • KELUAR DARI HANGGAR MENUJU RUNWAY 09');
-        } else if (pt < 4.2) {
+        } else if (pt < 6.0) {
           // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway 09!
-          const p = easeInOut((pt - 2.4) / 1.8);
-          targetX = THREE.MathUtils.lerp(-4.2, 0, p);
+          const p = easeInOut((pt - 4.2) / 1.8);
+          targetX = THREE.MathUtils.lerp(-6.5, 0, p);
           targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
           targetGear = 0;
           setFlightLabel('LINE UP • MASUK POSISI START RUNWAY 09');
-        } else if (pt < 5.8) {
+        } else if (pt < 7.6) {
           // Fase 1: Posisi siap di Runway 09 + Izin ATC + Mesin Full Power
           targetX = 0;
           targetZ = -8.5;
@@ -285,26 +285,26 @@ export function AircraftModel() {
           targetPitch = Math.sin(t * 36) * 0.004;
           targetGear = 0;
           setFlightLabel('📡 ATC: CLEARED FOR TAKE OFF RUNWAY 09 • FULL POWER');
-        } else if (pt < 8.8) {
+        } else if (pt < 10.8) {
           // Fase 2: Akselerasi panjang di sepanjang aspal runway
-          const p = (pt - 5.8) / 3.0;
+          const p = (pt - 7.6) / 3.2;
           targetZ = THREE.MathUtils.lerp(-8.5, 2.8, p * p);
           targetY = 0;
           targetPitch = -0.02 * p;
           targetGear = 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • AKSELERASI PANJANG DI ASPAL RUNWAY');
-        } else if (pt < 10.5) {
+        } else if (pt < 12.5) {
           // Fase 3: Rotation & Liftoff
-          const p = (pt - 8.8) / 1.7;
+          const p = (pt - 10.8) / 1.7;
           const ease = easeInOut(p);
           targetZ = THREE.MathUtils.lerp(2.8, 5.2, ease);
           targetY = THREE.MathUtils.lerp(0, 1.75, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • ROTATION & LIFTOFF');
-        } else if (pt < 12.8) {
+        } else if (pt < 14.8) {
           // Fase 4: Initial Climb & Roda masuk otomatis
-          const p = easeInOut((pt - 10.5) / 2.3);
+          const p = easeInOut((pt - 12.5) / 2.3);
           targetZ = THREE.MathUtils.lerp(5.2, 0, p);
           targetY = THREE.MathUtils.lerp(1.75, 3.05, p);
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.18 : -0.26, -0.04, p);
@@ -492,7 +492,7 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'landing') {
       if (isHeli) {
-        // LANDING HELIKOPTER: Long Approach dari jauh -> Roda keluar -> Hover rendah -> Touchdown vertikal
+        // LANDING HELIKOPTER: Long Approach dari jauh -> Roda keluar -> Hover rendah -> Touchdown vertikal -> Taxi ke Hanggar jauh
         if (pt < 3.4) {
           const p = easeInOut(pt / 3.4);
           targetZ = THREE.MathUtils.lerp(-10.5, 0, p);
@@ -508,18 +508,18 @@ export function AircraftModel() {
           targetPitch = -0.08 * Math.sin(p * Math.PI);
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 8.6) {
-          // Helikopter taxi pelan menuju apron Hanggar TNI AU
-          const p = easeInOut((pt - 6.0) / 2.6);
-          targetX = THREE.MathUtils.lerp(0, -14.5, p);
-          targetZ = THREE.MathUtils.lerp(0, -10.5, p);
+        } else if (pt < 11.2) {
+          // Helikopter taxi pelan menyusuri jalur panjang menuju Hanggar TNI AU yang jauh
+          const p = easeInOut((pt - 6.0) / 5.2);
+          targetX = THREE.MathUtils.lerp(0, -31.5, p);
+          targetZ = THREE.MathUtils.lerp(0, 3.5, Math.min(1, p * 2.2));
           targetY = 0;
-          targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, Math.min(1, p * 2.2));
+          targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, Math.min(1, p * 2.4));
           targetGear = 0;
-          setFlightLabel('📡 ATC: WELCOME BACK • TAXI MASUK HANGGAR');
-        } else if (pt < 10.6) {
-          targetX = -14.5;
-          targetZ = -10.5;
+          setFlightLabel('📡 ATC: WELCOME BACK • TAXI PERLAHAN MENUJU HANGGAR');
+        } else if (pt < 12.6) {
+          targetX = -31.5;
+          targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
@@ -528,71 +528,78 @@ export function AircraftModel() {
           setFlightState('parked', null);
         }
       } else {
-        // LANDING PESAWAT SAYAP TETAP (Mulus & panjang: Long Final -> Flare -> Touchdown Kencang -> Rem Panjang -> Berhenti -> Taxi Pelan Masuk Hanggar!)
-        if (pt < 4.2) {
+        // LANDING PESAWAT SAYAP TETAP:
+        // Long Final -> Flare -> Touchdown & Melaju Kencang Panjang di Runway (4,4s) -> Pengereman Panjang (5,8s) -> Berhenti -> Belok Pelan -> Taxi Panjang ke Hanggar Jauh!
+        if (pt < 4.0) {
           // Fase 1: Long Final Approach dari kejauhan (-18.5) turun halus mengikuti glide slope + Roda keluar
-          const p = pt / 4.2;
-          targetZ = THREE.MathUtils.lerp(-18.5, -3.8, p);
-          targetY = THREE.MathUtils.lerp(8.2, 1.7, p);
+          const p = pt / 4.0;
+          targetZ = THREE.MathUtils.lerp(-18.5, -4.0, p);
+          targetY = THREE.MathUtils.lerp(8.2, 1.75, p);
           targetPitch = 0.06;
           targetGear = 0;
           gearSpeed = 1.6;
           setFlightLabel('📡 ATC: CLEARED TO LAND RUNWAY 09 • LONG FINAL APPROACH');
-        } else if (pt < 6.0) {
+        } else if (pt < 5.8) {
           // Fase 2: Landing Flare mulus (hidung mendongak halus sebelum ban menyentuh aspal)
-          const p = (pt - 4.2) / 1.8;
+          const p = (pt - 4.0) / 1.8;
           const ease = easeInOut(p);
-          targetZ = THREE.MathUtils.lerp(-3.8, -1.0, p);
-          targetY = THREE.MathUtils.lerp(1.7, 0.06, ease);
-          targetPitch = THREE.MathUtils.lerp(0.06, isHeavy ? -0.13 : -0.19, ease);
+          targetZ = THREE.MathUtils.lerp(-4.0, -1.5, p);
+          targetY = THREE.MathUtils.lerp(1.75, 0.05, ease);
+          targetPitch = THREE.MathUtils.lerp(0.06, isHeavy ? -0.14 : -0.2, ease);
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • FLARE (HIDUNG MENDONGAK)');
-        } else if (pt < 7.8) {
-          // Fase 3: Main Gear Touchdown — pesawat masih melaju kencang di atas aspal runway!
-          const p = (pt - 6.0) / 1.8;
-          targetZ = THREE.MathUtils.lerp(-1.0, 1.8, easeInOut(p));
-          targetY = Math.sin(Math.min(1, p * 1.6) * Math.PI) * 0.04;
-          targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.13 : -0.19, -0.08, p);
-          targetGear = 0;
-          setFlightLabel('TAHAP 3 • LANDING • TOUCHDOWN & MELAJU DI RUNWAY');
-        } else if (pt < 12.2) {
-          // Fase 4: Nose Gear Down & Pengereman panjang mulus (4,4 detik) sampai benar-benar berhenti!
-          const p = easeInOut((pt - 7.8) / 4.4);
-          targetZ = THREE.MathUtils.lerp(1.8, 2.4, p);
-          targetY = 0;
-          targetPitch = THREE.MathUtils.lerp(-0.08, 0, Math.min(1, p * 2.4));
-          targetGear = 0;
-          setFlightLabel('TAHAP 3 • LANDING • RODA DEPAN TURUN & PENGEREMAN PANJANG');
-        } else if (pt < 13.5) {
-          // Fase 5: Berhenti mantap di runway sebelum belok masuk hanggar + arahan radio ATC
+        } else if (pt < 10.2) {
+          // Fase 3: Main Gear Touchdown & HIGH-SPEED RUNWAY ROLLOUT (4,4 detik melaju kencang lurus di runway!)
+          const p = (pt - 5.8) / 4.4;
           targetX = 0;
-          targetZ = 2.4;
+          targetZ = THREE.MathUtils.lerp(-1.5, 1.4, easeInOut(p));
+          targetY = p < 0.14 ? Math.sin((p / 0.14) * Math.PI) * 0.04 : 0;
+          // Aerobraking singkat lalu roda depan turun mulus menyentuh aspal
+          targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.14 : -0.2, 0, Math.min(1, p * 1.65));
+          targetYawOffset = 0;
+          targetGear = 0;
+          setFlightLabel('TAHAP 3 • LANDING • TOUCHDOWN & MELAJU KENCANG DI RUNWAY');
+        } else if (pt < 16.0) {
+          // Fase 4: Pengereman Panjang & Halus (5,8 detik lurus di runway sampai benar-benar berhenti!)
+          const p = (pt - 10.2) / 5.8;
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(1.4, 2.2, easeInOut(p));
+          targetY = 0;
+          // Efek suspensi depan sedikit menunduk saat pengereman kuat (braking squat) lalu kembali datar
+          targetPitch = Math.sin(p * Math.PI) * 0.018;
+          targetYawOffset = 0;
+          targetGear = 0;
+          setFlightLabel('TAHAP 3 • LANDING • PENGEREMAN PANJANG DI RUNWAY');
+        } else if (pt < 17.5) {
+          // Fase 5: Berhenti mantap di runway sebelum mulai belok keluar menuju hanggar
+          targetX = 0;
+          targetZ = 2.2;
           targetY = 0;
           targetPitch = 0;
           targetYawOffset = 0;
           targetGear = 0;
           setFlightLabel('📡 ATC: BERHENTI DI RUNWAY • BERSIAP TAXI KE HANGGAR');
-        } else if (pt < 16.0) {
-          // Fase 6A: Maju pelan sambil belok kiri mulus keluar runway menuju jalur hanggar
-          const p = easeInOut((pt - 13.5) / 2.5);
-          targetX = THREE.MathUtils.lerp(0, -5.5, p);
-          targetZ = THREE.MathUtils.lerp(2.4, 3.5, p);
+        } else if (pt < 20.5) {
+          // Fase 6A: Mulai bergerak pelan sambil belok kiri mulus keluar runway menuju jalur taxiway hanggar
+          const p = easeInOut((pt - 17.5) / 3.0);
+          targetX = THREE.MathUtils.lerp(0, -8.0, p);
+          targetZ = THREE.MathUtils.lerp(2.2, 3.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, p);
           targetGear = 0;
           setFlightLabel('TAXI IN • BELOK PERLAHAN KELUAR RUNWAY MENUJU HANGGAR');
-        } else if (pt < 19.2) {
-          // Fase 6B: Meluncur perlahan & stabil masuk ke dalam Hanggar TNI AU
-          const p = easeInOut((pt - 16.0) / 3.2);
-          targetX = THREE.MathUtils.lerp(-5.5, -15.0, p);
+        } else if (pt < 26.5) {
+          // Fase 6B: Meluncur perlahan menyusuri jalur taxiway panjang masuk ke Hanggar TNI AU yang jauh
+          const p = easeInOut((pt - 20.5) / 6.0);
+          targetX = THREE.MathUtils.lerp(-8.0, -31.5, p);
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('TAXI IN • MASUK PERLAHAN KE DALAM HANGGAR');
-        } else if (pt < 20.4) {
+          setFlightLabel('TAXI IN • MELUNCUR PERLAHAN MASUK KE DALAM HANGGAR');
+        } else if (pt < 27.8) {
           // Fase 7: Parkir rapi di dalam hanggar, mesin dimatikan
-          targetX = -15.0;
+          targetX = -31.5;
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;

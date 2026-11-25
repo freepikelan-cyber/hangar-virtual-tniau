@@ -522,9 +522,9 @@ class AircraftAudioEngine {
 
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
-      const atcTime = isHeli ? 2.6 : 4.2;
-      const rollStart = isHeli ? 4.4 : 5.8;
-      const gearUpTime = isHeli ? 6.8 : 10.4;
+      const atcTime = isHeli ? 4.2 : 6.0;
+      const rollStart = isHeli ? 6.0 : 7.6;
+      const gearUpTime = isHeli ? 8.4 : 12.4;
 
       if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
@@ -537,7 +537,7 @@ class AircraftAudioEngine {
         // Spool-up full power di garis start Runway 09
         const p = (phaseTime - atcTime) / (rollStart - atcTime);
         throttle = 0.28 + p * 0.72;
-      } else if (phaseTime < 12.2) {
+      } else if (phaseTime < 14.2) {
         throttle = 1.0;
         if (phaseTime > gearUpTime && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
@@ -552,9 +552,9 @@ class AircraftAudioEngine {
         this.playAtcRadio('landing');
       }
       const isHeli = profile === 'helicopter';
-      const touchTime = isHeli ? 5.8 : 6.0;
-      const stopTime = isHeli ? 6.4 : 12.2;
-      const vacateTime = isHeli ? 6.1 : 12.2;
+      const touchTime = 5.8;
+      const stopTime = isHeli ? 6.4 : 16.0;
+      const vacateTime = isHeli ? 6.1 : 16.0;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
         this.playAtcRadio('vacate');
@@ -570,16 +570,16 @@ class AircraftAudioEngine {
           this.touchdownPlayed = true;
           this.playTouchdownSfx(isHeli);
         }
-        // Thrust reverser & pengereman panjang mulus sampai berhenti di runway
+        // High-speed rollout + thrust reverser & pengereman panjang mulus sampai berhenti di runway
         const p = Math.min(1, (phaseTime - touchTime) / (stopTime - touchTime));
-        throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.72 * (1 - p * 0.76);
+        throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.76 * (1 - p * 0.78);
       } else {
-        // Berhenti sejenak -> taxi pelan masuk hanggar -> idle mati
-        const taxiEnd = isHeli ? 8.6 : 19.2;
+        // Berhenti sejenak -> taxi pelan menyusuri jalur panjang masuk hanggar -> idle mati
+        const taxiEnd = isHeli ? 11.2 : 26.5;
         if (phaseTime < taxiEnd) {
           throttle = 0.21;
         } else {
-          const idleP = Math.min(1, (phaseTime - taxiEnd) / 1.2);
+          const idleP = Math.min(1, (phaseTime - taxiEnd) / 1.3);
           throttle = Math.max(0.03, 0.16 * (1 - idleP * 0.8));
         }
       }
