@@ -12,21 +12,21 @@ export function TopHeader() {
 
   return (
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
-      {/* Header Kiri Atas: Logo 3D Resmi TNI AU (Swa Bhuwana Paksa) + Judul */}
-      <div className="hud-panel pointer-events-auto flex w-full md:w-auto md:max-w-[62vw] items-center gap-2.5 sm:gap-3 rounded-xl px-2.5 sm:px-4 py-1.5 sm:py-2">
+      {/* Header Kiri Atas: Logo 3D Resmi TNI AU (Swa Bhuwana Paksa) + Judul Ringkas */}
+      <div className="hud-panel pointer-events-auto flex w-full md:w-auto md:max-w-[54vw] items-center gap-2 sm:gap-2.5 rounded-xl px-2.5 sm:px-3 py-1.5">
         <button
           type="button"
           onClick={openWelcome}
           title="Kembali ke Halaman Awal"
-          className="relative flex h-11 w-11 sm:h-14 sm:w-14 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/35 bg-[#0c264d]/60 p-1 hover:border-[#ffb703] transition-colors cursor-pointer"
+          className="relative flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/35 bg-[#0c264d]/60 p-1 hover:border-[#ffb703] transition-colors cursor-pointer"
         >
           <TniAuLogo3D className="h-full w-full" />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="font-display text-[10px] sm:text-xs font-semibold tracking-[0.16em] sm:tracking-[0.2em] text-[#4da6ff] uppercase truncate">
+          <p className="font-display text-[9px] sm:text-[10px] font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-[#4da6ff] uppercase truncate">
             TNI ANGKATAN UDARA • EDUKASI DIRGANTARA 3D
           </p>
-          <h1 className="font-display text-sm sm:text-xl lg:text-2xl font-bold tracking-[0.06em] sm:tracking-[0.08em] text-white uppercase leading-tight truncate">
+          <h1 className="font-display text-xs sm:text-sm lg:text-base font-bold tracking-[0.05em] sm:tracking-[0.07em] text-white uppercase leading-tight truncate">
             HANGAR VIRTUAL PESAWAT TNI AU 3D
           </h1>
           {/* Ringkasan Unit Aktif khusus layar HP (< md) */}

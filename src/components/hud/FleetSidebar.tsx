@@ -71,7 +71,7 @@ export function FleetSidebar() {
           <div className="flex items-center justify-between border-b border-[#4da6ff]/25 px-3.5 py-2.5">
             <div>
               <h2 className="font-display text-sm font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
-                KATALOG ARMADA
+                PILIH ARMADA
               </h2>
               <p className="text-[11px] text-slate-400">{items.length} dari {FLEET.length} unit Alutsista</p>
             </div>
@@ -194,7 +194,7 @@ export function FleetSidebar() {
           className="hud-panel hud-btn pointer-events-auto h-12 px-3 gap-1.5 text-[#4da6ff] hover:bg-[#4da6ff]/20"
         >
           <ChevronRight className="h-5 w-5" />
-          <span className="font-display text-xs font-bold tracking-widest uppercase">Armada</span>
+          <span className="font-display text-xs font-bold tracking-widest uppercase">Pilih Armada</span>
         </button>
       )}
     </aside>
