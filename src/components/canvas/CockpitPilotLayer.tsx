@@ -87,11 +87,8 @@ function getPilotSeats(unitId: string, category: string): SeatSpec[] {
       if (category === 'Tempur' || category === 'Latih') {
         return [{ pos: [0, 1.9, 2.9], scale: 0.92, isFighter: true }];
       }
-      // Pesawat Angkut & VIP (kokpit kaca depan)
-      return [
-        { pos: [-0.36, 1.56, 4.95], scale: 0.78, isFighter: false },
-        { pos: [0.36, 1.56, 4.95], scale: 0.78, isFighter: false },
-      ];
+      // Pesawat Angkut & VIP: kokpit kaca gelap / tertutup sehingga figur pilot tidak perlu ditampilkan
+      return [];
   }
 }
 

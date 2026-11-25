@@ -50,8 +50,8 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     return { voiceStart: 6.0, rollStart: 24.4, rotStart: 28.0, climbStart: 29.8, airborneStart: 32.2 };
   }
   if (isCargoTransport) {
-    // transport-voice-takeoff.wav (20.56s): 6.0s mulai -> 23.0s "Power set" -> 25.8s "Rotate!"
-    return { voiceStart: 6.0, rollStart: 23.0, rotStart: 25.8, climbStart: 27.6, airborneStart: 30.0 };
+    // transport-voice-takeoff.wav (20.56s): 6.0s..26.56s suara selesai penuh + jeda 1.4s -> 28.0s baru mulai Take Off roll!
+    return { voiceStart: 6.0, rollStart: 28.0, rotStart: 31.8, climbStart: 33.6, airborneStart: 36.0 };
   }
   if (isVvip) {
     // 0.2..39.8s: Pengumuman keberangkatan Kapten Pnb Herlani di apron sebelum Take Off!
@@ -183,7 +183,7 @@ class AircraftAudioEngine {
       this.setupGraph();
     }
     if (this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      this.ctx.resume().catch(() => { });
     }
     // Preload rekaman suara ATC & suara asli pesawat tempur (Take Off, Terbang, Taxiway)
     void this.preloadAtc('takeoff');

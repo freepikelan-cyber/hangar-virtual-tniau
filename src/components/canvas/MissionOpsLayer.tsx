@@ -117,7 +117,8 @@ export function MissionOpsLayer() {
       // 0..8.0s: Persiapan 130 knot -> 8.0..10.8s: "Buka pintu rampa belakang" -> 11.0s: "Lampu hijau menyala!" -> 12.0s+: "Drop! Drop! Drop!"
       const rampOpen = THREE.MathUtils.clamp((mt - 8.0) / 2.8, 0, 1);
       if (rampRef.current) {
-        rampRef.current.rotation.x = THREE.MathUtils.lerp(0.15, -0.78, rampOpen);
+        // Tersambung rapat pada lantai perut belakang (rotation +0.26 tertutup rapat sejajar upsweep ekor -> -0.22 terbuka turun)
+        rampRef.current.rotation.x = THREE.MathUtils.lerp(0.26, -0.22, rampOpen);
       }
       const isGreenLight = mt >= 11.0;
       if (jumpLightMatRef.current) {
@@ -153,9 +154,9 @@ export function MissionOpsLayer() {
           const cycle = (dropT - delay) % 8.4;
           const p = cycle / 8.4;
           const isCargo = i % 2 === 1;
-          const z = THREE.MathUtils.lerp(-5.8, -28.0, p);
-          const y = THREE.MathUtils.lerp(1.25, isCargo ? -9.5 : -8.2, Math.pow(p, 1.12));
-          const x = (i % 2 === 0 ? 1 : -1) * (0.65 + p * 4.4) + Math.sin(t * 1.6 + i) * 0.45;
+          const z = THREE.MathUtils.lerp(-4.2, -26.0, p);
+          const y = THREE.MathUtils.lerp(0.62, isCargo ? -9.5 : -8.2, Math.pow(p, 1.12));
+          const x = (i % 2 === 0 ? 1 : -1) * (0.45 + p * 4.4) + Math.sin(t * 1.6 + i) * 0.45;
           grp.position.set(x, y, z);
           grp.rotation.z = Math.sin(t * 1.5 + i) * 0.14;
           const chuteOpen = Math.min(1, Math.max(0.12, (p - 0.06) * 3.4));
@@ -235,16 +236,43 @@ export function MissionOpsLayer() {
       {/* 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (KHUSUS PESAWAT ANGKUT — BUKAN VVIP) */}
       {isTransport && (
         <group>
-          {/* Pintu Rampa Belakang (Cargo Ramp) & Lampu Jump Light Merah/Hijau */}
-          <group ref={rampRef} position={[0, 1.25, -5.2]}>
-            <mesh position={[0, -0.05, -1.0]}>
-              <boxGeometry args={[1.65, 0.12, 2.0]} />
-              <meshStandardMaterial color="#475569" roughness={0.6} metalness={0.4} />
+          {/* Ruang Kargo Gelap & Pintu Rampa Belakang (tersambung rapat langsung pada engsel perut ekor pesawat!) */}
+          <group position={[0, 0.72, -2.55]}>
+            {/* Rongga interior kargo belakang yang menyatu ke badan pesawat */}
+            <mesh position={[0, 0.36, -0.35]}>
+              <boxGeometry args={[1.18, 0.68, 1.15]} />
+              <meshStandardMaterial color="#0f172a" roughness={0.95} />
             </mesh>
-            <mesh position={[0.72, 0.25, -0.15]}>
-              <sphereGeometry args={[0.14, 10, 10]} />
+            {/* Engsel rampa bawah tersambung kokoh ke lantai kargo */}
+            <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.07, 0.07, 1.18, 10]} />
+              <meshStandardMaterial color="#334155" metalness={0.75} roughness={0.35} />
+            </mesh>
+            {/* Lampu indikator Jump Light Merah / Hijau di bingkai pintu kargo */}
+            <mesh position={[0.52, 0.56, -0.82]}>
+              <sphereGeometry args={[0.11, 10, 10]} />
               <meshBasicMaterial ref={jumpLightMatRef} color="#ef4444" />
             </mesh>
+            {/* Daun Pintu Rampa Belakang (berputar pada engsel z = -2.55 agar selalu menempel utuh!) */}
+            <group ref={rampRef} rotation={[0.26, 0, 0]}>
+              <mesh position={[0, -0.04, -0.92]}>
+                <boxGeometry args={[1.14, 0.1, 1.84]} />
+                <meshStandardMaterial color="#475569" roughness={0.58} metalness={0.42} />
+              </mesh>
+              {/* Rel pemandu sisi kiri & kanan rampa + tali baja hidrolik */}
+              {[-0.54, 0.54].map((rx, idx) => (
+                <group key={idx}>
+                  <mesh position={[rx, 0.05, -0.92]}>
+                    <boxGeometry args={[0.06, 0.14, 1.82]} />
+                    <meshStandardMaterial color="#334155" roughness={0.5} metalness={0.5} />
+                  </mesh>
+                  <mesh position={[rx, 0.36, -0.68]} rotation={[0.55, 0, 0]}>
+                    <cylinderGeometry args={[0.016, 0.016, 0.85, 6]} />
+                    <meshStandardMaterial color="#cbd5e1" metalness={0.85} roughness={0.25} />
+                  </mesh>
+                </group>
+              ))}
+            </group>
           </group>
 
           {Array.from({ length: 8 }, (_, i) => {
