@@ -111,7 +111,7 @@ export function MissionOpsLayer() {
         grp.scale.setScalar(0.75 + fade * 0.65);
       });
 
-      setFlightLabel('✨ MISI TEMPUR • FLARE COUNTERMEASURE AKTIF — MENGECOL RUDAL PENCARI PANAS!');
+      setFlightLabel('OPS TEMPUR // FLARE COUNTERMEASURE AKTIF — MENGECOL RUDAL PENCARI PANAS');
     } else if (isTransport) {
       // === 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (Sinkron tepat dengan transport-voice-airdrop.wav 14.52s!) ===
       // 0..8.0s: Persiapan 130 knot -> 8.0..10.8s: "Buka pintu rampa belakang" -> 11.0s: "Lampu hijau menyala!" -> 12.0s+: "Drop! Drop! Drop!"
@@ -126,22 +126,22 @@ export function MissionOpsLayer() {
       }
 
       if (mt < 8.0) {
-        setFlightLabel('📢 RAJAWALI 1 • 5 MENIT MENUJU TITIK PENERJUNAN — 130 KNOT');
+        setFlightLabel('RAJAWALI 1 // 5 MENIT MENUJU DROP ZONE — KECEPATAN 130 KNOT');
         dropRefs.current.forEach((grp) => {
           if (grp) grp.visible = false;
         });
       } else if (mt < 11.0) {
-        setFlightLabel('🚪 RAJAWALI 1 • MEMBUKA PINTU RAMPA BELAKANG — LAMPU MERAH SIAGA');
+        setFlightLabel('RAJAWALI 1 // MEMBUKA PINTU RAMPA BELAKANG — LAMPU MERAH SIAGA');
         dropRefs.current.forEach((grp) => {
           if (grp) grp.visible = false;
         });
       } else if (mt < 12.0) {
-        setFlightLabel('🟢 LAMPU HIJAU MENYALA • SIAP TERJUN!');
+        setFlightLabel('DROP ZONE // LAMPU HIJAU MENYALA — SIAP TERJUN');
         dropRefs.current.forEach((grp) => {
           if (grp) grp.visible = false;
         });
       } else {
-        setFlightLabel('🟢 DROP! DROP! DROP! • DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT');
+        setFlightLabel('DROP ZONE // DROP! DROP! DROP! — LOGISTIK & TERJUN PAYUNG KOPASGAT');
         const dropT = mt - 12.0;
         dropRefs.current.forEach((grp, i) => {
           if (!grp) return;
@@ -169,26 +169,23 @@ export function MissionOpsLayer() {
       let hoistLen = 0.6;
       let rescued = false;
       if (cycle < 4.0) {
-        // Menurunkan tali baja & keranjang SAR ke permukaan laut
         const p = cycle / 4.0;
         hoistLen = THREE.MathUtils.lerp(0.6, 5.1, p * p * (3 - 2 * p));
         rescued = false;
-        setFlightLabel('🚁 MISI SAR LAUT • MENURUNKAN TALI RESCUE HOIST KE RAKIT KORBAN');
+        setFlightLabel('SAR LAUT // MENURUNKAN TALI RESCUE HOIST KE RAKIT KORBAN');
       } else if (cycle < 5.5) {
-        // Korban naik ke keranjang penyelamat!
         hoistLen = 5.1;
         rescued = cycle > 4.6;
-        setFlightLabel('🛟 MISI SAR LAUT • KORBAN MASUK KERANJANG PENYELAMAT — SIAP ANGKAT!');
+        setFlightLabel('SAR LAUT // KORBAN MASUK KERANJANG PENYELAMAT — SIAP ANGKAT');
       } else if (cycle < 9.5) {
-        // Mengangkat korban naik ke kabin helikopter!
         const p = (cycle - 5.5) / 4.0;
         hoistLen = THREE.MathUtils.lerp(5.1, 0.7, p * p * (3 - 2 * p));
         rescued = true;
-        setFlightLabel('⬆ MISI SAR LAUT • WINCH MENGANGKAT KORBAN KE KABIN HELIKOPTER!');
+        setFlightLabel('SAR LAUT // WINCH MENGANGKAT KORBAN KE KABIN HELIKOPTER');
       } else {
         hoistLen = 0.7;
         rescued = true;
-        setFlightLabel('✅ MISI SAR LAUT • KORBAN BERHASIL DIEVAKUASI DENGAN SELAMAT!');
+        setFlightLabel('SAR LAUT // EVAKUASI SELESAI — KORBAN AMAN DI KABIN');
       }
 
       if (hoistCableRef.current) {

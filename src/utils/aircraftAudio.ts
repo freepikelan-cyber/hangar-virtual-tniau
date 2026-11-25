@@ -207,6 +207,7 @@ class AircraftAudioEngine {
     void this.preloadAtc('vvip-landing');
     void this.preloadAtc('heli-takeoff');
     void this.preloadAtc('heli-cruise');
+    void this.preloadAtc('heli-landing');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -358,7 +359,8 @@ class AircraftAudioEngine {
       | 'vvip-reply'
       | 'vvip-landing'
       | 'heli-takeoff'
-      | 'heli-cruise',
+      | 'heli-cruise'
+      | 'heli-landing',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -397,7 +399,9 @@ class AircraftAudioEngine {
                                     ? '/audio/heli-voice-takeoff.wav'
                                     : key === 'heli-cruise'
                                       ? '/audio/heli-voice-cruise.wav'
-                                      : `/audio/atc-${key}.mp3`;
+                                      : key === 'heli-landing'
+                                        ? '/audio/heli-voice-landing.wav'
+                                        : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -588,7 +592,8 @@ class AircraftAudioEngine {
       | 'vvip-reply'
       | 'vvip-landing'
       | 'heli-takeoff'
-      | 'heli-cruise',
+      | 'heli-cruise'
+      | 'heli-landing',
   ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
@@ -1087,20 +1092,28 @@ class AircraftAudioEngine {
         throttle = 0.76 + Math.sin(phaseTime * 1.4) * 0.04;
       }
     } else if (flightMode === 'landing') {
+      const isHeli = profile === 'helicopter';
       if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
-          isFighter ? 'fighter-landing' : isCargoTransport ? 'transport-landing' : isVvip ? 'vvip-landing' : 'landing',
+          isHeli
+            ? 'heli-landing'
+            : isFighter
+              ? 'fighter-landing'
+              : isCargoTransport
+                ? 'transport-landing'
+                : isVvip
+                  ? 'vvip-landing'
+                  : 'landing',
         );
       }
-      const isHeli = profile === 'helicopter';
       const ld = getLandingTiming(unitId);
-      const touchTime = isHeli ? 5.8 : ld.touchTime;
-      const stopTime = isHeli ? 6.4 : ld.brakeEnd;
-      const vacateTime = isHeli ? 6.1 : ld.brakeEnd;
+      const touchTime = isHeli ? 25.0 : ld.touchTime;
+      const stopTime = isHeli ? 25.4 : ld.brakeEnd;
+      const vacateTime = isHeli ? 25.2 : ld.brakeEnd;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
-        this.playAtcRadio('vacate');
+        if (!isHeli) this.playAtcRadio('vacate');
       }
       if (phaseTime < touchTime) {
         throttle = 0.62 - (phaseTime / touchTime) * 0.16;
@@ -1118,7 +1131,7 @@ class AircraftAudioEngine {
         throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.76 * (1 - p * 0.78);
       } else {
         // Berhenti sejenak -> taxi pelan menyusuri jalur panjang masuk hanggar -> idle mati
-        const taxiEnd = isHeli ? 11.2 : ld.taxiEnd;
+        const taxiEnd = isHeli ? 30.2 : ld.taxiEnd;
         if (phaseTime < taxiEnd) {
           throttle = 0.21;
         } else {

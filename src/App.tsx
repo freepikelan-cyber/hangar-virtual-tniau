@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { CheckCircle2, X, XCircle } from 'lucide-react';
 import { HangarScene } from './components/canvas/HangarScene';
 import { TopHeader } from './components/hud/TopHeader';
@@ -7,14 +7,30 @@ import { InfoPanel } from './components/hud/InfoPanel';
 import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
-import { InfographicModal } from './components/hud/InfographicModal';
-import { AeroControlPanel } from './components/hud/AeroControlPanel';
-import { AarStatusPanel } from './components/hud/AarStatusPanel';
-import { FighterManeuverPanel } from './components/hud/FighterManeuverPanel';
-import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
-import { JupiterManeuverPanel } from './components/hud/JupiterManeuverPanel';
-import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
+
+// Lazy-load panel sekunder agar muat awal aplikasi instan & ringan
+const InfographicModal = lazy(() =>
+  import('./components/hud/InfographicModal').then((m) => ({ default: m.InfographicModal })),
+);
+const AeroControlPanel = lazy(() =>
+  import('./components/hud/AeroControlPanel').then((m) => ({ default: m.AeroControlPanel })),
+);
+const AarStatusPanel = lazy(() =>
+  import('./components/hud/AarStatusPanel').then((m) => ({ default: m.AarStatusPanel })),
+);
+const FighterManeuverPanel = lazy(() =>
+  import('./components/hud/FighterManeuverPanel').then((m) => ({ default: m.FighterManeuverPanel })),
+);
+const GSuitControlPanel = lazy(() =>
+  import('./components/hud/GSuitControlPanel').then((m) => ({ default: m.GSuitControlPanel })),
+);
+const JupiterManeuverPanel = lazy(() =>
+  import('./components/hud/JupiterManeuverPanel').then((m) => ({ default: m.JupiterManeuverPanel })),
+);
+const SafetyStoryPanel = lazy(() =>
+  import('./components/hud/SafetyStoryPanel').then((m) => ({ default: m.SafetyStoryPanel })),
+);
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
 function FloatingQuizBanner() {
@@ -80,7 +96,7 @@ function FloatingQuizBanner() {
   );
 }
 
-const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16', 'kt1b', 'c130j', 'b737vip', 'ec725'];
+const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16id', 'kt1b', 'c130j', 'b737vip', 'caracal'];
 
 export function App() {
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
@@ -97,7 +113,7 @@ export function App() {
   }, [showcaseMode]);
 
   return (
-    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#0a1e3c]">
+    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#07152c]">
       {/* Kanvas 3D Interaktif */}
       <HangarScene />
 
@@ -105,16 +121,18 @@ export function App() {
       <TopHeader />
       <FleetSidebar />
       <InfoPanel />
-      <AeroControlPanel />
-      <AarStatusPanel />
-      <FighterManeuverPanel />
-      <GSuitControlPanel />
-      <JupiterManeuverPanel />
-      <SafetyStoryPanel />
+      <Suspense fallback={null}>
+        <AeroControlPanel />
+        <AarStatusPanel />
+        <FighterManeuverPanel />
+        <GSuitControlPanel />
+        <JupiterManeuverPanel />
+        <SafetyStoryPanel />
+        <InfographicModal />
+      </Suspense>
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />
-      <InfographicModal />
       <WelcomeScreen />
     </main>
   );

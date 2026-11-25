@@ -96,7 +96,7 @@ function StudioLighting() {
         intensity={sunInt}
         color={sunColor}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-48}
         shadow-camera-right={48}
         shadow-camera-top={48}
@@ -106,8 +106,8 @@ function StudioLighting() {
       <directionalLight position={[-14, 10, -10]} intensity={timeOfDay === 'night' ? 0.55 : 0.85} color={rimColor} />
       <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={timeOfDay === 'night' ? 0.8 : 1.2} color="#e6f5ff" />
 
-      {/* Studio Hangar IBL dengan panel softbox Lightformer */}
-      <Environment resolution={256} frames={1}>
+      {/* Studio Hangar IBL ringan (128px baked 1x) untuk performa 60 FPS */}
+      <Environment resolution={128} frames={1}>
         <group rotation={[-Math.PI / 3, 0, 1]}>
           <Lightformer form="rect" intensity={3.2} position={[0, 10, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[20, 6, 1]} color="#eef8ff" />
           <Lightformer form="rect" intensity={2.2} position={[0, 10, 8]} rotation={[Math.PI / 2, 0, 0]} scale={[18, 3, 1]} color="#cceeff" />
@@ -185,43 +185,47 @@ function CameraRig() {
 export function HangarScene() {
   const clearHotspot = useHangarStore((s) => s.clearHotspot);
   const flightMode = useHangarStore((s) => s.flightMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
   const selectedId = useHangarStore((s) => s.selectedId);
   const initialCam = useMemo(() => getDefaultCamera(), []);
-  const showGroundShadow =
-    selectedId === 'gsuit' ||
-    selectedId === 'pilot-helmet' ||
-    flightMode === 'parked' ||
-    flightMode === 'takeoff' ||
-    flightMode === 'landing';
+  const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
+  const isOutdoorSim = !isEquipment && (flightMode !== 'parked' || safetyMode);
+  const showGroundShadow = isEquipment || flightMode === 'parked';
 
   return (
-    <div className="absolute inset-0 bg-[#0a1e3c] touch-none">
+    <div className="absolute inset-0 bg-[#07152c] touch-none">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        dpr={[1, 1.5]}
         camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
-        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.08 }}
+        gl={{
+          antialias: true,
+          powerPreference: 'high-performance',
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.06,
+        }}
         onPointerMissed={() => clearHotspot()}
       >
-        <color attach="background" args={['#0a1e3c']} />
-        <fog attach="fog" args={['#0a1e3c', 26, 62]} />
+        <color attach="background" args={['#07152c']} />
+        <fog attach="fog" args={['#07152c', 26, 62]} />
 
         <StudioLighting />
-        <SkyCloudsEnvironment />
+        {isOutdoorSim && <SkyCloudsEnvironment />}
         <RadarPlatform />
         {showGroundShadow && (
           <ContactShadows
             position={[0, 0.02, 0]}
-            opacity={0.58}
+            opacity={0.52}
             scale={22}
             blur={1.8}
             far={8}
-            resolution={512}
+            frames={1}
+            resolution={256}
             color="#041024"
           />
         )}
         <AircraftModel />
-        <AirRefuelingLayer />
+        {flightMode === 'aar' && <AirRefuelingLayer />}
         <CameraRig />
       </Canvas>
     </div>
