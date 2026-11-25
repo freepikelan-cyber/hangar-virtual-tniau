@@ -10,6 +10,7 @@ class BgmPlayer {
   private fadeTimer: number | null = null;
   private targetVol = 0.35;
   private unlockBound = false;
+  private epoch = 0;
 
   private ensureAudio(): HTMLAudioElement | null {
     if (typeof window === 'undefined') return null;
@@ -23,11 +24,14 @@ class BgmPlayer {
     if (!this.unlockBound) {
       this.unlockBound = true;
       const onGesture = () => {
-        if (this.shouldPlay) {
-          this.tryStart();
-        }
+        // Jalankan setelah handler klik tombol (microtask/timeout 0) agar klik tombol "Mati" tidak memicu play ulang!
+        window.setTimeout(() => {
+          if (this.shouldPlay && this.audio && this.audio.paused) {
+            this.tryStart();
+          }
+        }, 0);
       };
-      window.addEventListener('pointerdown', onGesture, { passive: true });
+      window.addEventListener('click', onGesture, { passive: true });
       window.addEventListener('keydown', onGesture, { passive: true });
     }
     return this.audio;
@@ -42,7 +46,8 @@ class BgmPlayer {
 
   private tryStart() {
     const a = this.ensureAudio();
-    if (!a) return;
+    if (!a || !this.shouldPlay) return;
+    const myEpoch = ++this.epoch;
     if (!a.paused) {
       this.fadeTo(this.targetVol, false);
       return;
@@ -50,10 +55,12 @@ class BgmPlayer {
     const p = a.play();
     if (p && typeof p.then === 'function') {
       p.then(() => {
-        if (this.shouldPlay) {
+        if (this.shouldPlay && this.epoch === myEpoch) {
           this.fadeTo(this.targetVol, false);
         } else {
+          this.clearFade();
           a.pause();
+          a.volume = 0;
         }
       }).catch(() => {
         // Browser memblokir autoplay sebelum interaksi pertama; listener gesture akan memutar otomatis!
@@ -66,10 +73,16 @@ class BgmPlayer {
     if (!a) return;
     this.clearFade();
     const stepMs = 40;
-    const stepDelta = 0.04;
+    const stepDelta = 0.045;
     this.fadeTimer = window.setInterval(() => {
       if (!this.audio) {
         this.clearFade();
+        return;
+      }
+      if (!this.shouldPlay && !pauseWhenZero) {
+        this.clearFade();
+        this.audio.pause();
+        this.audio.volume = 0;
         return;
       }
       const cur = this.audio.volume;
@@ -92,8 +105,11 @@ class BgmPlayer {
     if (!a) return;
     if (active) {
       this.tryStart();
-    } else if (!a.paused) {
-      this.fadeTo(0, true);
+    } else {
+      this.epoch++;
+      this.clearFade();
+      a.pause();
+      a.volume = 0;
     }
   }
 
@@ -106,14 +122,9 @@ class BgmPlayer {
     }
   }
 
-  /** Panggil dari klik tombol untuk langsung membuka blokir autoplay browser. */
+  /** Panggil dari klik tombol untuk langsung membuka blokir autoplay atau mematikan seketika. */
   unlockAndSync(active: boolean) {
-    this.shouldPlay = active;
-    if (active) {
-      this.tryStart();
-    } else {
-      this.sync(false);
-    }
+    this.sync(active);
   }
 }
 

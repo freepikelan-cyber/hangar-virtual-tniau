@@ -79,28 +79,28 @@ export function VvipEscortLayer() {
     [],
   );
 
-  // Lintasan lengkung aerodinamis 3D Pengawal 1 (manuver cantik ke kanan -> masuk formasi belakang kanan VVIP!)
+  // Lintasan lengkung halus & berwibawa Pengawal 1 (melebar ke kanan lalu mundur mulus ke belakang kanan VVIP!)
   const burstCurveRight = useMemo(
     () =>
       new THREE.CatmullRomCurve3([
-        new THREE.Vector3(21.5, 1.0, -3.5),
-        new THREE.Vector3(27.5, 4.6, 2.5),
-        new THREE.Vector3(32.5, 9.4, -3.5),
-        new THREE.Vector3(22.5, 6.2, -16.5),
-        new THREE.Vector3(12.5, 3.6, -22.0),
+        new THREE.Vector3(21.5, 1.0, -7.5),
+        new THREE.Vector3(26.5, 2.4, -10.5),
+        new THREE.Vector3(28.0, 3.8, -15.5),
+        new THREE.Vector3(21.5, 3.8, -19.5),
+        new THREE.Vector3(14.0, 3.2, -21.0),
       ]),
     [],
   );
 
-  // Lintasan lengkung aerodinamis 3D Pengawal 2 (manuver cantik bergantian ke kiri -> masuk formasi belakang kiri VVIP!)
+  // Lintasan lengkung halus & berwibawa Pengawal 2 (melebar ke kiri lalu mundur mulus ke belakang kiri VVIP!)
   const burstCurveLeft = useMemo(
     () =>
       new THREE.CatmullRomCurve3([
-        new THREE.Vector3(-24.0, 1.4, -5.0),
-        new THREE.Vector3(-29.5, 5.0, 1.8),
-        new THREE.Vector3(-34.0, 9.6, -4.0),
-        new THREE.Vector3(-23.0, 6.2, -16.8),
-        new THREE.Vector3(-12.5, 3.6, -22.0),
+        new THREE.Vector3(-24.0, 1.4, -9.5),
+        new THREE.Vector3(-28.5, 2.6, -12.2),
+        new THREE.Vector3(-29.5, 3.8, -16.2),
+        new THREE.Vector3(-22.0, 3.8, -19.8),
+        new THREE.Vector3(-14.0, 3.2, -21.0),
       ]),
     [],
   );
@@ -141,26 +141,26 @@ export function VvipEscortLayer() {
     timer.current += dt;
     const st = timer.current;
 
-    // Timeline Pengawalan Udara VVIP setelah mengudara (tidak terburu-buru, jeda 50 detik sebelum pengawal masuk!):
-    // 0.0..50.0s   : Pesawat VVIP terbang jelajah tenang menikmati udara Nusantara
-    // 50.0..54.5s  : 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-24.0)
-    // 55.0..72.0s  : Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (16.8s)
-    // 72.0..75.0s  : Jeda alami 3 detik setelah pengawal selesai berbicara
-    // 75.0..89.2s  : Balasan Indonesia One kepada Flight Pengawal (13.8s)
-    // 90.0..98.0s  : Pengawal 1 dulu bermanuver cantik ke kanan (Salute + Victory Roll + Asap) -> masuk belakang kanan VVIP!
-    // 98.5..106.5s : Dilanjutkan Pengawal 2 bermanuver cantik ke kiri (Salute + Victory Roll + Asap) -> masuk belakang kiri VVIP!
-    // 106.5s+      : Kedua pesawat pengawal mengawal stabil di belakang pesawat VVIP!
-    const ESCORT_APPEAR = 50.0;
-    const GREET_START = 55.0;
-    const GREET_END = 72.0;
-    const REPLY_START = 75.0;
-    const P1_SALUTE_START = 90.0;
-    const P1_BURST_START = 91.8;
-    const BURST_DUR = 6.2;
-    const P1_END = P1_BURST_START + BURST_DUR; // 98.0
-    const P2_SALUTE_START = 98.5;
-    const P2_BURST_START = 100.3;
-    const P2_END = P2_BURST_START + BURST_DUR; // 106.5
+    // Timeline Pengawalan Udara VVIP setelah mengudara (jeda 20 detik sebelum pengawal masuk!):
+    // 0.0..20.0s  : Pesawat VVIP terbang jelajah tenang
+    // 20.0..24.5s : 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-24.0)
+    // 25.0..42.0s : Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (16.8s)
+    // 42.0..45.0s : Jeda alami 3 detik setelah pengawal selesai berbicara
+    // 45.0..59.2s : Balasan Indonesia One kepada Flight Pengawal (13.8s)
+    // 60.0..67.5s : Pengawal 1 dulu Wing-Rock hormat & belok halus melebar ke kanan -> formasi belakang kanan VVIP!
+    // 68.0..75.5s : Dilanjutkan Pengawal 2 Wing-Rock hormat & belok halus melebar ke kiri -> formasi belakang kiri VVIP!
+    // 75.5s+      : Kedua pesawat pengawal mengawal stabil di belakang pesawat VVIP!
+    const ESCORT_APPEAR = 20.0;
+    const GREET_START = 25.0;
+    const GREET_END = 42.0;
+    const REPLY_START = 45.0;
+    const P1_SALUTE_START = 60.0;
+    const P1_BURST_START = 62.0;
+    const BURST_DUR = 5.5;
+    const P1_END = P1_BURST_START + BURST_DUR; // 67.5
+    const P2_SALUTE_START = 68.0;
+    const P2_BURST_START = 70.0;
+    const P2_END = P2_BURST_START + BURST_DUR; // 75.5
 
     if (st < ESCORT_APPEAR) {
       if (rightRef.current) rightRef.current.visible = false;
@@ -170,7 +170,7 @@ export function VvipEscortLayer() {
       });
       if (flightMode === 'airborne') {
         setFlightLabel(
-          st > 45.5
+          st > 16.0
             ? 'RADAR // 2 PESAWAT TEMPUR PENGAWAL TNI AU MENDEKAT'
             : 'VIP // TERBANG JELAJAH PESAWAT KEPRESIDENAN RI (INDONESIA ONE)',
         );
@@ -192,7 +192,7 @@ export function VvipEscortLayer() {
     const p2Z = THREE.MathUtils.lerp(-50.0, -9.5, ease);
     const p2Y = 1.4;
 
-    // Pengawal 1 (Kanan): Formasi -> Manuver cantik pertama ke kanan -> Formasi di BELAKANG kanan VVIP!
+    // Pengawal 1 (Kanan): Formasi -> Wing-Rock hormat halus -> Belok melebar lembut ke kanan -> Belakang kanan VVIP!
     let smokeSource: THREE.Group | null = null;
     if (rightRef.current) {
       if (st < P1_SALUTE_START) {
@@ -201,54 +201,55 @@ export function VvipEscortLayer() {
           p1Y + Math.sin(t * 1.4) * 0.15,
           p1Z + Math.cos(t * 0.8) * 0.2,
         );
-        rightRef.current.rotation.z = (1 - ease) * 0.34 + Math.sin(t * 1.1) * 0.025;
+        rightRef.current.rotation.z = (1 - ease) * 0.3 + Math.sin(t * 1.1) * 0.025;
         rightRef.current.rotation.x = -0.02 + Math.sin(t * 1.2) * 0.015;
         rightRef.current.rotation.y = 0;
         if (rightFlameRef.current) rightFlameRef.current.scale.set(1, 1, 1);
       } else if (st < P1_BURST_START) {
-        const sp = easeInOutCubic((st - P1_SALUTE_START) / (P1_BURST_START - P1_SALUTE_START));
-        rightRef.current.position.set(21.5, 1.0, THREE.MathUtils.lerp(-7.5, -3.5, sp));
-        rightRef.current.rotation.x = THREE.MathUtils.lerp(-0.02, -0.1, sp);
+        // Wing-Rock hormat lembut (±20°) tanpa hentakan
+        const sp = (st - P1_SALUTE_START) / (P1_BURST_START - P1_SALUTE_START);
+        rightRef.current.position.set(21.5, 1.0, -7.5);
+        rightRef.current.rotation.x = -0.02;
         rightRef.current.rotation.y = 0;
-        rightRef.current.rotation.z = Math.sin(sp * Math.PI * 2) * 0.38;
+        rightRef.current.rotation.z = Math.sin(sp * Math.PI * 2) * 0.34;
         if (rightFlameRef.current) {
-          rightFlameRef.current.scale.set(1.25, 1.7 + Math.sin(t * 36) * 0.25, 1.25);
+          rightFlameRef.current.scale.set(1.15, 1.35 + Math.sin(t * 28) * 0.15, 1.15);
         }
-        if (sp > 0.35) smokeSource = rightRef.current;
+        if (sp > 0.4) smokeSource = rightRef.current;
       } else if (st < P1_END) {
+        // Manuver halus berwibawa: bank lembut ke kanan lalu masuk rapi ke posisi belakang kanan VVIP (tanpa salto liar!)
         const rawP = (st - P1_BURST_START) / BURST_DUR;
         const u = easeInOutCubic(rawP);
         const pos = burstCurveRight.getPoint(u);
-        const tan = burstCurveRight.getTangent(u).normalize();
 
         rightRef.current.position.copy(pos);
-        const climbPitch = -Math.asin(THREE.MathUtils.clamp(tan.y, -0.85, 0.85)) * 0.72;
-        const turnYaw = Math.atan2(tan.x, Math.max(0.25, tan.z + 0.65)) * 0.38;
-        const victoryRoll = -easeInOutCubic(rawP) * Math.PI * 2;
+        // Bank lembut keluar ke kanan (+0.44 rad), lalu kembali rata saat masuk formasi belakang
+        const gentleBank = Math.sin(rawP * Math.PI) * 0.44 * (rawP < 0.55 ? 1 : -0.65);
+        const gentlePitch = -Math.sin(rawP * Math.PI) * 0.09;
+        const gentleYaw = Math.sin(rawP * Math.PI * 2) * -0.14;
 
-        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, climbPitch, Math.min(1, dt * 6));
-        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, turnYaw, Math.min(1, dt * 6));
-        rightRef.current.rotation.z = victoryRoll;
+        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, gentlePitch, Math.min(1, dt * 5));
+        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, gentleYaw, Math.min(1, dt * 5));
+        rightRef.current.rotation.z = THREE.MathUtils.lerp(rightRef.current.rotation.z, gentleBank, Math.min(1, dt * 5));
 
         if (rightFlameRef.current) {
-          rightFlameRef.current.scale.set(1.4, 2.3 + Math.sin(t * 42) * 0.35, 1.4);
+          rightFlameRef.current.scale.set(1.2, 1.55 + Math.sin(t * 32) * 0.2, 1.2);
         }
-        if (rawP < 0.88) smokeSource = rightRef.current;
+        if (rawP < 0.85) smokeSource = rightRef.current;
       } else {
-        // Pengawal 1 menetap di BELAKANG kanan pesawat VVIP!
+        // Pengawal 1 menetap tenang di BELAKANG kanan pesawat VVIP!
         const targetPos = new THREE.Vector3(
-          12.5 + Math.sin(t * 0.75) * 0.3,
-          3.6 + Math.sin(t * 1.1) * 0.2,
-          -22.0 + Math.cos(t * 0.7) * 0.25,
+          14.0 + Math.sin(t * 0.75) * 0.28,
+          3.2 + Math.sin(t * 1.1) * 0.18,
+          -21.0 + Math.cos(t * 0.7) * 0.22,
         );
         rightRef.current.position.lerp(targetPos, Math.min(1, dt * 3));
-        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, -0.02, Math.min(1, dt * 3.5));
-        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, 0, Math.min(1, dt * 3.5));
-        if (rightRef.current.rotation.z < -Math.PI) rightRef.current.rotation.z += Math.PI * 2;
+        rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, -0.02, Math.min(1, dt * 4));
+        rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, 0, Math.min(1, dt * 4));
         rightRef.current.rotation.z = THREE.MathUtils.lerp(
           rightRef.current.rotation.z,
-          Math.sin(t * 0.9) * 0.035,
-          Math.min(1, dt * 3.5),
+          Math.sin(t * 0.9) * 0.03,
+          Math.min(1, dt * 4),
         );
         if (rightFlameRef.current) {
           rightFlameRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 4));
@@ -256,7 +257,7 @@ export function VvipEscortLayer() {
       }
     }
 
-    // Pengawal 2 (Kiri): Formasi -> Giliran kedua bermanuver cantik ke kiri -> Formasi di BELAKANG kiri VVIP!
+    // Pengawal 2 (Kiri): Formasi -> Giliran kedua Wing-Rock hormat halus -> Belok melebar lembut ke kiri -> Belakang kiri VVIP!
     if (leftRef.current) {
       if (st < P2_SALUTE_START) {
         leftRef.current.position.set(
@@ -264,54 +265,52 @@ export function VvipEscortLayer() {
           p2Y + Math.cos(t * 1.35) * 0.16,
           p2Z + Math.sin(t * 0.75) * 0.22,
         );
-        leftRef.current.rotation.z = -(1 - ease) * 0.34 + Math.cos(t * 1.05) * 0.025;
+        leftRef.current.rotation.z = -(1 - ease) * 0.3 + Math.cos(t * 1.05) * 0.025;
         leftRef.current.rotation.x = -0.02 + Math.cos(t * 1.15) * 0.015;
         leftRef.current.rotation.y = 0;
         if (leftFlameRef.current) leftFlameRef.current.scale.set(1, 1, 1);
       } else if (st < P2_BURST_START) {
-        const sp = easeInOutCubic((st - P2_SALUTE_START) / (P2_BURST_START - P2_SALUTE_START));
-        leftRef.current.position.set(-24.0, 1.4, THREE.MathUtils.lerp(-9.5, -5.0, sp));
-        leftRef.current.rotation.x = THREE.MathUtils.lerp(-0.02, -0.1, sp);
+        const sp = (st - P2_SALUTE_START) / (P2_BURST_START - P2_SALUTE_START);
+        leftRef.current.position.set(-24.0, 1.4, -9.5);
+        leftRef.current.rotation.x = -0.02;
         leftRef.current.rotation.y = 0;
-        leftRef.current.rotation.z = -Math.sin(sp * Math.PI * 2) * 0.38;
+        leftRef.current.rotation.z = -Math.sin(sp * Math.PI * 2) * 0.34;
         if (leftFlameRef.current) {
-          leftFlameRef.current.scale.set(1.25, 1.7 + Math.sin(t * 36) * 0.25, 1.25);
+          leftFlameRef.current.scale.set(1.15, 1.35 + Math.sin(t * 28) * 0.15, 1.15);
         }
-        if (sp > 0.35) smokeSource = leftRef.current;
+        if (sp > 0.4) smokeSource = leftRef.current;
       } else if (st < P2_END) {
         const rawP = (st - P2_BURST_START) / BURST_DUR;
         const u = easeInOutCubic(rawP);
         const pos = burstCurveLeft.getPoint(u);
-        const tan = burstCurveLeft.getTangent(u).normalize();
 
         leftRef.current.position.copy(pos);
-        const climbPitch = -Math.asin(THREE.MathUtils.clamp(tan.y, -0.85, 0.85)) * 0.72;
-        const turnYaw = Math.atan2(tan.x, Math.max(0.25, tan.z + 0.65)) * 0.38;
-        const victoryRoll = easeInOutCubic(rawP) * Math.PI * 2;
+        const gentleBank = -Math.sin(rawP * Math.PI) * 0.44 * (rawP < 0.55 ? 1 : -0.65);
+        const gentlePitch = -Math.sin(rawP * Math.PI) * 0.09;
+        const gentleYaw = Math.sin(rawP * Math.PI * 2) * 0.14;
 
-        leftRef.current.rotation.x = THREE.MathUtils.lerp(leftRef.current.rotation.x, climbPitch, Math.min(1, dt * 6));
-        leftRef.current.rotation.y = THREE.MathUtils.lerp(leftRef.current.rotation.y, turnYaw, Math.min(1, dt * 6));
-        leftRef.current.rotation.z = victoryRoll;
+        leftRef.current.rotation.x = THREE.MathUtils.lerp(leftRef.current.rotation.x, gentlePitch, Math.min(1, dt * 5));
+        leftRef.current.rotation.y = THREE.MathUtils.lerp(leftRef.current.rotation.y, gentleYaw, Math.min(1, dt * 5));
+        leftRef.current.rotation.z = THREE.MathUtils.lerp(leftRef.current.rotation.z, gentleBank, Math.min(1, dt * 5));
 
         if (leftFlameRef.current) {
-          leftFlameRef.current.scale.set(1.4, 2.3 + Math.sin(t * 42) * 0.35, 1.4);
+          leftFlameRef.current.scale.set(1.2, 1.55 + Math.sin(t * 32) * 0.2, 1.2);
         }
-        if (rawP < 0.88) smokeSource = leftRef.current;
+        if (rawP < 0.85) smokeSource = leftRef.current;
       } else {
-        // Pengawal 2 menetap di BELAKANG kiri pesawat VVIP!
+        // Pengawal 2 menetap tenang di BELAKANG kiri pesawat VVIP!
         const targetPos = new THREE.Vector3(
-          -12.5 + Math.cos(t * 0.75) * 0.3,
-          3.6 + Math.cos(t * 1.1) * 0.2,
-          -22.0 + Math.sin(t * 0.7) * 0.25,
+          -14.0 + Math.cos(t * 0.75) * 0.28,
+          3.2 + Math.cos(t * 1.1) * 0.18,
+          -21.0 + Math.sin(t * 0.7) * 0.22,
         );
         leftRef.current.position.lerp(targetPos, Math.min(1, dt * 3));
-        leftRef.current.rotation.x = THREE.MathUtils.lerp(leftRef.current.rotation.x, -0.02, Math.min(1, dt * 3.5));
-        leftRef.current.rotation.y = THREE.MathUtils.lerp(leftRef.current.rotation.y, 0, Math.min(1, dt * 3.5));
-        if (leftRef.current.rotation.z > Math.PI) leftRef.current.rotation.z -= Math.PI * 2;
+        leftRef.current.rotation.x = THREE.MathUtils.lerp(leftRef.current.rotation.x, -0.02, Math.min(1, dt * 4));
+        leftRef.current.rotation.y = THREE.MathUtils.lerp(leftRef.current.rotation.y, 0, Math.min(1, dt * 4));
         leftRef.current.rotation.z = THREE.MathUtils.lerp(
           leftRef.current.rotation.z,
-          Math.cos(t * 0.9) * 0.035,
-          Math.min(1, dt * 3.5),
+          Math.cos(t * 0.9) * 0.03,
+          Math.min(1, dt * 4),
         );
         if (leftFlameRef.current) {
           leftFlameRef.current.scale.lerp(new THREE.Vector3(1, 1, 1), Math.min(1, dt * 4));

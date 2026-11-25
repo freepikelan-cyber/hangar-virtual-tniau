@@ -201,6 +201,8 @@ export function SkyCloudsEnvironment() {
   const phaseTime = useRef(0);
   const worldY = useRef(-0.02);
   const scrollZ = useRef(0);
+  const chunkZ = useRef({ runway: RUNWAY_OFFSET, mountain: RUNWAY_OFFSET + CHUNK_LEN, ocean: RUNWAY_OFFSET + CHUNK_LEN * 2 });
+  const prevFlightMode = useRef<string>('parked');
 
   const skyMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunGroupRef = useRef<THREE.Group>(null);
@@ -212,19 +214,32 @@ export function SkyCloudsEnvironment() {
 
   useEffect(() => {
     phaseTime.current = 0;
+    const prev = prevFlightMode.current;
+    prevFlightMode.current = flightMode;
+
     if (safetyMode) {
       worldY.current = isEjectionSafety ? -19.5 : -6.5;
-      // Posisikan langsung di atas Zona Samudra (biome-ocean) untuk simulasi Safety Laut!
       scrollZ.current = isEjectionSafety ? 240 : RUNWAY_OFFSET + CHUNK_LEN * 2;
     } else if (flightMode === 'takeoff') {
       worldY.current = -0.02;
       scrollZ.current = 0;
+      chunkZ.current = {
+        runway: RUNWAY_OFFSET,
+        mountain: RUNWAY_OFFSET + CHUNK_LEN,
+        ocean: RUNWAY_OFFSET + CHUNK_LEN * 2,
+      };
     } else if (flightMode === 'landing') {
       worldY.current = -12.5;
       scrollZ.current = 0;
     } else if (flightMode === 'mission') {
-      worldY.current = isHeli ? -0.02 : -19.5;
+      worldY.current = isHeli ? -0.02 : -28.0;
       scrollZ.current = isHeli ? RUNWAY_OFFSET + CHUNK_LEN * 2 : 260;
+      if (!isHeli && prev !== 'airborne' && prev !== 'takeoff') {
+        chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN };
+      }
+    } else if ((flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'aar') && prev === 'parked') {
+      // Langsung masuk udara dari parkir (misal AAR/Jupiter Show): mulai langsung di atas Pegunungan & Laut!
+      chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN };
     }
   }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety, isHeli]);
 
@@ -671,33 +686,44 @@ export function SkyCloudsEnvironment() {
     }
 
     if (isOutdoorSim) {
-      // Runway HANYA tampil saat Take Off & Landing! Saat mengudara/manuver/AAR/Misi, hanya melintasi Gunung & Laut!
-      const showRunwayBiome = flightMode === 'takeoff' || flightMode === 'landing';
-      if (runwayChunkRef.current) {
-        runwayChunkRef.current.visible = showRunwayBiome;
-      }
-
-      if (showRunwayBiome || safetyMode || (flightMode === 'mission' && isHeli)) {
+      // Runway HANYA tampil saat Take Off & Landing! Saat transisi Take Off -> Airborne, Runway meluncur pergi
+      // mulus ke belakang tanpa lompatan/jeda, lalu hilang & hanya Pegunungan <-> Laut Hidup yang berputar!
+      if (flightMode === 'landing' || safetyMode || (flightMode === 'mission' && isHeli)) {
         scrollZ.current = (scrollZ.current + groundSpeed * dt) % LOOP_LEN;
         const wrapZ = (offset: number) => {
           let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
           if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
           return z;
         };
-        if (runwayChunkRef.current) runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
+        if (runwayChunkRef.current) {
+          runwayChunkRef.current.visible = flightMode === 'landing';
+          runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
+        }
         if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
         if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
       } else {
-        // Mode Mengudara & Manuver: loop mulus 2 zona saja (Pegunungan <-> Laut Hidup) tanpa pernah memunculkan Runway!
-        const airLoopLen = CHUNK_LEN * 2;
-        scrollZ.current = (scrollZ.current + groundSpeed * dt) % airLoopLen;
-        const wrapAirZ = (offset: number) => {
-          let z = ((offset - scrollZ.current) % airLoopLen + airLoopLen) % airLoopLen;
-          if (z > CHUNK_LEN) z -= airLoopLen;
-          return z;
-        };
-        if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapAirZ(0);
-        if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapAirZ(CHUNK_LEN);
+        // Kontinu tanpa jeda/snap dari Take Off -> Airborne -> Manuver -> AAR -> Misi!
+        const cz = chunkZ.current;
+        const step = groundSpeed * dt;
+        cz.runway -= step;
+        cz.mountain -= step;
+        cz.ocean -= step;
+
+        // Begitu Pegunungan lewat jauh ke belakang, sambung mulus di depan Laut; begitu pula sebaliknya!
+        if (cz.mountain < -CHUNK_LEN * 0.95) {
+          cz.mountain = cz.ocean + CHUNK_LEN;
+        }
+        if (cz.ocean < -CHUNK_LEN * 0.95) {
+          cz.ocean = cz.mountain + CHUNK_LEN;
+        }
+
+        if (runwayChunkRef.current) {
+          // Runway tetap terlihat mulus saat lepas landas sampai lewat di belakang kamera, lalu tidak pernah muncul lagi!
+          runwayChunkRef.current.visible = cz.runway > -CHUNK_LEN * 0.85;
+          runwayChunkRef.current.position.z = cz.runway;
+        }
+        if (mountainChunkRef.current) mountainChunkRef.current.position.z = cz.mountain;
+        if (oceanChunkRef.current) oceanChunkRef.current.position.z = cz.ocean;
       }
 
       // Animasi perahu nelayan mengayun lembut & kawanan ikan/lumba-lumba melompat di atas laut!
