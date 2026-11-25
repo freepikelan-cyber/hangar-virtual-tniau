@@ -9,6 +9,7 @@ import { aircraftAudio } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
+import { CockpitPilotLayer } from './CockpitPilotLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
 
@@ -21,7 +22,7 @@ interface SavedMatProps {
 
 const savedMaterials = new WeakMap<THREE.Material, SavedMatProps>();
 
-function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boolean) {
+function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boolean, clearCanopy = false) {
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -61,7 +62,7 @@ function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boo
         if ('wireframe' in std) std.wireframe = wireframe;
       } else if (role === 'glass') {
         mat.transparent = true;
-        mat.opacity = cutaway ? 0.16 : orig.opacity;
+        mat.opacity = cutaway ? 0.16 : clearCanopy ? Math.min(orig.opacity, 0.28) : orig.opacity;
         mat.depthWrite = false;
         if ('wireframe' in std) std.wireframe = wireframe;
       } else {
@@ -93,6 +94,8 @@ export function AircraftModel() {
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
+  const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const aeroManeuver = useHangarStore((s) => s.aeroManeuver);
   const glbVer = useHangarStore((s) => s.glbVersion[unit.id] ?? 0);
@@ -103,7 +106,9 @@ export function AircraftModel() {
   const [glbGroup, setGlbGroup] = useState<THREE.Group | null>(() => customGlbRegistry.get(unit.id) ?? null);
 
   const rootRef = useRef<THREE.Group>(null);
+  const airframeRef = useRef<THREE.Group>(null);
   const phaseTime = useRef(0);
+  const safetyTime = useRef(0);
   const gearRetract = useRef(0); // 0 = roda turun/keluar, 1 = roda masuk penuh di dalam badan
   const currentX = useRef(0);
   const currentY = useRef(0);
@@ -184,18 +189,30 @@ export function AircraftModel() {
     }
   }, [flightMode, flightNonce, unit.category]);
 
-  // Pesawat selalu tampil utuh (tidak transparan/kerangka saat pin diklik)
+  // Reset waktu cerita Safety saat tombol Safety atau Ulangi ditekan
   useEffect(() => {
-    applyVisualModes(activeGroup, false, wireframe);
-  }, [activeGroup, wireframe]);
+    safetyTime.current = 0;
+    if (airframeRef.current) {
+      airframeRef.current.position.set(0, 0, 0);
+      airframeRef.current.rotation.set(0, 0, 0);
+      airframeRef.current.visible = true;
+    }
+  }, [safetyMode, safetyNonce, unit.id]);
 
-  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, & demo aerodinamika!
+  // Saat simulasi aktif, kaca kanopi dibuat lebih bening agar Pilot 3D di dalam kokpit terlihat jelas!
+  const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
+  useEffect(() => {
+    applyVisualModes(activeGroup, false, wireframe, isAnySimActive);
+  }, [activeGroup, wireframe, isAnySimActive]);
+
+  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, safety, & demo aerodinamika!
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
     flightMode === 'airborne' ||
     flightMode === 'maneuver' ||
     flightMode === 'landing' ||
+    safetyMode ||
     aeroMode;
 
   useFrame((state, delta) => {
@@ -686,6 +703,91 @@ export function AircraftModel() {
           setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
         }
       }
+    } else if (safetyMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
+      // Animasi 3D badan pesawat sesuai cerita Safety (Tempur: Manuver -> Tertembak -> Menukik; Laut: Turun -> Mengapung)
+      safetyTime.current += dt;
+      const st = safetyTime.current;
+      const isEjection = unit.category === 'Tempur' || unit.category === 'Latih';
+
+      if (isEjection) {
+        targetGear = 1;
+        if (st < 3.5) {
+          // Babak 1: Patroli & manuver tempur di langit
+          const s = Math.sin((st / 3.5) * Math.PI * 2);
+          targetX = s * 1.4;
+          targetY = 2.65 + Math.sin(t * 2.0) * 0.16;
+          targetZ = 0;
+          targetRoll = -s * 0.52;
+          targetPitch = -0.06;
+          if (airframeRef.current) {
+            airframeRef.current.position.set(0, 0, 0);
+            airframeRef.current.rotation.set(0, 0, 0);
+            airframeRef.current.visible = true;
+          }
+        } else if (st < 5.8) {
+          // Babak 2: Rudal menghantam -> pesawat berguncang & miring tak terkendali!
+          const hit = st >= 4.45;
+          targetX = hit ? Math.sin(t * 22) * 0.18 : 0;
+          targetY = hit ? 2.5 - (st - 4.45) * 0.35 : 2.65;
+          targetZ = 0;
+          targetRoll = hit ? 0.58 + Math.sin(t * 16) * 0.24 : -0.15;
+          targetPitch = hit ? 0.18 + Math.cos(t * 18) * 0.1 : -0.04;
+          if (airframeRef.current) {
+            airframeRef.current.position.set(0, 0, 0);
+            airframeRef.current.rotation.set(0, 0, 0);
+            airframeRef.current.visible = true;
+          }
+        } else {
+          // Babak 3 & 4: Setelah pilot melontar, root tetap stabil di fokus kamera untuk parasut,
+          // sementara badan pesawat yang terbakar menukik berputar menjauh ke bawah!
+          targetX = 0;
+          targetY = 1.6;
+          targetZ = 0;
+          targetRoll = 0;
+          targetPitch = 0;
+          if (airframeRef.current) {
+            const p = Math.min(1, (st - 5.8) / 3.2);
+            airframeRef.current.visible = p < 0.96;
+            airframeRef.current.position.set(p * 3.8, -p * 11.5, p * 6.5);
+            airframeRef.current.rotation.set(0.45 + p * 0.65, p * 0.4, 0.7 + p * 2.8);
+          }
+        }
+      } else if (isHeli) {
+        // Helikopter di laut: Autorotasi turun -> Pelampung mengembang -> Mengapung stabil di ombak
+        targetGear = 0;
+        if (st < 3.5) {
+          const p = easeInOut(st / 3.5);
+          targetY = THREE.MathUtils.lerp(4.4, 1.5, p);
+          targetPitch = 0.08 * (1 - p);
+          targetRoll = Math.sin(t * 3.2) * 0.05;
+        } else if (st < 6.2) {
+          const p = easeInOut((st - 3.5) / 2.7);
+          targetY = THREE.MathUtils.lerp(1.5, 0.14, p);
+          targetPitch = -0.05 * Math.sin(p * Math.PI);
+          targetRoll = Math.sin(t * 2.2) * 0.03;
+        } else {
+          targetY = 0.14 + Math.sin(t * 1.9) * 0.06;
+          targetPitch = Math.sin(t * 1.4) * 0.025;
+          targetRoll = Math.cos(t * 1.6) * 0.035;
+        }
+      } else {
+        // Pesawat Angkut & VIP: Gangguan mesin di atas laut -> Water Ditching -> Mengapung di ombak
+        targetGear = 1; // Roda tetap masuk saat Water Ditching agar badan pesawat tidak terbalik!
+        if (st < 3.5) {
+          targetY = 3.2 + Math.sin(t * 1.6) * 0.12;
+          targetPitch = 0.04;
+          targetRoll = -0.08 + Math.sin(t * 2.4) * 0.03;
+        } else if (st < 6.8) {
+          const p = easeInOut((st - 3.5) / 3.3);
+          targetY = THREE.MathUtils.lerp(3.2, 0.1, p);
+          targetPitch = THREE.MathUtils.lerp(0.05, -0.1, Math.sin(p * Math.PI));
+          targetRoll = THREE.MathUtils.lerp(-0.08, 0, p);
+        } else {
+          targetY = 0.1 + Math.sin(t * 1.6) * 0.05;
+          targetPitch = Math.sin(t * 1.2) * 0.018;
+          targetRoll = Math.cos(t * 1.4) * 0.024;
+        }
+      }
     } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
       // Animasi 3D Aerodinamika: Proses Lift Terbang, Menanjak, Menurun, Belok Kiri, & Belok Kanan!
       if (aeroManeuver === 'liftDemo') {
@@ -834,19 +936,22 @@ export function AircraftModel() {
 
   return (
     <group ref={rootRef} name="aircraft-root">
-      <primitive object={activeGroup} />
-      <EffectsLayer
-        nozzles={procedural.nozzles}
-        spinners={procedural.spinners}
-        navLights={procedural.navLights}
-        glowMats={procedural.glowMats}
-        engineSim={isEngineVisualActive}
-        rotorWash={procedural.rotorWash}
-      />
-      <AerodynamicsLayer />
+      <group ref={airframeRef} name="aircraft-airframe">
+        <primitive object={activeGroup} />
+        <CockpitPilotLayer />
+        <EffectsLayer
+          nozzles={procedural.nozzles}
+          spinners={procedural.spinners}
+          navLights={procedural.navLights}
+          glowMats={procedural.glowMats}
+          engineSim={isEngineVisualActive}
+          rotorWash={procedural.rotorWash}
+        />
+        <AerodynamicsLayer />
+        <OxygenSystemLayer />
+        <HotspotMarkers hotspots={unit.hotspots} />
+      </group>
       <SafetySystemLayer />
-      <OxygenSystemLayer />
-      <HotspotMarkers hotspots={unit.hotspots} />
     </group>
   );
 }

@@ -107,11 +107,15 @@ export function SkyCloudsEnvironment() {
   const { scene } = useThree();
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
+  const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const selectedId = useHangarStore((s) => s.selectedId);
 
+  const unit = getUnit(selectedId);
   const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
-  const isHeli = getUnit(selectedId).category === 'Helikopter';
-  const isOutdoorSim = !isEquipment && flightMode !== 'parked';
+  const isHeli = unit.category === 'Helikopter';
+  const isEjectionSafety = unit.category === 'Tempur' || unit.category === 'Latih';
+  const isOutdoorSim = !isEquipment && (flightMode !== 'parked' || safetyMode);
 
   const skyOpacity = useRef(0);
   const cloudOpacity = useRef(0);
@@ -129,14 +133,18 @@ export function SkyCloudsEnvironment() {
 
   useEffect(() => {
     phaseTime.current = 0;
-    if (flightMode === 'takeoff') {
+    if (safetyMode) {
+      worldY.current = isEjectionSafety ? -19.5 : -6.5;
+      // Posisikan langsung di atas Zona Samudra (biome-ocean) untuk simulasi Safety Laut!
+      scrollZ.current = isEjectionSafety ? 240 : RUNWAY_OFFSET + CHUNK_LEN * 2;
+    } else if (flightMode === 'takeoff') {
       worldY.current = -0.02;
       scrollZ.current = 0;
     } else if (flightMode === 'landing') {
       worldY.current = -12.5;
       scrollZ.current = 0;
     }
-  }, [flightMode, flightNonce]);
+  }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety]);
 
   const skyTex = useMemo(() => makeBlueSkyTexture(), []);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
@@ -351,8 +359,9 @@ export function SkyCloudsEnvironment() {
       sunGroupRef.current.visible = mix > 0.05;
     }
 
-    // Awan 3D HANYA muncul saat pesawat sudah terbang tinggi (airborne / maneuver), TIDAK saat Take Off & Landing di runway!
-    const showClouds = isOutdoorSim && (flightMode === 'airborne' || flightMode === 'maneuver');
+    // Awan 3D muncul saat terbang tinggi (airborne / maneuver) atau Safety Tempur di udara!
+    const showClouds =
+      isOutdoorSim && (flightMode === 'airborne' || flightMode === 'maneuver' || (safetyMode && isEjectionSafety));
     cloudOpacity.current = THREE.MathUtils.lerp(cloudOpacity.current, showClouds ? 1 : 0, Math.min(1, dt * 2.2));
     const cMix = cloudOpacity.current;
 
@@ -372,7 +381,18 @@ export function SkyCloudsEnvironment() {
     let targetWorldY = -0.02;
     let groundSpeed = 0;
 
-    if (flightMode === 'takeoff') {
+    if (safetyMode) {
+      if (isEjectionSafety) {
+        targetWorldY = -19.5;
+        groundSpeed = pt < 5.8 ? 52 : 16;
+      } else {
+        // Safety Laut (Angkut/VIP Water Ditching & Helikopter Emergency Floats): terkunci di atas Laut 3D!
+        scrollZ.current = RUNWAY_OFFSET + CHUNK_LEN * 2;
+        groundSpeed = 0;
+        const p = Math.min(1, pt / (isHeli ? 5.5 : 6.0));
+        targetWorldY = THREE.MathUtils.lerp(-6.5, -0.02, p);
+      }
+    } else if (flightMode === 'takeoff') {
       if (pt < 7.6) {
         // Taxi keluar dari Hanggar TNI AU yang jauh -> Line-up di Runway 09 -> Spool-up full power
         targetWorldY = -0.02;

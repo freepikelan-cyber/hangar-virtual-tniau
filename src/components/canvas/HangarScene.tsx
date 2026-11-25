@@ -12,11 +12,12 @@ function RadarPlatform() {
   const groupRef = useRef<THREE.Group>(null);
   const sweepRef = useRef<THREE.Mesh>(null);
   const flightMode = useHangarStore((s) => s.flightMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
   const selectedId = useHangarStore((s) => s.selectedId);
   const floorTex = useMemo(() => radarFloorTexture(), []);
   const sweepTex = useMemo(() => sweepTexture(), []);
 
-  const isOutdoorSim = flightMode !== 'parked' && selectedId !== 'gsuit' && selectedId !== 'pilot-helmet';
+  const isOutdoorSim = (flightMode !== 'parked' || safetyMode) && selectedId !== 'gsuit' && selectedId !== 'pilot-helmet';
 
   useEffect(() => {
     return () => {

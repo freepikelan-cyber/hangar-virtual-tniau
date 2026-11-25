@@ -8,6 +8,7 @@ import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { InfographicModal } from './components/hud/InfographicModal';
 import { AeroControlPanel } from './components/hud/AeroControlPanel';
+import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
@@ -85,6 +86,7 @@ export function App() {
       <FleetSidebar />
       <InfoPanel />
       <AeroControlPanel />
+      <SafetyStoryPanel />
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />

@@ -80,6 +80,8 @@ interface HangarState {
   soundEnabled: boolean;
   aeroMode: boolean;
   safetyMode: boolean;
+  safetyNonce: number;
+  safetyStep: number;
   oxygenMode: boolean;
   flapAngle: 0 | 15 | 35;
   trimAngle: -5 | 0 | 8;
@@ -110,6 +112,8 @@ interface HangarState {
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
+  replaySafety: () => void;
+  setSafetyStep: (step: number) => void;
 
   triggerTakeOff: () => void;
   triggerManeuver: () => void;
@@ -160,6 +164,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   soundEnabled: true,
   aeroMode: false,
   safetyMode: false,
+  safetyNonce: 0,
+  safetyStep: 0,
   oxygenMode: false,
   flapAngle: 15,
   trimAngle: 8,
@@ -237,10 +243,15 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     if (key === 'safetyMode') {
       set({
         safetyMode: next,
+        safetyNonce: next ? get().safetyNonce + 1 : get().safetyNonce,
+        safetyStep: 0,
+        aeroMode: next ? false : get().aeroMode,
         oxygenMode: next ? false : get().oxygenMode,
         flightMode: next ? 'parked' : get().flightMode,
         flightLabel: null,
+        autoRotate: next ? false : get().autoRotate,
         activeHotspot: next ? null : get().activeHotspot,
+        rightOpen: next && isCompactViewport() ? false : get().rightOpen,
       });
       return;
     }
@@ -264,6 +275,10 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       aeroManeuver,
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
+  replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
+  setSafetyStep: (safetyStep) => {
+    if (get().safetyStep !== safetyStep) set({ safetyStep });
+  },
 
   triggerTakeOff: () => {
     const s = get();

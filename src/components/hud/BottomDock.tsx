@@ -5,7 +5,6 @@ import {
   ChevronUp,
   FileText,
   Flame,
-  Grid3X3,
   Lock,
   Mail,
   MapPin,
@@ -26,7 +25,6 @@ export function BottomDock() {
   const selectedId = useHangarStore((s) => s.selectedId);
   const selectedLivery = useHangarStore((s) => s.selectedLivery);
   const setLivery = useHangarStore((s) => s.setLivery);
-  const wireframe = useHangarStore((s) => s.wireframe);
   const showInfographic = useHangarStore((s) => s.showInfographic);
   const showPins = useHangarStore((s) => s.showPins);
   const autoRotate = useHangarStore((s) => s.autoRotate);
@@ -70,7 +68,7 @@ export function BottomDock() {
     icon: typeof Activity;
     active: boolean;
     onClick: () => void;
-    accent?: 'amber' | 'emerald';
+    accent?: 'amber' | 'emerald' | 'rose';
     hasMenu?: boolean;
   }[] = [
     ...(isEquipment
@@ -91,7 +89,7 @@ export function BottomDock() {
             label: 'Simulasi',
             short: 'Simulasi',
             icon: Flame,
-            active: simMenuOpen || anySimActive,
+            active: simMenuOpen || flightMode !== 'parked' || oxygenMode,
             onClick: () => setSimMenuOpen((v) => !v),
             accent: 'amber' as const,
             hasMenu: true,
@@ -107,6 +105,18 @@ export function BottomDock() {
               toggle('aeroMode');
             },
           },
+          {
+            id: 'safety',
+            label: 'Safety',
+            short: 'Safety',
+            icon: ShieldAlert,
+            active: safetyMode,
+            accent: 'rose' as const,
+            onClick: () => {
+              setSimMenuOpen(false);
+              toggle('safetyMode');
+            },
+          },
         ]),
     {
       id: 'infographic',
@@ -118,14 +128,6 @@ export function BottomDock() {
         setSimMenuOpen(false);
         toggleInfographic();
       },
-    },
-    {
-      id: 'wireframe',
-      label: 'Wireframe',
-      short: 'Wire',
-      icon: Grid3X3,
-      active: wireframe,
-      onClick: () => toggle('wireframe'),
     },
     {
       id: 'pins',
@@ -277,22 +279,6 @@ export function BottomDock() {
             <button
               type="button"
               onClick={() => {
-                toggle('safetyMode');
-                setSimMenuOpen(false);
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-                safetyMode
-                  ? 'border-rose-400 bg-rose-400 text-[#0a1e3c]'
-                  : 'border-rose-400/45 bg-[#0e2a54] text-rose-300 hover:bg-rose-400/20'
-              }`}
-            >
-              <ShieldAlert className="h-4 w-4" />
-              Safety 3D
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
                 toggle('oxygenMode');
                 setSimMenuOpen(false);
               }}
@@ -331,7 +317,9 @@ export function BottomDock() {
               ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703] shadow-amber'
               : b.accent === 'emerald'
                 ? 'border-emerald-400 bg-emerald-400/20 text-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.4)]'
-                : 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-glow';
+                : b.accent === 'rose'
+                  ? 'border-rose-400 bg-rose-500/20 text-rose-300 shadow-[0_0_16px_rgba(251,113,133,0.45)]'
+                  : 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-glow';
           return (
             <button
               key={b.id}
