@@ -46,9 +46,8 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'a330mrtt';
 
   if (profile === 'helicopter') {
-    // Khusus Helikopter: tanpa suara ATC saat Take Off (suara ATC hanya saat Landing).
-    // 0..4.2s keluar ke Helipad H -> 4.2..5.4s spool-up rotor 100% -> 5.4..8.8s naik vertikal perlahan -> 8.8..10.2s hover -> 10.2..14.6s maju perlahan & menanjak!
-    return { voiceStart: 4.2, rollStart: 5.4, rotStart: 10.2, climbStart: 11.6, airborneStart: 14.6 };
+    // heli-voice-takeoff.wav (15.76s): 4.2..19.96s suara selesai -> 20.8..25.4s naik vertikal perlahan & hover di tempat -> 25.4..29.8s baru maju perlahan & menanjak!
+    return { voiceStart: 4.2, rollStart: 20.8, rotStart: 25.4, climbStart: 26.8, airborneStart: 29.8 };
   }
   if (unitId === 'rafale') {
     // Khusus Dassault Rafale: fighter-voice-takeoff.wav (6.0..24.08s) + audio khusus rafale-takeoff.mp3 (~17s)
@@ -1064,16 +1063,18 @@ class AircraftAudioEngine {
         this.playAtcRadio('vvip-welcome');
       }
 
-      if (!isHeli && phaseTime > atcTime && !this.atcStartPlayed) {
+      if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
-          isFighter
-            ? 'fighter-takeoff'
-            : isCargoTransport
-              ? 'transport-takeoff'
-              : isVvip
-                ? 'vvip-takeoff'
-                : 'takeoff',
+          isHeli
+            ? 'heli-takeoff'
+            : isFighter
+              ? 'fighter-takeoff'
+              : isCargoTransport
+                ? 'transport-takeoff'
+                : isVvip
+                  ? 'vvip-takeoff'
+                  : 'takeoff',
         );
       }
       if (phaseTime < atcTime) {
@@ -1145,9 +1146,6 @@ class AircraftAudioEngine {
       if (flightMode === 'airborne' && isCargoTransport && phaseTime > 1.2 && !this.transportCruisePlayed) {
         this.transportCruisePlayed = true;
         this.playAtcRadio('transport-cruise');
-      } else if (flightMode === 'airborne' && profile === 'helicopter' && phaseTime > 1.2 && !this.transportCruisePlayed) {
-        this.transportCruisePlayed = true;
-        this.playAtcRadio('heli-cruise');
       } else if (flightMode === 'mission' && isCargoTransport && phaseTime > 0.2 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio('transport-airdrop');
