@@ -150,7 +150,7 @@ const initialDesktop = !isCompactViewport();
 
 export const useHangarStore = create<HangarState>((set, get) => ({
   showWelcome: true,
-  selectedId: 'c130j',
+  selectedId: 'su30mk2',
   search: '',
   category: 'Semua',
   leftOpen: initialDesktop,
