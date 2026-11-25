@@ -3,7 +3,14 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHangarStore } from '../../store/useHangarStore';
-import { getJupiterSpec, JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../../data/jupiterManeuvers';
+import { getJupiterSpec, type JupiterManeuverId } from '../../data/jupiterManeuvers';
+import {
+  JUPITER_PARTS,
+  JUPITER_SCRIPT,
+  JUPITER_SHOW_TOTAL_SEC,
+  jupiterShowLive,
+} from '../../data/jupiterShowScript';
+import { jupiterRadioPlayer } from '../../utils/jupiterRadioPlayer';
 
 interface Props {
   sourceGroup: THREE.Group;
@@ -18,7 +25,6 @@ interface Pose {
   rz: number;
 }
 
-const INTRO_DURATION = 11.5; // Durasi masuk satu per satu J1 -> J2 -> J3 -> J4 -> J5 -> J6 + hold formasi rapi
 const CYCLE_LEN = 10.0; // Durasi tiap manuver lebih tenang, anggun, dan mulus
 
 // Formasi dasar Arrow Head yang LEGA, SIMETRIS, dan RAPI (rentang sayap KT-1B ≈ 10 unit -> jarak bersih ≥ 13.5 unit!)
@@ -30,23 +36,9 @@ const BASE_ARROW: [number, number, number][] = [
   [-27.0, -1.0, -26.0], // J6 Kiri Luar (Synchro)
 ];
 
-// Titik awal & jadwal masuk satu per satu secara sinematik (J2 -> J3 -> J4 -> J5 -> J6)
-const ENTRY_SPECS: { start: number; dur: number; spawn: [number, number, number]; bankSign: number }[] = [
-  { start: 1.4, dur: 2.2, spawn: [54, 10, -52], bankSign: 1 },   // J2
-  { start: 3.0, dur: 2.2, spawn: [-54, 10, -52], bankSign: -1 }, // J3
-  { start: 4.6, dur: 2.2, spawn: [0, -14, -76], bankSign: 0 },   // J4
-  { start: 6.2, dur: 2.2, spawn: [68, 14, -68], bankSign: 1 },   // J5
-  { start: 7.8, dur: 2.2, spawn: [-68, 14, -68], bankSign: -1 }, // J6
-];
-
 function easeInOut(t: number): number {
   const c = Math.max(0, Math.min(1, t));
   return c * c * (3 - 2 * c);
-}
-
-function easeOutCubic(t: number): number {
-  const c = Math.max(0, Math.min(1, t));
-  return 1 - Math.pow(1 - c, 3);
 }
 
 function lerpAngle(current: number, target: number, alpha: number): number {
@@ -339,13 +331,17 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
   const selectedId = useHangarStore((s) => s.selectedId);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
+  const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const jupiterManeuver = useHangarStore((s) => s.jupiterManeuver);
   const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
 
   const wingRefs = useRef<(THREE.Group | null)[]>([]);
+  const wingSmokeRefs = useRef<(THREE.Mesh | null)[]>([]);
   const leaderFxRef = useRef<THREE.Group>(null);
+  const leaderSmokeRef = useRef<THREE.Mesh>(null);
   const heartSmokeRef = useRef<THREE.Group>(null);
   const timer = useRef(0);
+  const lastSpokenId = useRef(-1);
   const spawnedRef = useRef<boolean[]>([false, false, false, false, false]);
 
   const isActive = selectedId === 'kt1b' && flightMode === 'maneuver';
@@ -354,18 +350,22 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     return getJupiterSpec(jupiterManeuver);
   }, [jupiterManeuver]);
 
-  // Reset urutan masuk satu per satu setiap kali Jupiter Aerobatic Show dimulai ulang
+  // Reset skenario 5-Part & hentikan radio saat pertunjukan dimulai ulang atau keluar
   useEffect(() => {
     timer.current = 0;
+    lastSpokenId.current = -1;
+    jupiterShowLive.time = 0;
+    jupiterShowLive.part = 1;
+    jupiterShowLive.activeLine = JUPITER_SCRIPT[0];
+    jupiterShowLive.seekTarget = null;
     spawnedRef.current = [false, false, false, false, false];
-    wingRefs.current.forEach((grp, idx) => {
-      if (!grp) return;
-      const [sx, sy, sz] = ENTRY_SPECS[idx].spawn;
-      grp.position.set(sx, sy, sz);
-      grp.rotation.set(0, 0, 0);
-      grp.visible = false;
-    });
-  }, [isActive, flightNonce]);
+    if (!isActive) {
+      jupiterRadioPlayer.stop();
+    }
+    return () => {
+      jupiterRadioPlayer.stop();
+    };
+  }, [isActive, flightNonce, jupiterManeuver]);
 
   const wingmen = useMemo(() => {
     if (selectedId !== 'kt1b') return [];
@@ -396,84 +396,221 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     }
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
-    timer.current += dt;
-    const elapsed = timer.current;
 
-    // === FASE 1: PEMBUKAAN MASUK SATU PER SATU (0 .. 11.5 DETIK) ===
-    if (elapsed < INTRO_DURATION) {
-      if (leaderFxRef.current) leaderFxRef.current.visible = true;
-      if (heartSmokeRef.current) heartSmokeRef.current.visible = false;
-
-      if (elapsed < 1.4) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 1 (LEADER) MEMIMPIN FORMASI');
-      } else if (elapsed < 3.0) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 2 MASUK FORMASI KANAN');
-      } else if (elapsed < 4.6) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 3 MASUK FORMASI KIRI');
-      } else if (elapsed < 6.2) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 4 MASUK SLOT BELAKANG');
-      } else if (elapsed < 7.8) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 5 (SYNCHRO) BERGABUNG');
-      } else if (elapsed < 9.8) {
-        setFlightLabel('JUPITER AEROBATIC SHOW • JUPITER 6 (SYNCHRO) BERGABUNG');
+    // === MODE UTAMA: SKENARIO LENGKAP 5-PART BERURUTAN (Part 1 -> Part 5) ===
+    if (jupiterManeuver === 'auto') {
+      if (jupiterShowLive.seekTarget !== null) {
+        timer.current = jupiterShowLive.seekTarget;
+        jupiterShowLive.seekTarget = null;
+        lastSpokenId.current = -1;
+        jupiterRadioPlayer.stop();
       } else {
-        setFlightLabel('JUPITER AEROBATIC SHOW • FORMASI 6 PESAWAT LENGKAP — SIAP MANUVER!');
+        timer.current += dt;
+        if (timer.current >= JUPITER_SHOW_TOTAL_SEC) {
+          timer.current = 0;
+          lastSpokenId.current = -1;
+        }
       }
+
+      const st = timer.current;
+      jupiterShowLive.time = st;
+
+      // Cari baris dialog & Part aktif saat ini
+      let curLine = JUPITER_SCRIPT[0];
+      for (let i = JUPITER_SCRIPT.length - 1; i >= 0; i--) {
+        if (st >= JUPITER_SCRIPT[i].tStart) {
+          curLine = JUPITER_SCRIPT[i];
+          break;
+        }
+      }
+      jupiterShowLive.part = curLine.part;
+      jupiterShowLive.activeLine = curLine;
+
+      if (curLine.id !== lastSpokenId.current && st >= curLine.tStart) {
+        lastSpokenId.current = curLine.id;
+        jupiterRadioPlayer.speak(curLine.text, curLine.role, soundEnabled);
+      }
+
+      const partMeta = JUPITER_PARTS[curLine.part - 1];
+      setFlightLabel(`${partMeta.title.toUpperCase()}`);
+
+      // Smoke ON mulai "Gears up, smoke on!" (35s) sampai "Smoke off, prepare for landing" (122s)
+      const smokeOn = st >= 35.0 && st < 122.0;
+      if (leaderFxRef.current) leaderFxRef.current.visible = true;
+      if (leaderSmokeRef.current) leaderSmokeRef.current.visible = smokeOn;
+
+      const posAlpha = Math.min(1, dt * 3.4);
+      const rotAlpha = Math.min(1, dt * 3.8);
+
+      // Formasi Holding Short / Departure di Runway (Part 1 & awal Part 2)
+      const HOLDING_POS: [number, number, number][] = [
+        [10.5, 0, -6.5],
+        [-10.5, 0, -6.5],
+        [0, 0, -14.5],
+        [18.5, 0, -14.5],
+        [-18.5, 0, -14.5],
+      ];
+      // Formasi Left Echelon (Part 5 Rejoin & Landing di sayap kiri Leader)
+      const LEFT_ECHELON: [number, number, number][] = [
+        [9.5, 0.3, -8.5],
+        [19.0, 0.6, -17.0],
+        [28.5, 0.9, -25.5],
+        [38.0, 1.2, -34.0],
+        [47.5, 1.5, -42.5],
+      ];
 
       wingRefs.current.forEach((grp, idx) => {
         if (!grp) return;
-        const entry = ENTRY_SPECS[idx];
-        if (elapsed < entry.start) {
-          grp.visible = false;
-          return;
-        }
-        if (!spawnedRef.current[idx]) {
-          spawnedRef.current[idx] = true;
-          grp.position.set(...entry.spawn);
-          grp.rotation.set(0, 0, 0);
-        }
         grp.visible = true;
-        const p = Math.min(1, (elapsed - entry.start) / entry.dur);
-        const e = easeOutCubic(p);
-        const target = BASE_ARROW[idx];
-        const curveArc = Math.sin(p * Math.PI);
+        const wSmoke = wingSmokeRefs.current[idx];
+        let x = BASE_ARROW[idx][0];
+        let y = BASE_ARROW[idx][1];
+        let z = BASE_ARROW[idx][2];
+        let rx = 0;
+        let ry = 0;
+        let rz = 0;
+        let shipSmoke = smokeOn;
 
-        const gx = THREE.MathUtils.lerp(entry.spawn[0], target[0], e);
-        const gy = THREE.MathUtils.lerp(entry.spawn[1], target[1], e) + curveArc * 1.4;
-        const gz = THREE.MathUtils.lerp(entry.spawn[2], target[2], e);
-        const bank = entry.bankSign * curveArc * 0.48;
-        const yaw = -entry.bankSign * curveArc * 0.2;
-        const pitch = (entry.spawn[1] > target[1] ? 0.1 : -0.14) * curveArc;
+        if (st < 28.2) {
+          // Part 1 & Part 2 Check-In: Holding Short Runway 09
+          [x, y, z] = HOLDING_POS[idx];
+          shipSmoke = false;
+        } else if (st < 48.0) {
+          // Part 2: Brakes Release -> Rolling -> Rotate -> Climb ke Aerobatic Box!
+          const p = easeInOut((st - 28.2) / 14.0);
+          x = THREE.MathUtils.lerp(HOLDING_POS[idx][0], BASE_ARROW[idx][0], p);
+          y = THREE.MathUtils.lerp(0, BASE_ARROW[idx][1], p) + Math.sin(p * Math.PI) * 1.4;
+          z = THREE.MathUtils.lerp(HOLDING_POS[idx][2], BASE_ARROW[idx][2], p);
+          rx = st > 31.5 && st < 42.0 ? -0.22 * Math.sin(Math.min(1, (st - 31.5) / 10.5) * Math.PI) : 0;
+        } else if (st < 59.0) {
+          // Part 3A: Tighten into Arrowhead Formation
+          const sway = Math.sin(t * 1.2 + idx * 0.4) * 0.25;
+          x = BASE_ARROW[idx][0] * 0.92;
+          y = BASE_ARROW[idx][1] + sway;
+          z = BASE_ARROW[idx][2] * 0.92;
+        } else if (st < 68.5) {
+          // Part 3B: Jupiter Roll ("Pulling up 20 degrees... Ready, roll... NOW!")
+          const p = Math.max(0, Math.min(1, (st - 59.0) / 9.5));
+          const pose = computeWingmanPose('jupiterRoll', idx, p, st);
+          x = pose.x;
+          y = pose.y + Math.sin(p * Math.PI) * 2.2;
+          z = pose.z;
+          rx = -0.34 * Math.sin(p * Math.PI);
+          rz = pose.rz;
+        } else if (st < 84.0) {
+          // Part 3C: Opposing Solo Pass — Jupiter 5 & 6 breaking off & CROSSING!
+          if (idx === 3 || idx === 4) {
+            const side = idx === 3 ? 1 : -1;
+            const p = (st - 68.5) / 15.5;
+            if (p < 0.45) {
+              // Break off melebar ke posisi berhadapan
+              const b = easeInOut(p / 0.45);
+              x = THREE.MathUtils.lerp(BASE_ARROW[idx][0], side * 42, b);
+              y = THREE.MathUtils.lerp(BASE_ARROW[idx][1], 1.5, b);
+              z = THREE.MathUtils.lerp(BASE_ARROW[idx][2], side * 32, b);
+              rz = side * 0.65 * Math.sin(b * Math.PI);
+            } else {
+              // Closing speed 400 knots -> CROSSING!
+              const c = easeInOut((p - 0.45) / 0.55);
+              x = THREE.MathUtils.lerp(side * 42, -side * 42, c);
+              y = 1.5 + Math.sin(c * Math.PI) * 1.2;
+              z = side * 2.2;
+              ry = -side * (Math.PI / 2);
+              rz = side * 0.28 * Math.sin(c * Math.PI);
+            }
+          }
+        } else if (st < 106.5) {
+          // Part 4A: Heart Maneuver (J5 & J6 lukis hati + J4 menusuk tengah hati!)
+          const p = Math.max(0, Math.min(1, (st - 84.0) / 22.5));
+          if (idx === 3 || idx === 4) {
+            const side = idx === 3 ? 1 : -1;
+            const carveP = easeInOut(Math.max(0, Math.min(1, (p - 0.22) / 0.68)));
+            const a = carveP * Math.PI;
+            x = side * (16 * Math.pow(Math.sin(a), 3)) * 1.12;
+            y = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * 0.7 + 5.2;
+            z = -6.0;
+            rz = -side * Math.cos(a) * 0.65;
+            rx = -Math.sin(a) * 0.28;
+          } else if (idx === 2 && st >= 101.0) {
+            // Jupiter 4 (Arrow) melesat menusuk tengah Hati ("Four, piercing the heart! Smoke off!")
+            const ap = easeInOut(Math.min(1, (st - 101.0) / 5.2));
+            x = 0;
+            y = THREE.MathUtils.lerp(-6.0, 14.5, ap);
+            z = THREE.MathUtils.lerp(-32.0, 12.0, ap);
+            rx = -0.58;
+            shipSmoke = st < 104.2;
+          }
+        } else if (st < 122.0) {
+          // Part 4B: Bomb Burst Finale ("Pitch up vertical... BREAK, BREAK, BREAK!")
+          const p = Math.max(0, Math.min(1, (st - 106.5) / 15.5));
+          const pose = computeWingmanPose('bombBurst', idx, p, st);
+          x = pose.x;
+          y = pose.y;
+          z = pose.z;
+          rx = pose.rx;
+          ry = pose.ry;
+          rz = pose.rz;
+        } else if (st < 141.0) {
+          // Part 5A: Left Echelon Rejoin (Smoke OFF, berkumpul rapi di sayap kiri Leader)
+          const p = easeInOut(Math.min(1, (st - 122.0) / 6.0));
+          x = THREE.MathUtils.lerp(BASE_ARROW[idx][0], LEFT_ECHELON[idx][0], p);
+          y = THREE.MathUtils.lerp(BASE_ARROW[idx][1], LEFT_ECHELON[idx][1], p);
+          z = THREE.MathUtils.lerp(BASE_ARROW[idx][2], LEFT_ECHELON[idx][2], p);
+          shipSmoke = false;
+        } else {
+          // Part 5B: Final Approach -> Touchdown -> Full Stop!
+          const p = easeInOut(Math.min(1, (st - 141.0) / 8.0));
+          x = THREE.MathUtils.lerp(LEFT_ECHELON[idx][0], HOLDING_POS[idx][0], p);
+          y = THREE.MathUtils.lerp(LEFT_ECHELON[idx][1], 0, p);
+          z = THREE.MathUtils.lerp(LEFT_ECHELON[idx][2], HOLDING_POS[idx][2], p);
+          rx = st < 147.0 ? 0.06 * (1 - p) : 0;
+          shipSmoke = false;
+        }
 
-        grp.position.set(gx, gy, gz);
-        grp.rotation.set(pitch, yaw, bank);
+        if (wSmoke) wSmoke.visible = shipSmoke;
+        grp.position.x = THREE.MathUtils.lerp(grp.position.x, x, posAlpha);
+        grp.position.y = THREE.MathUtils.lerp(grp.position.y, y, posAlpha);
+        grp.position.z = THREE.MathUtils.lerp(grp.position.z, z, posAlpha);
+        grp.rotation.x = lerpAngle(grp.rotation.x, rx, rotAlpha);
+        grp.rotation.y = lerpAngle(grp.rotation.y, ry, rotAlpha);
+        if (st >= 59.0 && st < 68.5) {
+          grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, rz, Math.min(1, dt * 5.0));
+        } else {
+          grp.rotation.z = lerpAngle(grp.rotation.z, rz, rotAlpha);
+        }
       });
+
+      if (heartSmokeRef.current) {
+        heartSmokeRef.current.visible = st >= 91.5 && st < 107.0;
+        if (heartSmokeRef.current.visible) {
+          heartSmokeRef.current.scale.setScalar(0.95 + Math.sin(t * 1.6) * 0.025);
+        }
+      }
       return;
     }
 
-    // === FASE 2: PERTUNJUKAN MANUVER FORMASI MULUS ===
-    const showT = elapsed - INTRO_DURATION;
-    const activeId: Exclude<JupiterManeuverId, 'auto'> =
-      jupiterManeuver === 'auto'
-        ? JUPITER_AUTO_ORDER[Math.floor(showT / CYCLE_LEN) % JUPITER_AUTO_ORDER.length]
-        : jupiterManeuver;
-    const p = (showT % CYCLE_LEN) / CYCLE_LEN;
+    // === MODE PILIHAN MANUVER INDIVIDUAL (jika pengguna memilih manuver spesifik di panel kanan) ===
+    timer.current += dt;
+    const elapsed = timer.current;
+    const activeId = jupiterManeuver;
+    const p = (elapsed % CYCLE_LEN) / CYCLE_LEN;
 
     const spec = getJupiterSpec(activeId);
     setFlightLabel(`JUPITER AEROBATIC SHOW (${spec.activeShips.length} PESAWAT) • ${spec.name.toUpperCase()}`);
 
     const leaderInScene = spec.activeShips.includes(1);
-    if (leaderFxRef.current) {
-      leaderFxRef.current.visible = leaderInScene;
-    }
+    if (leaderFxRef.current) leaderFxRef.current.visible = leaderInScene;
+    if (leaderSmokeRef.current) leaderSmokeRef.current.visible = leaderInScene;
 
     const posAlpha = Math.min(1, dt * 3.1);
     const rotAlpha = Math.min(1, dt * 3.4);
 
     wingRefs.current.forEach((grp, idx) => {
       if (!grp) return;
-      const shipNum = idx + 2; // 2..6
+      const shipNum = idx + 2;
       const shipActive = spec.activeShips.includes(shipNum);
+      const wSmoke = wingSmokeRefs.current[idx];
+      if (wSmoke) wSmoke.visible = shipActive;
       if (!shipActive) {
         const exitX = shipNum % 2 === 0 ? 120 : -120;
         grp.position.x = THREE.MathUtils.lerp(grp.position.x, exitX, Math.min(1, dt * 2.2));
@@ -485,13 +622,12 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
       }
 
       grp.visible = true;
-      const pose = computeWingmanPose(activeId, idx, p, showT);
+      const pose = computeWingmanPose(activeId, idx, p, elapsed);
       grp.position.x = THREE.MathUtils.lerp(grp.position.x, pose.x, posAlpha);
       grp.position.y = THREE.MathUtils.lerp(grp.position.y, pose.y, posAlpha);
       grp.position.z = THREE.MathUtils.lerp(grp.position.z, pose.z, posAlpha);
       grp.rotation.x = lerpAngle(grp.rotation.x, pose.rx, rotAlpha);
       grp.rotation.y = lerpAngle(grp.rotation.y, pose.ry, rotAlpha);
-      // Untuk manuver roll penuh 360°, ikuti sudut langsung agar tidak terpotong shortest-arc
       if (
         activeId === 'jupiterRoll' ||
         activeId === 'jupiterRollBack' ||
@@ -508,8 +644,7 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     if (heartSmokeRef.current) {
       heartSmokeRef.current.visible = activeId === 'heart';
       if (activeId === 'heart') {
-        const s = 0.94 + Math.sin(t * 1.5) * 0.025;
-        heartSmokeRef.current.scale.setScalar(s);
+        heartSmokeRef.current.scale.setScalar(0.94 + Math.sin(t * 1.5) * 0.025);
       }
     }
   });
@@ -522,7 +657,7 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     <group name="jupiter-6ship-formation">
       {/* Jejak Asap Putih Aerobatik ramping untuk Jupiter 1 (Leader) */}
       <group ref={leaderFxRef}>
-        <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <mesh ref={leaderSmokeRef} position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
           <coneGeometry args={[0.52, 16.5, 12, 1, true]} />
           <meshBasicMaterial color="#ffffff" transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
         </mesh>
@@ -547,7 +682,13 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
             visible={false}
           >
             <primitive object={w.obj} />
-            <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+            <mesh
+              ref={(el) => {
+                wingSmokeRefs.current[idx] = el;
+              }}
+              position={[0, 1.35, -13.5]}
+              rotation={[Math.PI / 2, 0, 0]}
+            >
               <coneGeometry args={[0.48, 16.0, 12, 1, true]} />
               <meshBasicMaterial color="#ffffff" transparent opacity={0.32} depthWrite={false} side={THREE.DoubleSide} />
             </mesh>
