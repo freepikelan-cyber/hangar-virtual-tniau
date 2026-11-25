@@ -293,7 +293,7 @@ export function AircraftModel() {
           targetY = 0;
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('SEMPLAK TOWER // CARACAL 01 DI HELIPAD H — ROTOR 100%');
+          setFlightLabel('HELIPAD SKADRON 8 // ROTOR 100% — PERSIAPAN ANGKAT VERTIKAL');
         } else if (pt < hoverDone) {
           // Fase 3A: Naik vertikal PERLAHAN lurus ke atas di atas huruf H (belum maju!)
           const p = easeInOut((pt - to.rollStart) / Math.max(0.5, hoverDone - to.rollStart));
