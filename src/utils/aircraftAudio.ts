@@ -107,6 +107,9 @@ class AircraftAudioEngine {
     void this.preloadAtc('landing');
     void this.preloadAtc('vacate');
     void this.preloadAtc('vvip-escort');
+    void this.preloadAtc('fighter-takeoff');
+    void this.preloadAtc('fighter-maneuver');
+    void this.preloadAtc('fighter-landing');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -240,14 +243,25 @@ class AircraftAudioEngine {
     return true;
   }
 
-  private async preloadAtc(key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort'): Promise<AudioBuffer | null> {
+  private async preloadAtc(
+    key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort' | 'fighter-takeoff' | 'fighter-maneuver' | 'fighter-landing',
+  ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
     if (cached) return cached;
     if (this.atcLoading.has(key)) return null;
     this.atcLoading.add(key);
     try {
-      const url = key === 'vvip-escort' ? '/audio/vvip-escort.mp3' : `/audio/atc-${key}.mp3`;
+      const url =
+        key === 'vvip-escort'
+          ? '/audio/vvip-escort.mp3'
+          : key === 'fighter-takeoff'
+            ? '/audio/fighter-voice-takeoff.wav'
+            : key === 'fighter-maneuver'
+              ? '/audio/fighter-voice-maneuver.wav'
+              : key === 'fighter-landing'
+                ? '/audio/fighter-voice-landing.wav'
+                : `/audio/atc-${key}.mp3`;
       const res = await fetch(url);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
@@ -414,7 +428,9 @@ class AircraftAudioEngine {
    * Memutar rekaman suara ATC / Radio Kokpit realistis melalui rantai DSP Radio Kokpit VHF asli:
    * Highpass 520 Hz -> Lowpass 2300 Hz -> Presence 1550 Hz -> Saturasi AM Radio + Kresek Statis VHF nyata!
    */
-  private playAtcRadio(key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort') {
+  private playAtcRadio(
+    key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort' | 'fighter-takeoff' | 'fighter-maneuver' | 'fighter-landing',
+  ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
       if (!this.ctx) return;
@@ -422,8 +438,12 @@ class AircraftAudioEngine {
       this.stopAtcPlayback();
 
       const now = ctx.currentTime;
-      const isVvipVoice = key === 'vvip-escort';
-      const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli pilot VVIP!
+      const isVvipVoice =
+        key === 'vvip-escort' ||
+        key === 'fighter-takeoff' ||
+        key === 'fighter-maneuver' ||
+        key === 'fighter-landing';
+      const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli kokpit!
       const dur = buffer.duration / rate;
 
       // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio kokpit
@@ -828,15 +848,18 @@ class AircraftAudioEngine {
     let throttle = 0.6;
     let speedMod = 0;
 
+    const isFighter = profile === 'fighter_single' || profile === 'fighter_twin';
+
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
       const atcTime = isHeli ? 4.2 : 6.0;
+      const voiceStart = isFighter ? 3.6 : atcTime;
       const rollStart = isHeli ? 6.0 : 7.6;
       const gearUpTime = isHeli ? 8.4 : 12.4;
 
-      if (phaseTime > atcTime && !this.atcStartPlayed) {
+      if (phaseTime > voiceStart && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio('takeoff');
+        this.playAtcRadio(isFighter ? 'fighter-takeoff' : 'takeoff');
       }
       if (phaseTime < atcTime) {
         // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
@@ -857,7 +880,7 @@ class AircraftAudioEngine {
     } else if (flightMode === 'landing') {
       if (phaseTime > 0.15 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio('landing');
+        this.playAtcRadio(isFighter ? 'fighter-landing' : 'landing');
       }
       const isHeli = profile === 'helicopter';
       const touchTime = 5.8;
@@ -895,6 +918,10 @@ class AircraftAudioEngine {
       throttle = flightMode === 'mission' ? 0.84 : 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
       speedMod = flightMode === 'mission' ? 0.08 : 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
+      if (flightMode === 'maneuver' && isFighter && phaseTime > 0.25 && !this.atcStartPlayed) {
+        this.atcStartPlayed = true;
+        this.playAtcRadio('fighter-maneuver');
+      }
       const cycle = phaseTime % 20;
       if (cycle < 5) {
         // Barrel / Aileron Roll -> high energy!
