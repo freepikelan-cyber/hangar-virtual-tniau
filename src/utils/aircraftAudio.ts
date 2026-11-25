@@ -168,6 +168,7 @@ class AircraftAudioEngine {
   private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
   private activeAtcCarrier: AudioBufferSourceNode | null = null;
+  private voiceEpoch = 0;
   private radioCurve: Float32Array | null = null;
 
   // Rekaman audio asli pesawat tempur (Take Off, Terbang, & Taxiway)
@@ -428,7 +429,8 @@ class AircraftAudioEngine {
     return src;
   }
 
-  private stopAtcPlayback() {
+  private stopAtcPlayback(bumpEpoch = true) {
+    if (bumpEpoch) this.voiceEpoch++;
     try {
       this.activeAtcSrc?.stop();
     } catch {
@@ -575,10 +577,11 @@ class AircraftAudioEngine {
       | 'heli-landing',
   ) {
     if (!this.ctx) return;
+    const myEpoch = ++this.voiceEpoch;
     const run = (buffer: AudioBuffer) => {
-      if (!this.ctx) return;
+      if (!this.ctx || myEpoch !== this.voiceEpoch) return;
       const ctx = this.ctx;
-      this.stopAtcPlayback();
+      this.stopAtcPlayback(false);
 
       const now = ctx.currentTime;
       const isVvipVoice =
@@ -673,7 +676,7 @@ class AircraftAudioEngine {
       run(cached);
     } else {
       void this.preloadAtc(key).then((buf) => {
-        if (buf) run(buf);
+        if (buf && myEpoch === this.voiceEpoch) run(buf);
       });
     }
   }
