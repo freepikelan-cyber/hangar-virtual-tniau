@@ -59,7 +59,8 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
 
-  const isActive = selectedId === 'kt1b' && (flightMode === 'takeoff' || flightMode === 'airborne');
+  const isActive =
+    selectedId === 'kt1b' && (flightMode === 'takeoff' || flightMode === 'airborne' || flightMode === 'landing');
 
   const phaseTime = useRef(0);
   const wingRefs = useRef<(THREE.Group | null)[]>([]);
@@ -225,6 +226,55 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
           targetGear = 1;
           smokeOn = true;
+        }
+      } else if (flightMode === 'landing') {
+        // MODE LANDING: Seluruh 6 pesawat turun bersama, roda keluar saat "gears down" (3.2s), flare & touchdown di 8.6s!
+        smokeOn = false;
+        const ech = LEFT_ECHELON_SLOTS[i];
+        const landX = (i % 2 === 0 ? 1 : -1) * (3.6 + Math.floor(i / 2) * 3.4);
+        const landZOff = -3.0 - i * 3.2;
+
+        if (pt < 6.8) {
+          const p = pt / 6.8;
+          tx = THREE.MathUtils.lerp(ech[0] * 0.65, landX, p);
+          ty = THREE.MathUtils.lerp(8.2, 1.75, p);
+          tz = THREE.MathUtils.lerp(-18.5, -4.0, p) + landZOff * 0.55;
+          tp = 0.06;
+          targetGear = pt < 3.2 ? 1 : 0;
+        } else if (pt < 8.6) {
+          const p = easeInOut((pt - 6.8) / 1.8);
+          tx = landX;
+          ty = THREE.MathUtils.lerp(1.75, 0.05, p);
+          tz = THREE.MathUtils.lerp(-4.0, -1.5, p) + landZOff * 0.55;
+          tp = THREE.MathUtils.lerp(0.06, -0.16, p);
+          targetGear = 0;
+        } else if (pt < 13.0) {
+          const p = (pt - 8.6) / 4.4;
+          tx = landX;
+          ty = p < 0.14 ? Math.sin((p / 0.14) * Math.PI) * 0.04 : 0;
+          tz = THREE.MathUtils.lerp(-1.5, 1.4, easeInOut(p)) + landZOff * 0.55;
+          tp = THREE.MathUtils.lerp(-0.16, 0, Math.min(1, p * 1.65));
+          targetGear = 0;
+        } else if (pt < 20.3) {
+          const p = Math.min(1, (pt - 13.0) / 5.8);
+          tx = landX;
+          ty = 0;
+          tz = THREE.MathUtils.lerp(1.4, 2.2, easeInOut(p)) + landZOff * 0.55;
+          targetGear = 0;
+        } else if (pt < 23.3) {
+          const p = easeInOut((pt - 20.3) / 3.0);
+          tx = THREE.MathUtils.lerp(landX, -8.0 - i * 3.5, p);
+          tz = THREE.MathUtils.lerp(2.2 + landZOff * 0.55, 3.5, p);
+          ty = 0;
+          tyaw = THREE.MathUtils.lerp(0, -Math.PI / 2, p);
+          targetGear = 0;
+        } else {
+          const p = easeInOut(Math.min(1, (pt - 23.3) / 6.0));
+          tx = THREE.MathUtils.lerp(-8.0 - i * 3.5, -31.5 - i * 3.8, p);
+          tz = 3.5;
+          ty = 0;
+          tyaw = -Math.PI / 2;
+          targetGear = 0;
         }
       } else {
         // MODE AIRBORNE:

@@ -109,7 +109,8 @@ export function getLandingTiming(unitId: string): LandingTiming {
   // trainer-voice-landing.wav (0.1..13.44s) + trainer-voice-landroll.wav (14.0..43.49s):
   //   "500 ft.. 65 kts.. Minimums.. Power idle.. Flare!" (33.8s) -> Touchdown tepat di 35.8s -> Rollout & "Runway vacated — Oke, terima kasih"!
   // vvip-voice-landing.wav (19.24s): pengumuman persiapan mendarat selesai di 19.34s -> baru turun & Touchdown di 25.4s!
-  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isBasicTrainer ? 35.8 : isVvip ? 25.4 : 5.8;
+  // jupiter-landing.wav (9.27s): "Cleared to land" -> "gears down" (3.2s) -> "On final..." (7.0s) -> "Touchdown!" (8.6s)!
+  const touchTime = unitId === 'kt1b' ? 8.6 : isFighter ? 24.5 : isCargoTransport ? 17.6 : isBasicTrainer ? 35.8 : isVvip ? 25.4 : 5.8;
   const flareDur = 2.0;
   const approachEnd = Math.max(2.0, touchTime - flareDur);
   const rolloutEnd = touchTime + 4.4;
@@ -398,7 +399,8 @@ class AircraftAudioEngine {
       | 'jupiter-arrowhead-roll'
       | 'jupiter-opposing-pass'
       | 'jupiter-heart-bombburst'
-      | 'jupiter-rejoin-landing',
+      | 'jupiter-rejoin-landing'
+      | 'jupiter-landing',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -461,7 +463,9 @@ class AircraftAudioEngine {
                                                             ? '/audio/jupiter-heart-bombburst.wav'
                                                             : key === 'jupiter-rejoin-landing'
                                                               ? '/audio/jupiter-rejoin-landing.wav'
-                                                              : `/audio/atc-${key}.mp3`;
+                                                              : key === 'jupiter-landing'
+                                                                ? '/audio/jupiter-landing.wav'
+                                                                : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -673,7 +677,8 @@ class AircraftAudioEngine {
       | 'jupiter-arrowhead-roll'
       | 'jupiter-opposing-pass'
       | 'jupiter-heart-bombburst'
-      | 'jupiter-rejoin-landing',
+      | 'jupiter-rejoin-landing'
+      | 'jupiter-landing',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1219,17 +1224,19 @@ class AircraftAudioEngine {
           void this.preloadAtc('trainer-landroll');
         }
         this.playAtcRadio(
-          isHeli
-            ? 'heli-landing'
-            : isBasicTrainer
-              ? 'trainer-landing'
-              : isFighter
-                ? 'fighter-landing'
-                : isCargoTransport
-                  ? 'transport-landing'
-                  : isVvip
-                    ? 'vvip-landing'
-                    : 'landing',
+          unitId === 'kt1b'
+            ? 'jupiter-landing'
+            : isHeli
+              ? 'heli-landing'
+              : isBasicTrainer
+                ? 'trainer-landing'
+                : isFighter
+                  ? 'fighter-landing'
+                  : isCargoTransport
+                    ? 'transport-landing'
+                    : isVvip
+                      ? 'vvip-landing'
+                      : 'landing',
         );
       }
       if (isBasicTrainer && phaseTime > 14.0 && !this.trainerLandRollPlayed) {
@@ -1242,11 +1249,12 @@ class AircraftAudioEngine {
       const vacateTime = isHeli ? 25.2 : ld.brakeEnd;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
-        if (!isHeli && !isBasicTrainer) this.playAtcRadio('vacate');
+        if (!isHeli && !isBasicTrainer && unitId !== 'kt1b') this.playAtcRadio('vacate');
       }
       if (phaseTime < touchTime) {
         throttle = 0.62 - (phaseTime / touchTime) * 0.16;
-        if (phaseTime > Math.min(2.2, touchTime * 0.25) && !this.gearChimePlayed) {
+        const gearCue = unitId === 'kt1b' ? 3.2 : Math.min(2.2, touchTime * 0.25);
+        if (phaseTime > gearCue && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
           this.playGearServoSfx();
         }

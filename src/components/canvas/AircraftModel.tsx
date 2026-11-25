@@ -1060,9 +1060,15 @@ export function AircraftModel() {
           targetZ = THREE.MathUtils.lerp(-18.5, -4.0, p);
           targetY = THREE.MathUtils.lerp(8.2, 1.75, p);
           targetPitch = 0.06;
-          targetGear = 0;
-          gearSpeed = 1.6;
-          setFlightLabel('📡 FINAL APPROACH • RODA PENDARAT TERKUNCI & FLAPS PENUH');
+          targetGear = unit.id === 'kt1b' && pt < 3.2 ? 1 : 0;
+          gearSpeed = 1.8;
+          setFlightLabel(
+            unit.id === 'kt1b'
+              ? pt < 3.2
+                ? '🎙️ CLEARED TO LAND RUNWAY 09, JUPITER FLIGHT'
+                : '🎙️ JUPITERS, GEARS DOWN, FLAPS FULL... • PENDEKATAN FINAL'
+              : '📡 FINAL APPROACH • RODA PENDARAT TERKUNCI & FLAPS PENUH',
+          );
         } else if (pt < ld.touchTime) {
           // Fase 2: Landing Flare mulus tepat sebelum Touchdown!
           const p = (pt - ld.approachEnd) / Math.max(0.5, ld.touchTime - ld.approachEnd);
