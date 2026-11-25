@@ -408,7 +408,9 @@ class AircraftAudioEngine {
                                       ? '/audio/heli-voice-cruise.wav'
                                       : key === 'heli-landing'
                                         ? '/audio/heli-voice-landing.wav'
-                                        : `/audio/atc-${key}.mp3`;
+                                        : key === 'trainer-takeoff'
+                                          ? '/audio/trainer-voice-takeoff.wav'
+                                          : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
