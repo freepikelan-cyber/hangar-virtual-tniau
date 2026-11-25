@@ -106,6 +106,7 @@ class AircraftAudioEngine {
     void this.preloadAtc('takeoff');
     void this.preloadAtc('landing');
     void this.preloadAtc('vacate');
+    void this.preloadAtc('vvip-escort');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -239,14 +240,15 @@ class AircraftAudioEngine {
     return true;
   }
 
-  private async preloadAtc(key: 'takeoff' | 'landing' | 'vacate'): Promise<AudioBuffer | null> {
+  private async preloadAtc(key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort'): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
     if (cached) return cached;
     if (this.atcLoading.has(key)) return null;
     this.atcLoading.add(key);
     try {
-      const res = await fetch(`/audio/atc-${key}.mp3`);
+      const url = key === 'vvip-escort' ? '/audio/vvip-escort.mp3' : `/audio/atc-${key}.mp3`;
+      const res = await fetch(url);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
       const decoded = await this.ctx.decodeAudioData(arr);
@@ -409,10 +411,10 @@ class AircraftAudioEngine {
   }
 
   /**
-   * Memutar rekaman suara ATC realistis melalui rantai DSP Radio Kokpit VHF asli:
+   * Memutar rekaman suara ATC / Radio Kokpit realistis melalui rantai DSP Radio Kokpit VHF asli:
    * Highpass 520 Hz -> Lowpass 2300 Hz -> Presence 1550 Hz -> Saturasi AM Radio + Kresek Statis VHF nyata!
    */
-  private playAtcRadio(key: 'takeoff' | 'landing' | 'vacate') {
+  private playAtcRadio(key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort') {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
       if (!this.ctx) return;
@@ -420,7 +422,7 @@ class AircraftAudioEngine {
       this.stopAtcPlayback();
 
       const now = ctx.currentTime;
-      const rate = 1.07; // tempo tegas & cepat khas petugas menara ATC sungguhan
+      const rate = key === 'vvip-escort' ? 1.02 : 1.07; // Bahasa Indonesia gagah & jelas untuk pengawalan VVIP!
       const dur = buffer.duration / rate;
 
       // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio
@@ -496,6 +498,36 @@ class AircraftAudioEngine {
         if (buf) run(buf);
       });
     }
+  }
+
+  /** Memutar ucapan radio kokpit Bahasa Indonesia dari pesawat tempur pengawal VVIP. */
+  playVvipEscortRadio(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    const cached = this.atcBuffers.get('vvip-escort');
+    if (cached) {
+      this.playAtcRadio('vvip-escort');
+      return;
+    }
+    void this.preloadAtc('vvip-escort').then((buf) => {
+      if (buf) {
+        this.playAtcRadio('vvip-escort');
+      } else if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        // Fallback suara Bahasa Indonesia apabila file MP3 belum termuat
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(
+            'Selamat pagi Bapak Presiden, perjalanan Anda kami kawal. Salam Swa Bhuwana Paksa.',
+          );
+          u.lang = 'id-ID';
+          u.rate = 0.98;
+          u.pitch = 0.88;
+          window.speechSynthesis.speak(u);
+        } catch {
+          // ignore
+        }
+      }
+    });
   }
 
   /** Helper membuat buffer white noise pendek untuk sintesis akustik realistis (non-arcade). */

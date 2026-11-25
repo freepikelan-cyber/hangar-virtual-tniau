@@ -393,7 +393,17 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       };
     });
   },
-  setFlightState: (flightMode, flightLabel) => set({ flightMode, flightLabel }),
+  setFlightState: (flightMode, flightLabel) => {
+    const s = get();
+    const isVvip = s.selectedId === 'b737vip' || s.selectedId === 'falcon8x';
+    set({
+      flightMode,
+      flightLabel,
+      ...(flightMode === 'airborne' && isVvip
+        ? { camRequest: { pos: [23.0, 11.0, 31.5] as Vec3, target: [0, 3.2, -1.5] as Vec3, nonce: nonce++ } }
+        : {}),
+    });
+  },
   setFlightLabel: (flightLabel) => {
     if (get().flightLabel !== flightLabel) set({ flightLabel });
   },

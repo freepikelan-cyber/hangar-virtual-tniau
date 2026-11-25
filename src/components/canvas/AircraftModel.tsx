@@ -15,6 +15,7 @@ import { CockpitPilotLayer } from './CockpitPilotLayer';
 import { GSuitEduLayer } from './GSuitEduLayer';
 import { JupiterFormationLayer } from './JupiterFormationLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
+import { VvipEscortLayer } from './VvipEscortLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
 
 interface SavedMatProps {
@@ -1229,6 +1230,7 @@ export function AircraftModel() {
       </group>
       <SafetySystemLayer />
       <JupiterFormationLayer sourceGroup={procedural.group} />
+      <VvipEscortLayer />
     </group>
   );
 }
