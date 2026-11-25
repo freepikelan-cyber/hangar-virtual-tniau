@@ -81,9 +81,9 @@ export function getLandingTiming(unitId: string): LandingTiming {
     unitId === 'a330mrtt';
 
   // fighter-voice-landing.wav (21.0s): selesai penuh di 21.1s + jeda -> baru Flare & Touchdown di 24.5s!
-  // transport-voice-landing.wav (13.76s): "Touchdown" di 9.0s -> "Reverse thrust aktif" di 10-13s
+  // transport-voice-landing.wav (13.76s): selesai penuh di 13.86s + jeda -> baru Flare & Touchdown di 17.6s!
   // vvip-voice-landing.wav (19.24s): pengumuman persiapan mendarat selesai di 19.34s -> baru turun & Touchdown di 25.4s!
-  const touchTime = isFighter ? 24.5 : isCargoTransport ? 9.0 : isVvip ? 25.4 : 5.8;
+  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isVvip ? 25.4 : 5.8;
   const flareDur = 2.0;
   const approachEnd = Math.max(2.0, touchTime - flareDur);
   const rolloutEnd = touchTime + 4.4;
