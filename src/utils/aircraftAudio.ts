@@ -78,8 +78,8 @@ export function getLandingTiming(unitId: string): LandingTiming {
 
   // fighter-voice-landing.wav (21.0s): "Touchdown" di 15.8s -> "Drag chute deployed, pengereman aktif" di 18-20s
   // transport-voice-landing.wav (13.76s): "Touchdown" di 9.0s -> "Reverse thrust aktif" di 10-13s
-  // vvip-voice-landing.wav (19.24s): pengumuman kabin 0-19s, touchdown mulus di 14.5s
-  const touchTime = isFighter ? 15.8 : isCargoTransport ? 9.0 : isVvip ? 14.5 : 5.8;
+  // vvip-voice-landing.wav (19.24s): pengumuman persiapan mendarat selesai di 19.34s -> baru turun & Touchdown di 25.4s!
+  const touchTime = isFighter ? 15.8 : isCargoTransport ? 9.0 : isVvip ? 25.4 : 5.8;
   const flareDur = 2.0;
   const approachEnd = Math.max(2.0, touchTime - flareDur);
   const rolloutEnd = touchTime + 4.4;
