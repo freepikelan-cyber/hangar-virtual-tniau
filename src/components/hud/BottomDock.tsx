@@ -63,8 +63,9 @@ export function BottomDock() {
   const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
 
   const canTakeOff = flightMode === 'parked';
-  const isAirborneReady = flightMode === 'airborne' || flightMode === 'maneuver';
-  const takeOffDone = flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'landing';
+  const isAirborneReady =
+    flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'mission' || flightMode === 'aar';
+  const takeOffDone = isAirborneReady || flightMode === 'landing';
 
   const stopAllSim = () => {
     if (safetyMode) toggle('safetyMode');
@@ -206,7 +207,8 @@ export function BottomDock() {
             {flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver atau 3. Landing'}
             {flightMode === 'maneuver' && 'Manuver udara aktif! Klik 3. Landing untuk mendarat di Runway'}
             {flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
-            {flightMode === 'mission' && `Misi Operasi TNI AU aktif: ${missionBtnLabel}`}
+            {flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Langsung klik 3. Landing untuk mendarat di Runway`}
+            {flightMode === 'aar' && 'AAR Refueling aktif! Langsung klik 3. Landing untuk mendarat di Runway'}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5">

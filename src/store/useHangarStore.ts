@@ -411,7 +411,13 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
   triggerManeuver: () => {
     const s = get();
-    if (s.flightMode !== 'airborne' && s.flightMode !== 'maneuver') return;
+    if (
+      s.flightMode !== 'airborne' &&
+      s.flightMode !== 'maneuver' &&
+      s.flightMode !== 'mission' &&
+      s.flightMode !== 'aar'
+    )
+      return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
     const activating = s.flightMode !== 'maneuver';
@@ -432,7 +438,13 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
   triggerLanding: () => {
     const s = get();
-    if (s.flightMode !== 'airborne' && s.flightMode !== 'maneuver') return;
+    if (
+      s.flightMode !== 'airborne' &&
+      s.flightMode !== 'maneuver' &&
+      s.flightMode !== 'mission' &&
+      s.flightMode !== 'aar'
+    )
+      return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
     set({
