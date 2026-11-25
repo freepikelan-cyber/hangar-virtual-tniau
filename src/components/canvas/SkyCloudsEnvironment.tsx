@@ -95,6 +95,61 @@ function makeSkyTexture(mode: 'day' | 'sunset' | 'night'): THREE.CanvasTexture {
   return tex;
 }
 
+function makeHelipadTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  const ctx = c.getContext('2d')!;
+  // Beton helipad gelap dengan tekstur halus
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(0, 0, 512, 512);
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 4;
+  for (let i = 0; i <= 512; i += 64) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, 512);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(512, i);
+    ctx.stroke();
+  }
+  // Bingkai tepi kuning-hitam hazard
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 14;
+  ctx.strokeRect(18, 18, 476, 476);
+  // Lingkaran pendaratan kuning tebal
+  ctx.beginPath();
+  ctx.arc(256, 256, 178, 0, Math.PI * 2);
+  ctx.strokeStyle = '#facc15';
+  ctx.lineWidth = 18;
+  ctx.stroke();
+  // Lingkaran dalam putih
+  ctx.beginPath();
+  ctx.arc(256, 256, 152, 0, Math.PI * 2);
+  ctx.strokeStyle = 'rgba(255,255,255,0.65)';
+  ctx.lineWidth = 4;
+  ctx.stroke();
+  // Huruf H raksasa di tengah
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(184, 156, 34, 200);
+  ctx.fillRect(294, 156, 34, 200);
+  ctx.fillRect(184, 238, 144, 34);
+  // Stensil TNI AU
+  ctx.fillStyle = '#facc15';
+  ctx.font = 'bold 26px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('HELIPAD TNI AU', 256, 66);
+  ctx.fillText('SKADRON UDARA 8', 256, 466);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function makeSunHaloTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 128;
@@ -196,6 +251,7 @@ export function SkyCloudsEnvironment() {
     return geo;
   }, []);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
+  const helipadTex = useMemo(() => makeHelipadTexture(), []);
   const skyscraperTex = useMemo(() => makeSkyscraperGlassTexture(), []);
   const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
   const roofTileTex = useMemo(() => makeRoofTileTexture(), []);
@@ -251,6 +307,7 @@ export function SkyCloudsEnvironment() {
       skyTextures.night.dispose();
       starGeo.dispose();
       runwayTex.dispose();
+      helipadTex.dispose();
       skyscraperTex.dispose();
       houseWallTex.dispose();
       roofTileTex.dispose();
@@ -266,6 +323,7 @@ export function SkyCloudsEnvironment() {
     skyTextures,
     starGeo,
     runwayTex,
+    helipadTex,
     skyscraperTex,
     houseWallTex,
     roofTileTex,
@@ -505,19 +563,21 @@ export function SkyCloudsEnvironment() {
       const stopScroll = LOOP_LEN + 283.0;
       const ld = getLandingTiming(selectedId);
       if (isHeli) {
+        // Selaraskan Helipad Selatan (local z = +145) tepat di world z = 0.0!
+        const heliStopScroll = LOOP_LEN + 286.5;
         if (pt < 19.0) {
           // Hover menunggu seluruh suara persiapan landing Halim Tower selesai
           targetWorldY = -13.5;
-          scrollZ.current = stopScroll - 220;
+          scrollZ.current = heliStopScroll - 160;
           groundSpeed = 0;
         } else if (pt < 25.0) {
           const p = Math.min(1, (pt - 19.0) / 6.0);
           targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
-          scrollZ.current = THREE.MathUtils.lerp(stopScroll - 220, stopScroll, 1 - (1 - p) * (1 - p));
+          scrollZ.current = THREE.MathUtils.lerp(heliStopScroll - 160, heliStopScroll, 1 - (1 - p) * (1 - p));
           groundSpeed = 0;
         } else {
           targetWorldY = -0.02;
-          scrollZ.current = stopScroll;
+          scrollZ.current = heliStopScroll;
           groundSpeed = 0;
         }
       } else if (pt < ld.touchTime) {
@@ -660,89 +720,162 @@ export function SkyCloudsEnvironment() {
       <group ref={worldGroupRef} visible={false} position={[0, -0.02, 0]} name="outdoor-world-3d">
         {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN REALISTIS + GEDUNG KACA BERTINGKAT + LAUT PESISIR === */}
         <group ref={runwayChunkRef} name="biome-runway-city">
-          {/* Rumput pangkalan udara yang luas (jarak runway ke hanggar lebih jauh & realistis) */}
+          {/* Rumput pangkalan udara yang luas */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14, -0.08, 0]} receiveShadow>
             <planeGeometry args={[64, CHUNK_LEN]} />
             <meshStandardMaterial color="#3c6e47" roughness={0.95} metalness={0} />
           </mesh>
 
-          {/* Aspal Runway 3D lengkap */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-            <planeGeometry args={[11.2, CHUNK_LEN]} />
-            <meshStandardMaterial map={runwayTex} roughness={0.86} metalness={0.05} />
-          </mesh>
-
-          {/* Bahu aspal & parallel taxiway */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6.4, -0.02, 0]}>
-            <planeGeometry args={[1.6, CHUNK_LEN]} />
-            <meshStandardMaterial color="#3a404a" roughness={0.92} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6.4, -0.02, 0]}>
-            <planeGeometry args={[1.6, CHUNK_LEN]} />
-            <meshStandardMaterial color="#3a404a" roughness={0.92} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, -0.01, 0]}>
-            <planeGeometry args={[3.6, CHUNK_LEN]} />
-            <meshStandardMaterial color="#333942" roughness={0.9} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, 0.01, 0]}>
-            <planeGeometry args={[0.24, CHUNK_LEN]} />
-            <meshBasicMaterial color="#fbbf24" />
-          </mesh>
-
-          {/* Lampu tepi runway */}
-          {runwayLightZ.map((lz, i) => (
-            <group key={i} position={[0, 0.14, lz]}>
-              <mesh position={[-5.9, 0, 0]}>
-                <sphereGeometry args={[0.16, 8, 8]} />
-                <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
+          {isHeli ? (
+            /* === KHUSUS HELIKOPTER: HELIPAD SKADRON 8 (TAKE OFF z=-141.5) & HELIPAD SELATAN (LANDING z=+145.0) === */
+            <>
+              {[-141.5, 145.0].map((hz, hIdx) => (
+                <group key={`helipad-${hIdx}`} position={[0, 0, hz]}>
+                  {/* Beton alas Helipad persegi + marka huruf H raksasa */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]} receiveShadow>
+                    <planeGeometry args={[18, 18]} />
+                    <meshStandardMaterial map={helipadTex} roughness={0.82} metalness={0.08} />
+                  </mesh>
+                  {/* 8 Lampu hijau tepi helipad (TLOF perimeter lights) */}
+                  {[
+                    [-8.6, -8.6],
+                    [0, -8.6],
+                    [8.6, -8.6],
+                    [8.6, 0],
+                    [8.6, 8.6],
+                    [0, 8.6],
+                    [-8.6, 8.6],
+                    [-8.6, 0],
+                  ].map(([lx, lz], lIdx) => (
+                    <mesh key={lIdx} position={[lx, 0.16, lz]}>
+                      <sphereGeometry args={[0.2, 8, 8]} />
+                      <meshBasicMaterial color="#22c55e" />
+                    </mesh>
+                  ))}
+                  {/* Tiang Windsock (Penunjuk Arah Angin Helipad) di sudut kanan depan */}
+                  <group position={[11.2, 0, 8.5]}>
+                    <mesh position={[0, 2.2, 0]}>
+                      <cylinderGeometry args={[0.06, 0.08, 4.4, 8]} />
+                      <meshStandardMaterial color="#e2e8f0" roughness={0.5} />
+                    </mesh>
+                    <mesh position={[0.75, 4.15, 0]} rotation={[0, 0, -Math.PI / 2 + 0.15]}>
+                      <coneGeometry args={[0.32, 1.5, 10, 1, true]} />
+                      <meshStandardMaterial color="#f97316" side={THREE.DoubleSide} roughness={0.7} />
+                    </mesh>
+                  </group>
+                  {/* Apron penghubung pendek dari Hanggar Helikopter ke Helipad */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.01, 0]} receiveShadow>
+                    <planeGeometry args={[11, 10]} />
+                    <meshStandardMaterial color="#475569" roughness={0.88} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.025, 0]}>
+                    <planeGeometry args={[9.5, 0.28]} />
+                    <meshBasicMaterial color="#fbbf24" />
+                  </mesh>
+                  {/* Hanggar Khusus Skadron Helikopter TNI AU di sisi kiri Helipad (x = -21) */}
+                  <group position={[-21.0, 0, 0]}>
+                    <mesh position={[-4.5, 3.2, 0]}>
+                      <boxGeometry args={[0.5, 6.4, 13.4]} />
+                      <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+                    </mesh>
+                    <mesh position={[0, 3.2, -6.5]}>
+                      <boxGeometry args={[9.4, 6.4, 0.45]} />
+                      <meshStandardMaterial color="#cbd5e1" roughness={0.72} />
+                    </mesh>
+                    <mesh position={[0, 3.2, 6.5]}>
+                      <boxGeometry args={[9.4, 6.4, 0.45]} />
+                      <meshStandardMaterial color="#cbd5e1" roughness={0.72} />
+                    </mesh>
+                    <mesh position={[0, 6.65, 0]}>
+                      <boxGeometry args={[10.0, 0.65, 14.0]} />
+                      <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
+                    </mesh>
+                    <mesh position={[4.95, 6.65, 0]}>
+                      <boxGeometry args={[0.22, 0.45, 13.8]} />
+                      <meshBasicMaterial color="#ffb703" />
+                    </mesh>
+                    <pointLight position={[0, 5.4, 0]} color="#ffe9b8" intensity={6} distance={20} />
+                  </group>
+                </group>
+              ))}
+            </>
+          ) : (
+            /* === PESAWAT SAYAP TETAP: ASPAL RUNWAY 09 + TAXIWAY + HANGGAR JAUH === */
+            <>
+              {/* Aspal Runway 3D lengkap */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+                <planeGeometry args={[11.2, CHUNK_LEN]} />
+                <meshStandardMaterial map={runwayTex} roughness={0.86} metalness={0.05} />
               </mesh>
-              <mesh position={[5.9, 0, 0]}>
-                <sphereGeometry args={[0.16, 8, 8]} />
-                <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
-              </mesh>
-            </group>
-          ))}
 
-          {/* Hanggar TNI AU Terbuka (diletakkan lebih jauh di x = -36) — 1 di sisi Take Off (z = -152) & 1 di ujung Landing (z = +145) */}
-          {[-152.0, 145.0].map((hz, hIdx) => (
-            <group key={hIdx} position={[-36.0, 0, hz]}>
-              {/* Apron beton panjang penghubung dari dalam hanggar hingga tepi runway */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
-                <planeGeometry args={[32, 14]} />
-                <meshStandardMaterial color="#475569" roughness={0.88} />
+              {/* Bahu aspal & parallel taxiway */}
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6.4, -0.02, 0]}>
+                <planeGeometry args={[1.6, CHUNK_LEN]} />
+                <meshStandardMaterial color="#3a404a" roughness={0.92} />
               </mesh>
-              {/* Garis kuning taxiway panjang penghubung hanggar <-> runway */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
-                <planeGeometry args={[30, 0.34]} />
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[6.4, -0.02, 0]}>
+                <planeGeometry args={[1.6, CHUNK_LEN]} />
+                <meshStandardMaterial color="#3a404a" roughness={0.92} />
+              </mesh>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, -0.01, 0]}>
+                <planeGeometry args={[3.6, CHUNK_LEN]} />
+                <meshStandardMaterial color="#333942" roughness={0.9} />
+              </mesh>
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, 0.01, 0]}>
+                <planeGeometry args={[0.24, CHUNK_LEN]} />
                 <meshBasicMaterial color="#fbbf24" />
               </mesh>
-              {/* Dinding belakang & samping Hanggar (bagian depan +X terbuka lebar agar pesawat bisa keluar/masuk!) */}
-              <mesh position={[-5.5, 3.6, 0]}>
-                <boxGeometry args={[0.6, 7.2, 16.4]} />
-                <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
-              </mesh>
-              <mesh position={[0, 3.6, -8.0]}>
-                <boxGeometry args={[11.4, 7.2, 0.5]} />
-                <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
-              </mesh>
-              <mesh position={[0, 3.6, 8.0]}>
-                <boxGeometry args={[11.4, 7.2, 0.5]} />
-                <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
-              </mesh>
-              {/* Atap lengkung baja Biru TNI AU + lis kuning */}
-              <mesh position={[0, 7.45, 0]}>
-                <boxGeometry args={[12.0, 0.7, 17.0]} />
-                <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
-              </mesh>
-              <mesh position={[5.95, 7.45, 0]}>
-                <boxGeometry args={[0.25, 0.5, 16.8]} />
-                <meshBasicMaterial color="#ffb703" />
-              </mesh>
-              {/* Lampu hangat di langit-langit hanggar */}
-              <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
-            </group>
-          ))}
+
+              {/* Lampu tepi runway */}
+              {runwayLightZ.map((lz, i) => (
+                <group key={i} position={[0, 0.14, lz]}>
+                  <mesh position={[-5.9, 0, 0]}>
+                    <sphereGeometry args={[0.16, 8, 8]} />
+                    <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
+                  </mesh>
+                  <mesh position={[5.9, 0, 0]}>
+                    <sphereGeometry args={[0.16, 8, 8]} />
+                    <meshBasicMaterial color={lz < -135 ? '#22c55e' : '#fde68a'} />
+                  </mesh>
+                </group>
+              ))}
+
+              {/* Hanggar TNI AU Terbuka (diletakkan lebih jauh di x = -36) */}
+              {[-152.0, 145.0].map((hz, hIdx) => (
+                <group key={hIdx} position={[-36.0, 0, hz]}>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
+                    <planeGeometry args={[32, 14]} />
+                    <meshStandardMaterial color="#475569" roughness={0.88} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
+                    <planeGeometry args={[30, 0.34]} />
+                    <meshBasicMaterial color="#fbbf24" />
+                  </mesh>
+                  <mesh position={[-5.5, 3.6, 0]}>
+                    <boxGeometry args={[0.6, 7.2, 16.4]} />
+                    <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+                  </mesh>
+                  <mesh position={[0, 3.6, -8.0]}>
+                    <boxGeometry args={[11.4, 7.2, 0.5]} />
+                    <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+                  </mesh>
+                  <mesh position={[0, 3.6, 8.0]}>
+                    <boxGeometry args={[11.4, 7.2, 0.5]} />
+                    <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+                  </mesh>
+                  <mesh position={[0, 7.45, 0]}>
+                    <boxGeometry args={[12.0, 0.7, 17.0]} />
+                    <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
+                  </mesh>
+                  <mesh position={[5.95, 7.45, 0]}>
+                    <boxGeometry args={[0.25, 0.5, 16.8]} />
+                    <meshBasicMaterial color="#ffb703" />
+                  </mesh>
+                  <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
+                </group>
+              ))}
+            </>
+          )}
 
           {/* Hanggar cadangan & Menara ATC */}
           <group position={[-36.0, 0, -32]}>

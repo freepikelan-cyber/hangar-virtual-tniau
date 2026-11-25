@@ -172,9 +172,9 @@ export function AircraftModel() {
     const isHeli = unit.category === 'Helikopter';
 
     if (flightMode === 'takeoff') {
-      // Mulai dari dalam Hanggar TNI AU yang agak jauh di sisi kiri landasan, menghadap keluar menuju taxiway & runway!
-      const startX = -31.5;
-      const startZ = -10.5;
+      // Helikopter mulai dari Hanggar Helipad Skadron 8 (x = -19, z = 0); sayap tetap mulai dari Hanggar Runway (x = -31.5, z = -10.5)
+      const startX = isHeli ? -19.0 : -31.5;
+      const startZ = isHeli ? 0.0 : -10.5;
       currentX.current = startX;
       currentY.current = 0;
       currentZ.current = startZ;
@@ -250,34 +250,34 @@ export function AircraftModel() {
 
     if (flightMode === 'takeoff') {
       if (isHeli) {
-        // TAKE OFF HELIKOPTER: Keluar hanggar ke helipad -> Tunggu suara Semplak Tower selesai penuh -> Hover vertikal -> Menanjak!
+        // TAKE OFF HELIKOPTER: Keluar Hanggar Skadron 8 -> Tepat ke tengah Helipad H (0,0,0) -> Tunggu suara Semplak Tower -> Hover Vertikal -> Menanjak!
         const to = getTakeOffTiming(unit.id);
         if (pt < 4.2) {
           const p = easeInOut(pt / 4.2);
-          targetX = THREE.MathUtils.lerp(-31.5, 0, p);
-          targetZ = THREE.MathUtils.lerp(-10.5, -2.0, p);
+          targetX = THREE.MathUtils.lerp(-19.0, 0, p);
+          targetZ = 0;
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.65) / 0.35));
           targetGear = 0;
-          setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU HELIPAD');
+          setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU HELIPAD SKADRON 8');
         } else if (pt < to.rollStart) {
           targetX = 0;
-          targetZ = -2.0;
+          targetZ = 0;
           targetY = 0;
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('📡 SEMPLAK TOWER • CARACAL 01 PERSIAPAN START ENGINE & ROTOR 100%');
+          setFlightLabel('📡 SEMPLAK TOWER • CARACAL 01 DI HELIPAD H — START ENGINE & ROTOR 100%');
         } else if (pt < to.rotStart) {
           const p = easeInOut((pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart));
-          targetZ = -2.0;
-          targetY = THREE.MathUtils.lerp(0, 1.8, p);
+          targetZ = 0;
+          targetY = THREE.MathUtils.lerp(0, 2.1, p);
           targetPitch = -0.03 * Math.sin(p * Math.PI);
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL (HOVER — LIFTING OFF!)');
+          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL DARI HELIPAD H (LIFTING OFF!)');
         } else if (pt < to.airborneStart) {
           const p = easeInOut((pt - to.rotStart) / Math.max(0.5, to.airborneStart - to.rotStart));
-          targetY = THREE.MathUtils.lerp(1.8, 3.0, p);
-          targetZ = THREE.MathUtils.lerp(-2.0, 0, p);
+          targetY = THREE.MathUtils.lerp(2.1, 3.0, p);
+          targetZ = 0;
           targetPitch = 0.09 * Math.sin(p * Math.PI);
           targetGear = p > 0.2 ? 1 : 0;
           setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK MENUJU UTARA & RODA MASUK');
@@ -841,21 +841,21 @@ export function AircraftModel() {
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
         } else if (pt < 30.2) {
-          // Helikopter taxi pelan menyusuri jalur panjang menuju Hanggar TNI AU yang jauh
+          // Helikopter taxi pelan dari tengah Helipad Selatan H masuk ke Hanggar Helikopter (x = -19)
           const p = easeInOut((pt - 25.0) / 5.2);
-          targetX = THREE.MathUtils.lerp(0, -31.5, p);
-          targetZ = THREE.MathUtils.lerp(0, 3.5, Math.min(1, p * 2.2));
+          targetX = THREE.MathUtils.lerp(0, -19.0, p);
+          targetZ = 0;
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, Math.min(1, p * 2.4));
           targetGear = 0;
-          setFlightLabel('📡 HALIM TOWER • TAXI PERLAHAN MENUJU HANGGAR');
+          setFlightLabel('📡 HALIM TOWER • TAXI PERLAHAN DARI HELIPAD H MENUJU HANGGAR');
         } else if (pt < 31.6) {
-          targetX = -31.5;
-          targetZ = 3.5;
+          targetX = -19.0;
+          targetZ = 0;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('PARKIR DI HANGGAR • ROTOR IDLE — MISI SELESAI');
+          setFlightLabel('PARKIR DI HANGGAR HELIKOPTER • ROTOR IDLE — MISI SELESAI');
         } else {
           setFlightState('parked', null);
         }
