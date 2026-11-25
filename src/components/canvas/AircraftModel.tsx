@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
-import { JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../../data/jupiterManeuvers';
+import { getJupiterSpec, JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../../data/jupiterManeuvers';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
 import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
@@ -194,7 +194,7 @@ export function AircraftModel() {
     }
   }, [flightMode, flightNonce, unit.category]);
 
-  // Reset waktu cerita Safety saat tombol Safety atau Ulangi ditekan
+  // Reset waktu cerita Safety & posisi airframe saat berganti mode terbang/safety
   useEffect(() => {
     safetyTime.current = 0;
     if (airframeRef.current) {
@@ -202,7 +202,7 @@ export function AircraftModel() {
       airframeRef.current.rotation.set(0, 0, 0);
       airframeRef.current.visible = true;
     }
-  }, [safetyMode, safetyNonce, unit.id]);
+  }, [safetyMode, safetyNonce, flightMode, unit.id]);
 
   // Saat simulasi aktif, kaca kanopi dibuat lebih bening agar Pilot 3D di dalam kokpit terlihat jelas!
   const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
@@ -416,20 +416,41 @@ export function AircraftModel() {
           setFlightLabel('TAHAP 2 • MANUVER TEMPUR • TACTICAL DIVE & AFTERBURNER PULL-UP');
         }
       } else if (unit.id === 'kt1b') {
-        // JUPITER AEROBATIC TEAM (6-SHIP): Gerakan Jupiter 1 (Leader) selaras dengan 21 manuver JAT!
-        const cycleLen = 7.0;
+        // JUPITER AEROBATIC TEAM: Jika manuver hanya melibatkan Synchro (J5-J6) atau Solo (J5), Jupiter 1 menyingkir keluar pandangan!
+        const cycleLen = 7.5;
         const activeJat: Exclude<JupiterManeuverId, 'auto'> =
           jupiterManeuver === 'auto'
             ? JUPITER_AUTO_ORDER[Math.floor(pt / cycleLen) % JUPITER_AUTO_ORDER.length]
             : jupiterManeuver;
+        const spec = getJupiterSpec(activeJat);
+        const leaderActive = spec.activeShips.includes(1);
         const p = (pt % cycleLen) / cycleLen;
         const sWave = Math.sin(p * Math.PI);
         const fullWave = Math.sin(p * Math.PI * 2);
 
+        if (airframeRef.current) {
+          if (!leaderActive) {
+            airframeRef.current.position.x = THREE.MathUtils.lerp(airframeRef.current.position.x, -110, Math.min(1, dt * 3.2));
+            airframeRef.current.position.y = THREE.MathUtils.lerp(airframeRef.current.position.y, 26, Math.min(1, dt * 3.2));
+            airframeRef.current.position.z = THREE.MathUtils.lerp(airframeRef.current.position.z, -80, Math.min(1, dt * 3.2));
+            airframeRef.current.rotation.z = THREE.MathUtils.lerp(airframeRef.current.rotation.z, 0.85, Math.min(1, dt * 4));
+            airframeRef.current.visible = Math.abs(airframeRef.current.position.x) < 72;
+          } else {
+            airframeRef.current.visible = true;
+            airframeRef.current.position.x = THREE.MathUtils.lerp(airframeRef.current.position.x, 0, Math.min(1, dt * 5));
+            airframeRef.current.position.y = THREE.MathUtils.lerp(airframeRef.current.position.y, 0, Math.min(1, dt * 5));
+            airframeRef.current.position.z = THREE.MathUtils.lerp(airframeRef.current.position.z, 0, Math.min(1, dt * 5));
+            airframeRef.current.rotation.set(0, 0, 0);
+          }
+        }
+
         targetX = 0;
-        targetY = baseH + 0.8 + sWave * 0.65;
+        targetY = leaderActive ? baseH + 0.8 + sWave * 0.65 : baseH + 0.6;
         targetZ = 0;
-        if (activeJat === 'jupiterRoll' || activeJat === 'barrelRoll') {
+        if (!leaderActive) {
+          targetPitch = 0;
+          targetRoll = 0;
+        } else if (activeJat === 'jupiterRoll' || activeJat === 'barrelRoll') {
           directRoll = -p * Math.PI * 2;
         } else if (activeJat === 'jupiterRollBack') {
           directRoll = p < 0.5 ? -(p * 2) * Math.PI * 2 : ((p - 0.5) * 2) * Math.PI * 2;
@@ -437,16 +458,16 @@ export function AircraftModel() {
           targetPitch = -fullWave * 0.4;
           targetY = baseH + 0.9 + sWave * 1.4;
         } else if (activeJat === 'bombBurst') {
-          const burst = Math.max(0, (p - 0.25) / 0.75);
-          targetY = baseH + 1.0 + burst * 3.8;
+          const burst = Math.max(0, (p - 0.22) / 0.78);
+          targetY = baseH + 1.0 + burst * 5.2;
           targetPitch = -0.38 * burst;
         } else if (activeJat === 'snakeLoop') {
-          targetX = Math.sin(t * 2.6) * 3.8;
-          targetY = baseH + 0.9 + Math.cos(t * 2.6 * 0.8) * 1.35;
-          targetRoll = -Math.cos(t * 2.6) * 0.65;
+          targetX = Math.sin(t * 2.4) * 8.5;
+          targetY = baseH + 0.9 + Math.cos(t * 2.4 * 0.8) * 2.6;
+          targetRoll = -Math.cos(t * 2.4) * 0.62;
         } else if (activeJat === 'leaderBenefit') {
-          targetZ = 1.6 * sWave;
-          targetY = baseH + 1.1 + 0.6 * sWave;
+          targetZ = 2.6 * sWave;
+          targetY = baseH + 1.1 + 0.8 * sWave;
         } else if (activeJat === 'cloverLeaf') {
           targetRoll = -Math.sin(p * Math.PI * 2) * 0.75;
           targetPitch = -Math.cos(p * Math.PI * 2) * 0.3;

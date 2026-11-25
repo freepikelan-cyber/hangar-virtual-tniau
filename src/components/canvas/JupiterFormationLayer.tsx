@@ -157,20 +157,18 @@ function computeWingmanPose(
       break;
     }
     case 'screwRoll': {
-      // Main Body terbang rapat lurus, Synchro J5 & J6 berputar spiral lebar (radius 13 unit!) mengelilingi sumbu!
-      if (idx === 3 || idx === 4) {
-        const ang = p * Math.PI * 4 + (idx === 3 ? 0 : Math.PI);
-        x = Math.cos(ang) * 14.5;
-        y = Math.sin(ang) * 7.5;
-        z = -10.0;
+      // Hanya 2 pesawat Synchro: Jupiter 5 lurus di tengah, Jupiter 6 berputar spiral mengelilingi J5!
+      if (idx === 3) {
+        x = 0;
+        y = 1.2;
+        z = -2.0;
+        rz = 0;
+      } else if (idx === 4) {
+        const ang = p * Math.PI * 4;
+        x = Math.cos(ang) * 9.5;
+        y = 1.2 + Math.sin(ang) * 6.0;
+        z = -2.0;
         rz = -ang * 1.4;
-      } else {
-        const mb: [number, number, number][] = [
-          [8.6, -0.4, -9.2],
-          [-8.6, -0.4, -9.2],
-          [0.0, -0.8, -18.4],
-        ];
-        [x, y, z] = mb[idx];
       }
       break;
     }
@@ -201,34 +199,27 @@ function computeWingmanPose(
       break;
     }
     case 'mirror': {
-      // IKONIK! Jupiter 5 terbang normal, Jupiter 6 TERBALIK 180° berdampingan jelas di depan!
+      // HANYA 2 PESAWAT SYNCHRO: Jupiter 5 terbang normal, Jupiter 6 TERBALIK 180° tepat berdampingan di tengah!
       if (idx === 3) {
-        x = 9.5;
-        y = 1.4;
-        z = 4.5;
+        x = 6.2;
+        y = 1.6;
+        z = -2.0;
         rz = 0;
       } else if (idx === 4) {
-        x = -9.5;
-        y = 1.8;
-        z = 4.5;
+        x = -6.2;
+        y = 2.0;
+        z = -2.0;
         rz = Math.PI; // 180° terbalik!
-      } else {
-        // Main Body J2-J4 mengawal lega di belakang
-        const back: [number, number, number][] = [
-          [10.5, -1.2, -11.5],
-          [-10.5, -1.2, -11.5],
-          [0.0, -2.0, -21.5],
-        ];
-        [x, y, z] = back[idx];
       }
       break;
     }
     case 'twinHalfCuban': {
+      // HANYA 2 PESAWAT SYNCHRO di tengah layar
       if (idx === 3 || idx === 4) {
         const side = idx === 3 ? 1 : -1;
-        x = side * (9.5 + Math.cos(p * Math.PI * 2) * 11.0);
-        y = Math.sin(p * Math.PI * 2) * 6.5;
-        z = -7.5;
+        x = side * (6.5 + Math.cos(p * Math.PI * 2) * 10.5);
+        y = 1.5 + Math.sin(p * Math.PI * 2) * 6.5;
+        z = -3.0;
         rx = -Math.cos(p * Math.PI * 2) * 0.7;
         rz = side * p * Math.PI * 2;
       }
@@ -249,24 +240,14 @@ function computeWingmanPose(
       break;
     }
     case 'soloSpin': {
-      // Jupiter 5 melakukan Solo Spin menukik berputar di depan-tengah, yang lain mengorbit lebar!
+      // HANYA 1 PESAWAT SOLO (Jupiter 5) di tengah panggung, 5 pesawat lain menyingkir keluar pandangan!
       if (idx === 3) {
         x = 0.0;
-        y = 5.5 - p * 9.5;
-        z = 8.5;
+        y = 5.5 - p * 9.0;
+        z = -2.0;
         rx = 0.92;
         ry = p * Math.PI * 8;
         rz = 0.5;
-      } else {
-        const orbit: [number, number, number][] = [
-          [12.0, 1.0, -9.5],
-          [-12.0, 1.0, -9.5],
-          [0.0, 0.6, -19.5],
-          [0.0, 0.0, 0.0],
-          [-21.0, 1.8, -16.5],
-        ];
-        [x, y, z] = orbit[idx];
-        rz = -0.32;
       }
       break;
     }
@@ -346,10 +327,15 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
   const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
 
   const wingRefs = useRef<(THREE.Group | null)[]>([]);
+  const leaderFxRef = useRef<THREE.Group>(null);
   const heartSmokeRef = useRef<THREE.Group>(null);
   const timer = useRef(0);
 
   const isActive = selectedId === 'kt1b' && flightMode === 'maneuver';
+  const currentSpec = useMemo(() => {
+    if (jupiterManeuver === 'auto') return null;
+    return getJupiterSpec(jupiterManeuver);
+  }, [jupiterManeuver]);
 
   const wingmen = useMemo(() => {
     if (selectedId !== 'kt1b') return [];
@@ -390,10 +376,29 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     const p = (timer.current % cycleLen) / cycleLen;
 
     const spec = getJupiterSpec(activeId);
-    setFlightLabel(`JUPITER AEROBATIC TEAM (6-SHIP) • ${spec.name.toUpperCase()}`);
+    setFlightLabel(`JUPITER AEROBATIC TEAM (${spec.activeShips.length} PESAWAT) • ${spec.name.toUpperCase()}`);
+
+    const leaderInScene = spec.activeShips.includes(1);
+    if (leaderFxRef.current) {
+      leaderFxRef.current.visible = leaderInScene;
+    }
 
     wingRefs.current.forEach((grp, idx) => {
       if (!grp) return;
+      const shipNum = idx + 2; // 2..6
+      const shipActive = spec.activeShips.includes(shipNum);
+      if (!shipActive) {
+        // Pesawat yang tidak ikut manuver menyingkir jauh keluar lapangan pandang!
+        const exitX = shipNum % 2 === 0 ? 110 : -110;
+        grp.position.x = THREE.MathUtils.lerp(grp.position.x, exitX, Math.min(1, dt * 3.2));
+        grp.position.y = THREE.MathUtils.lerp(grp.position.y, 28, Math.min(1, dt * 3.2));
+        grp.position.z = THREE.MathUtils.lerp(grp.position.z, -85, Math.min(1, dt * 3.2));
+        grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, shipNum % 2 === 0 ? -0.9 : 0.9, Math.min(1, dt * 4));
+        grp.visible = Math.abs(grp.position.x) < 72;
+        return;
+      }
+
+      grp.visible = true;
       const pose = computeWingmanPose(activeId, idx, p, t);
       grp.position.x = THREE.MathUtils.lerp(grp.position.x, pose.x, Math.min(1, dt * 5.2));
       grp.position.y = THREE.MathUtils.lerp(grp.position.y, pose.y, Math.min(1, dt * 5.2));
@@ -414,45 +419,56 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
 
   if (!isActive) return null;
 
+  const showLeaderBadge = !currentSpec || currentSpec.activeShips.includes(1);
+
   return (
     <group name="jupiter-6ship-formation">
-      {/* Jejak Asap Putih Aerobatik ramping untuk Jupiter 1 (Leader) */}
-      <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.52, 16.5, 12, 1, true]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
-      </mesh>
-      <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-        <span className="whitespace-nowrap rounded border border-[#ffb703]/80 bg-[#0a1e3c]/85 px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
-          J1 • LEADER
-        </span>
-      </Html>
-
-      {/* 5 Pesawat Wingman: Jupiter 2–4 (Main Body) & Jupiter 5–6 (Synchro) */}
-      {wingmen.map((w, idx) => (
-        <group
-          key={`jupiter-${w.num}`}
-          ref={(el) => {
-            wingRefs.current[idx] = el;
-          }}
-        >
-          <primitive object={w.obj} />
-          <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.48, 16.0, 12, 1, true]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.32} depthWrite={false} side={THREE.DoubleSide} />
-          </mesh>
+      {/* Jejak Asap Putih Aerobatik ramping untuk Jupiter 1 (Leader) — sembunyi jika J1 menyingkir! */}
+      <group ref={leaderFxRef}>
+        <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.52, 16.5, 12, 1, true]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
+        </mesh>
+        {showLeaderBadge && (
           <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
-            <span
-              className={`whitespace-nowrap rounded px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider uppercase shadow ${
-                w.num <= 4
-                  ? 'border border-[#ffb703]/70 bg-[#0a1e3c]/80 text-[#ffb703]'
-                  : 'border border-rose-400/80 bg-rose-950/85 text-rose-200'
-              }`}
-            >
-              J{w.num} • {w.role}
+            <span className="whitespace-nowrap rounded border border-[#ffb703]/80 bg-[#0a1e3c]/85 px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
+              J1 • LEADER
             </span>
           </Html>
-        </group>
-      ))}
+        )}
+      </group>
+
+      {/* 5 Pesawat Wingman: Jupiter 2–4 (Main Body) & Jupiter 5–6 (Synchro) */}
+      {wingmen.map((w, idx) => {
+        const showBadge = !currentSpec || currentSpec.activeShips.includes(w.num);
+        return (
+          <group
+            key={`jupiter-${w.num}`}
+            ref={(el) => {
+              wingRefs.current[idx] = el;
+            }}
+          >
+            <primitive object={w.obj} />
+            <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+              <coneGeometry args={[0.48, 16.0, 12, 1, true]} />
+              <meshBasicMaterial color="#ffffff" transparent opacity={0.32} depthWrite={false} side={THREE.DoubleSide} />
+            </mesh>
+            {showBadge && (
+              <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+                <span
+                  className={`whitespace-nowrap rounded px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider uppercase shadow ${
+                    w.num <= 4
+                      ? 'border border-[#ffb703]/70 bg-[#0a1e3c]/80 text-[#ffb703]'
+                      : 'border border-rose-400/80 bg-rose-950/85 text-rose-200'
+                  }`}
+                >
+                  J{w.num} • {w.role}
+                </span>
+              </Html>
+            )}
+          </group>
+        );
+      })}
 
       {/* Formasi Hati Asap Putih 3D Raksasa (Heart Loop / Hearts) */}
       <group ref={heartSmokeRef} visible={false}>
