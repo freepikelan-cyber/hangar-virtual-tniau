@@ -37,55 +37,76 @@ function ridgedFbm(x: number, y: number): number {
 
 /**
  * Membuat geometri pegunungan 3D nyata (heightmap displaced mesh) dengan lembah sungai di tengah,
- * lereng hutan hijau tropis, tebing batu vulkanik, dan puncak kabut/salju alami.
+ * lereng hutan hijau tropis, tebing batu vulkanik (berdasarkan kemiringan), dan puncak berkabut alami.
  */
 export function buildMountainRangeGeometry(width: number, length: number): THREE.BufferGeometry {
-  const segX = 76;
-  const segZ = 64;
+  const segX = 96;
+  const segZ = 80;
   const geo = new THREE.PlaneGeometry(width, length, segX, segZ);
   geo.rotateX(-Math.PI / 2);
 
   const pos = geo.attributes.position as THREE.BufferAttribute;
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
   const c = new THREE.Color();
 
-  const cValley = new THREE.Color('#2d6138');
-  const cForest = new THREE.Color('#1f4d2e');
-  const cHighForest = new THREE.Color('#355c3a');
-  const cRock = new THREE.Color('#5a626b');
-  const cPeak = new THREE.Color('#dce8f4');
+  const cValley = new THREE.Color('#285432');
+  const cForest = new THREE.Color('#1a3f26');
+  const cHighForest = new THREE.Color('#2d4d32');
+  const cRock = new THREE.Color('#4f565e');
+  const cCliff = new THREE.Color('#3b4048');
+  const cPeak = new THREE.Color('#cfdbe6');
 
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
     const z = pos.getZ(i);
 
+    // Ulangi UV rapat agar tekstur detail hutan & tebing batu tajam dari dekat
+    uv.setXY(i, (x + width / 2) / 24, (z + length / 2) / 24);
+
     // Seamless blend ke ketinggian 0 di tepi Z agar sambungan antar-zona mulus tanpa patahan!
-    const zEdge = Math.min(1, Math.min(z + length / 2, length / 2 - z) / 26);
+    const zEdge = Math.min(1, Math.min(z + length / 2, length / 2 - z) / 28);
     const zFade = zEdge * zEdge * (3 - 2 * zEdge);
 
-    // Lembah sungai berkelok di tengah (x ≈ sin(z*0.035)*14)
+    // Lembah sungai berkelok di tengah (x ≈ sin(z*0.032)*14)
     const riverCenter = Math.sin(z * 0.032) * 14;
     const distFromRiver = Math.abs(x - riverCenter);
     const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 7, 34);
 
-    // Punggungan gunung organik multi-oktaf
-    const ridge = ridgedFbm(x * 0.022 + 4.3, z * 0.022 + 1.7);
-    const detail = valueNoise2D(x * 0.085, z * 0.085) * 0.25;
-    const rawH = Math.pow(ridge, 1.35) * 34 + detail * 4;
+    // Punggungan gunung organik multi-oktaf + mikro-erosi
+    const ridge = ridgedFbm(x * 0.021 + 4.3, z * 0.021 + 1.7);
+    const erosion = ridgedFbm(x * 0.055 + 9.1, z * 0.055 + 3.4) * 0.28;
+    const detail = valueNoise2D(x * 0.11, z * 0.11) * 0.24;
+    const rawH = Math.pow(ridge, 1.32) * 35 + erosion * 6.5 + detail * 3.5;
     const h = rawH * valleyMask * zFade;
 
     pos.setY(i, h - 0.15);
+  }
 
-    // Pewarnaan realistis berdasarkan ketinggian & variasi noise
-    const nTint = (valueNoise2D(x * 0.09, z * 0.09) - 0.5) * 0.08;
-    if (h < 2.2) {
-      c.copy(cValley).lerp(cForest, h / 2.2);
-    } else if (h < 10.5) {
-      c.copy(cForest).lerp(cHighForest, (h - 2.2) / 8.3);
-    } else if (h < 19.5) {
-      c.copy(cHighForest).lerp(cRock, (h - 10.5) / 9.0);
+  // Hitung normal terlebih dahulu agar tebing curam otomatis jadi batu vulkanik!
+  geo.computeVertexNormals();
+  const norm = geo.attributes.normal as THREE.BufferAttribute;
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    const h = pos.getY(i) + 0.15;
+    const ny = norm.getY(i); // 1.0 = datar, <0.78 = tebing curam
+    const slopeFactor = THREE.MathUtils.clamp((0.86 - ny) / 0.28, 0, 1);
+
+    const nTint = (valueNoise2D(x * 0.11, z * 0.11) - 0.5) * 0.09;
+    if (h < 2.4) {
+      c.copy(cValley).lerp(cForest, h / 2.4);
+    } else if (h < 11.5) {
+      c.copy(cForest).lerp(cHighForest, (h - 2.4) / 9.1);
+    } else if (h < 21.0) {
+      c.copy(cHighForest).lerp(cRock, (h - 11.5) / 9.5);
     } else {
-      c.copy(cRock).lerp(cPeak, Math.min(1, (h - 19.5) / 7.5));
+      c.copy(cRock).lerp(cPeak, Math.min(1, (h - 21.0) / 8.5));
+    }
+    // Lereng curam otomatis menampilkan strata tebing batu vulkanik gelap
+    if (slopeFactor > 0.05 && h > 2.0) {
+      c.lerp(cCliff, slopeFactor * 0.72);
     }
     colors[i * 3] = Math.min(1, Math.max(0, c.r + nTint));
     colors[i * 3 + 1] = Math.min(1, Math.max(0, c.g + nTint));
@@ -93,7 +114,6 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
   }
 
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-  geo.computeVertexNormals();
   return geo;
 }
 
@@ -405,9 +425,257 @@ export function makeRunwayAsphaltTexture(): THREE.CanvasTexture {
     ctx.fillRect(247, y, 18, 62);
   }
 
+  // Sambungan melintang beton/aspal realistis & garis drainase tipis
+  ctx.fillStyle = 'rgba(12,14,18,0.22)';
+  for (let y = 0; y < 2048; y += 128) {
+    ctx.fillRect(28, y, 456, 2);
+  }
+
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   tex.needsUpdate = true;
+  return tex;
+}
+
+/** Tekstur satelit rumput & tanah pangkalan udara nyata (jalur potong rumput, variasi tanah & drainase). */
+export function makeAirbaseGrassTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  const img = ctx.createImageData(size, size);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const n1 = valueNoise2D(x * 0.04, y * 0.04);
+      const n2 = valueNoise2D(x * 0.14 + 12.1, y * 0.14 + 4.7);
+      const n3 = hash2(x, y);
+      const stripe = Math.sin((x / size) * Math.PI * 12) * 0.045;
+      const v = n1 * 0.55 + n2 * 0.3 + n3 * 0.15 + stripe;
+      const idx = (y * size + x) * 4;
+      img.data[idx] = Math.min(255, Math.max(0, Math.round(44 + v * 36)));
+      img.data[idx + 1] = Math.min(255, Math.max(0, Math.round(78 + v * 48)));
+      img.data[idx + 2] = Math.min(255, Math.max(0, Math.round(40 + v * 26)));
+      img.data[idx + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(6, 22);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** Tekstur beton Apron Lanud nyata (sambungan pelat beton, noda karet ban & cuaca). */
+export function makeConcreteApronTexture(): THREE.CanvasTexture {
+  const size = 512;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+
+  ctx.fillStyle = '#55606e';
+  ctx.fillRect(0, 0, size, size);
+
+  let seed = 7331;
+  const rand = () => {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  };
+  for (let i = 0; i < 6000; i++) {
+    const x = rand() * size;
+    const y = rand() * size;
+    const v = 72 + Math.floor(rand() * 34);
+    ctx.fillStyle = `rgb(${v},${v + 4},${v + 9})`;
+    ctx.fillRect(x, y, 2 + rand() * 3, 2 + rand() * 3);
+  }
+  ctx.strokeStyle = 'rgba(20,26,34,0.45)';
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= size; i += 64) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, size);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(size, i);
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 2);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+/** Tekstur dinding baja bergelombang (corrugated steel) Hanggar TNI AU nyata. */
+export function makeHangarMetalTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext('2d')!;
+
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(0, 0, 256, 256);
+
+  for (let x = 0; x < 256; x += 8) {
+    const grad = ctx.createLinearGradient(x, 0, x + 8, 0);
+    grad.addColorStop(0, '#94a3b8');
+    grad.addColorStop(0.4, '#e2e8f0');
+    grad.addColorStop(0.85, '#cbd5e1');
+    grad.addColorStop(1, '#64748b');
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, 0, 8, 256);
+  }
+  ctx.fillStyle = 'rgba(15,23,42,0.22)';
+  ctx.fillRect(0, 84, 256, 2);
+  ctx.fillRect(0, 170, 256, 2);
+  const grime = ctx.createLinearGradient(0, 190, 0, 256);
+  grime.addColorStop(0, 'rgba(30,41,59,0)');
+  grime.addColorStop(1, 'rgba(30,41,59,0.28)');
+  ctx.fillStyle = grime;
+  ctx.fillRect(0, 190, 256, 66);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(3, 1);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** Tekstur detail mikro permukaan gunung (kanopi hutan tropis + urat batu tebing + bump map). */
+export function makeMountainDetailTextures(): { map: THREE.CanvasTexture; bumpMap: THREE.CanvasTexture } {
+  const size = 256;
+  const cCol = document.createElement('canvas');
+  cCol.width = size;
+  cCol.height = size;
+  const ctxCol = cCol.getContext('2d')!;
+
+  const cBump = document.createElement('canvas');
+  cBump.width = size;
+  cBump.height = size;
+  const ctxBump = cBump.getContext('2d')!;
+
+  const imgCol = ctxCol.createImageData(size, size);
+  const imgBump = ctxBump.createImageData(size, size);
+
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const n1 = valueNoise2D(x * 0.09, y * 0.09);
+      const n2 = valueNoise2D(x * 0.28 + 3.2, y * 0.28 + 7.4);
+      const n3 = hash2(x, y);
+      const v = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
+      const shade = Math.round(182 + v * 73);
+      const idx = (y * size + x) * 4;
+      imgCol.data[idx] = shade;
+      imgCol.data[idx + 1] = shade;
+      imgCol.data[idx + 2] = shade;
+      imgCol.data[idx + 3] = 255;
+
+      const b = Math.round(v * 255);
+      imgBump.data[idx] = b;
+      imgBump.data[idx + 1] = b;
+      imgBump.data[idx + 2] = b;
+      imgBump.data[idx + 3] = 255;
+    }
+  }
+  ctxCol.putImageData(imgCol, 0, 0);
+  ctxBump.putImageData(imgBump, 0, 0);
+
+  const map = new THREE.CanvasTexture(cCol);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.wrapS = THREE.RepeatWrapping;
+  map.wrapT = THREE.RepeatWrapping;
+  map.anisotropy = 4;
+
+  const bumpMap = new THREE.CanvasTexture(cBump);
+  bumpMap.wrapS = THREE.RepeatWrapping;
+  bumpMap.wrapT = THREE.RepeatWrapping;
+
+  return { map, bumpMap };
+}
+
+/** Tekstur pesisir pantai realistis (pasir kering -> pasir basah -> buih ombak pecah -> laguna biru toska). */
+export function makeCoastlineTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 512;
+  const ctx = c.getContext('2d')!;
+
+  const grad = ctx.createLinearGradient(0, 0, 256, 0);
+  grad.addColorStop(0.0, '#3c6b42');
+  grad.addColorStop(0.18, '#d6c496');
+  grad.addColorStop(0.48, '#b59d6e');
+  grad.addColorStop(0.62, '#eefaff');
+  grad.addColorStop(0.76, '#34a8ba');
+  grad.addColorStop(1.0, '#0f5d8c');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 256, 512);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.72)';
+  ctx.lineWidth = 4;
+  for (let wave = 0; wave < 2; wave++) {
+    ctx.beginPath();
+    for (let y = 0; y <= 512; y += 8) {
+      const wx = 152 + wave * 20 + Math.sin(y * 0.045 + wave * 2.1) * 8 + Math.cos(y * 0.11) * 4;
+      if (y === 0) ctx.moveTo(wx, y);
+      else ctx.lineTo(wx, y);
+    }
+    ctx.stroke();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 8);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** Tekstur awan cumulus lembut fotorealistis (volumetric radial sprite, jauh lebih nyata dari bola 3D). */
+export function makePhotorealCloudTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+
+  ctx.clearRect(0, 0, size, size);
+  const puffs: [number, number, number, string][] = [
+    [128, 144, 78, 'rgba(198,216,236,0.52)'],
+    [74, 148, 56, 'rgba(204,222,242,0.46)'],
+    [182, 148, 54, 'rgba(204,222,242,0.46)'],
+    [124, 114, 68, 'rgba(255,255,255,0.82)'],
+    [88, 124, 52, 'rgba(252,253,255,0.72)'],
+    [164, 124, 50, 'rgba(252,253,255,0.72)'],
+    [118, 90, 48, 'rgba(255,255,255,0.9)'],
+    [148, 102, 42, 'rgba(255,255,255,0.8)'],
+  ];
+
+  for (const [px, py, r, col] of puffs) {
+    const g = ctx.createRadialGradient(px, py - r * 0.15, r * 0.1, px, py, r);
+    g.addColorStop(0, col);
+    g.addColorStop(0.58, col.replace(/[\d.]+\)$/, '0.3)'));
+    g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(px, py, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }

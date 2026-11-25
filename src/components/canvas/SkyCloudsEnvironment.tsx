@@ -7,8 +7,14 @@ import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
 import {
   buildMountainRangeGeometry,
   buildOrganicIslandGeometry,
+  makeAirbaseGrassTexture,
+  makeCoastlineTexture,
+  makeConcreteApronTexture,
+  makeHangarMetalTexture,
   makeHouseWallTexture,
+  makeMountainDetailTextures,
   makeOceanTextures,
+  makePhotorealCloudTexture,
   makeRoofTileTexture,
   makeRunwayAsphaltTexture,
   makeSkyscraperGlassTexture,
@@ -251,12 +257,19 @@ export function SkyCloudsEnvironment() {
     return geo;
   }, []);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
+  const airbaseGrassTex = useMemo(() => makeAirbaseGrassTexture(), []);
+  const concreteApronTex = useMemo(() => makeConcreteApronTexture(), []);
+  const hangarMetalTex = useMemo(() => makeHangarMetalTexture(), []);
+  const mountainDetailTex = useMemo(() => makeMountainDetailTextures(), []);
+  const coastlineTex = useMemo(() => makeCoastlineTexture(), []);
+  const photorealCloudTex = useMemo(() => makePhotorealCloudTexture(), []);
   const helipadTex = useMemo(() => makeHelipadTexture(), []);
   const skyscraperTex = useMemo(() => makeSkyscraperGlassTexture(), []);
   const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
   const roofTileTex = useMemo(() => makeRoofTileTexture(), []);
   const oceanTextures = useMemo(() => makeOceanTextures(), []);
   const sunHaloTex = useMemo(() => makeSunHaloTexture(), []);
+  const atcRadarRef = useRef<THREE.Group>(null);
 
   // Geometri Pegunungan 3D Heightmap + 4 Pulau Tropis Organik
   const mountainGeo = useMemo(() => buildMountainRangeGeometry(280, CHUNK_LEN), []);
@@ -300,6 +313,18 @@ export function SkyCloudsEnvironment() {
     [],
   );
 
+  const cloudSpriteMat = useMemo(
+    () =>
+      new THREE.SpriteMaterial({
+        map: photorealCloudTex,
+        color: '#ffffff',
+        transparent: true,
+        opacity: 0,
+        depthWrite: false,
+      }),
+    [photorealCloudTex],
+  );
+
   useEffect(() => {
     return () => {
       skyTextures.day.dispose();
@@ -307,6 +332,13 @@ export function SkyCloudsEnvironment() {
       skyTextures.night.dispose();
       starGeo.dispose();
       runwayTex.dispose();
+      airbaseGrassTex.dispose();
+      concreteApronTex.dispose();
+      hangarMetalTex.dispose();
+      mountainDetailTex.map.dispose();
+      mountainDetailTex.bumpMap.dispose();
+      coastlineTex.dispose();
+      photorealCloudTex.dispose();
       helipadTex.dispose();
       skyscraperTex.dispose();
       houseWallTex.dispose();
@@ -318,11 +350,18 @@ export function SkyCloudsEnvironment() {
       islandGeos.forEach((ig) => ig.geo.dispose());
       cloudTopMat.dispose();
       cloudBottomMat.dispose();
+      cloudSpriteMat.dispose();
     };
   }, [
     skyTextures,
     starGeo,
     runwayTex,
+    airbaseGrassTex,
+    concreteApronTex,
+    hangarMetalTex,
+    mountainDetailTex,
+    coastlineTex,
+    photorealCloudTex,
     helipadTex,
     skyscraperTex,
     houseWallTex,
@@ -333,6 +372,7 @@ export function SkyCloudsEnvironment() {
     islandGeos,
     cloudTopMat,
     cloudBottomMat,
+    cloudSpriteMat,
   ]);
 
   const hangarBgDay = useMemo(() => new THREE.Color('#0a1e3c'), []);
@@ -640,7 +680,13 @@ export function SkyCloudsEnvironment() {
       if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
     }
 
+    if (atcRadarRef.current) {
+      atcRadarRef.current.rotation.y += dt * 1.65;
+    }
+
     if (cMix > 0.01) {
+      cloudSpriteMat.opacity = Math.min(0.88, cMix * (timeOfDay === 'night' ? 0.35 : 0.88));
+      cloudSpriteMat.color.set(timeOfDay === 'sunset' ? '#ffd9bc' : timeOfDay === 'night' ? '#3d5678' : '#ffffff');
       const cloudSpeedMult = flightMode === 'maneuver' ? 1.45 : 1.0;
       clouds.forEach((c, idx) => {
         const grp = cloudGroupRefs.current[idx];
@@ -652,6 +698,7 @@ export function SkyCloudsEnvironment() {
         }
       });
     } else {
+      cloudSpriteMat.opacity = 0;
       cloudGroupRefs.current.forEach((grp) => {
         if (grp) grp.visible = false;
       });
@@ -707,7 +754,7 @@ export function SkyCloudsEnvironment() {
         </sprite>
       </group>
 
-      {/* 3. Awan 3D Cumulus Bertingkat */}
+      {/* 3. Awan Cumulus Fotorealistis Berlapis */}
       {clouds.map((c, idx) => (
         <group
           key={idx}
@@ -718,27 +765,20 @@ export function SkyCloudsEnvironment() {
           scale={c.scale}
           visible={false}
         >
-          {c.puffs.map((p, pIdx) => (
-            <mesh
-              key={pIdx}
-              position={[p.ox, p.oy, p.oz]}
-              scale={[p.sx, p.sy, p.sz]}
-              material={p.isTop ? cloudTopMat : cloudBottomMat}
-            >
-              <icosahedronGeometry args={[1, 2]} />
-            </mesh>
-          ))}
+          <sprite position={[0, 0, 0]} scale={[7.2, 4.4, 1]} material={cloudSpriteMat} />
+          <sprite position={[2.1, -0.35, 0.8]} scale={[5.4, 3.3, 1]} material={cloudSpriteMat} />
+          <sprite position={[-2.0, -0.25, -0.7]} scale={[5.0, 3.1, 1]} material={cloudSpriteMat} />
         </group>
       ))}
 
-      {/* 4. Dunia Bawah 3D Realistis & Dinamis (3 Zona Bergantian) */}
+      {/* 4. Dunia Bawah 3D Fotorealistis & Dinamis (3 Zona Bergantian) */}
       <group ref={worldGroupRef} visible={false} position={[0, -0.02, 0]} name="outdoor-world-3d">
         {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN REALISTIS + GEDUNG KACA BERTINGKAT + LAUT PESISIR === */}
         <group ref={runwayChunkRef} name="biome-runway-city">
-          {/* Rumput pangkalan udara yang luas */}
+          {/* Rumput pangkalan udara bertekstur satelit nyata */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14, -0.08, 0]} receiveShadow>
             <planeGeometry args={[64, CHUNK_LEN]} />
-            <meshStandardMaterial color="#3c6e47" roughness={0.95} metalness={0} />
+            <meshStandardMaterial map={airbaseGrassTex} roughness={0.94} metalness={0} />
           </mesh>
 
           {isHeli ? (
@@ -781,7 +821,7 @@ export function SkyCloudsEnvironment() {
                   {/* Apron penghubung pendek dari Hanggar Helikopter ke Helipad */}
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.01, 0]} receiveShadow>
                     <planeGeometry args={[11, 10]} />
-                    <meshStandardMaterial color="#475569" roughness={0.88} />
+                    <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
                   </mesh>
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.025, 0]}>
                     <planeGeometry args={[9.5, 0.28]} />
@@ -791,15 +831,15 @@ export function SkyCloudsEnvironment() {
                   <group position={[-21.0, 0, 0]}>
                     <mesh position={[-4.5, 3.2, 0]}>
                       <boxGeometry args={[0.5, 6.4, 13.4]} />
-                      <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+                      <meshStandardMaterial map={hangarMetalTex} color="#33517a" roughness={0.62} metalness={0.35} />
                     </mesh>
                     <mesh position={[0, 3.2, -6.5]}>
                       <boxGeometry args={[9.4, 6.4, 0.45]} />
-                      <meshStandardMaterial color="#cbd5e1" roughness={0.72} />
+                      <meshStandardMaterial map={hangarMetalTex} roughness={0.68} metalness={0.28} />
                     </mesh>
                     <mesh position={[0, 3.2, 6.5]}>
                       <boxGeometry args={[9.4, 6.4, 0.45]} />
-                      <meshStandardMaterial color="#cbd5e1" roughness={0.72} />
+                      <meshStandardMaterial map={hangarMetalTex} roughness={0.68} metalness={0.28} />
                     </mesh>
                     <mesh position={[0, 6.65, 0]}>
                       <boxGeometry args={[10.0, 0.65, 14.0]} />
@@ -855,12 +895,28 @@ export function SkyCloudsEnvironment() {
                 </group>
               ))}
 
-              {/* Hanggar TNI AU Terbuka (diletakkan lebih jauh di x = -36) */}
+              {/* Lampu PAPI (Precision Approach Path Indicator — 2 Putih 2 Merah) di sisi kiri Zona Touchdown */}
+              <group position={[-8.6, 0.22, -112]}>
+                {[-1.5, -0.5, 0.5, 1.5].map((px, pIdx) => (
+                  <group key={pIdx} position={[px, 0, 0]}>
+                    <mesh>
+                      <boxGeometry args={[0.55, 0.34, 0.45]} />
+                      <meshStandardMaterial color="#1e293b" roughness={0.7} />
+                    </mesh>
+                    <mesh position={[0, 0, 0.24]}>
+                      <sphereGeometry args={[0.14, 8, 8]} />
+                      <meshBasicMaterial color={pIdx < 2 ? '#ffffff' : '#ef4444'} />
+                    </mesh>
+                  </group>
+                ))}
+              </group>
+
+              {/* Hanggar TNI AU Terbuka (baja bergelombang + beton apron nyata) */}
               {[-152.0, 145.0].map((hz, hIdx) => (
                 <group key={hIdx} position={[-36.0, 0, hz]}>
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
                     <planeGeometry args={[32, 14]} />
-                    <meshStandardMaterial color="#475569" roughness={0.88} />
+                    <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
                   </mesh>
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
                     <planeGeometry args={[30, 0.34]} />
@@ -868,19 +924,19 @@ export function SkyCloudsEnvironment() {
                   </mesh>
                   <mesh position={[-5.5, 3.6, 0]}>
                     <boxGeometry args={[0.6, 7.2, 16.4]} />
-                    <meshStandardMaterial color="#1e3a5f" roughness={0.7} metalness={0.25} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#33517a" roughness={0.62} metalness={0.35} />
                   </mesh>
                   <mesh position={[0, 3.6, -8.0]}>
                     <boxGeometry args={[11.4, 7.2, 0.5]} />
-                    <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+                    <meshStandardMaterial map={hangarMetalTex} roughness={0.66} metalness={0.28} />
                   </mesh>
                   <mesh position={[0, 3.6, 8.0]}>
                     <boxGeometry args={[11.4, 7.2, 0.5]} />
-                    <meshStandardMaterial color="#cbd5e1" roughness={0.72} metalness={0.2} />
+                    <meshStandardMaterial map={hangarMetalTex} roughness={0.66} metalness={0.28} />
                   </mesh>
                   <mesh position={[0, 7.45, 0]}>
                     <boxGeometry args={[12.0, 0.7, 17.0]} />
-                    <meshStandardMaterial color="#0f3b7a" roughness={0.55} metalness={0.35} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#1a4a8f" roughness={0.5} metalness={0.4} />
                   </mesh>
                   <mesh position={[5.95, 7.45, 0]}>
                     <boxGeometry args={[0.25, 0.5, 16.8]} />
@@ -892,36 +948,52 @@ export function SkyCloudsEnvironment() {
             </>
           )}
 
-          {/* Hanggar cadangan & Menara ATC */}
+          {/* Hanggar cadangan & Menara ATC dengan Radar Berputar */}
           <group position={[-36.0, 0, -32]}>
             <mesh position={[0, 2.2, 0]}>
               <boxGeometry args={[7.5, 4.4, 14]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.75} metalness={0.2} />
+              <meshStandardMaterial map={hangarMetalTex} roughness={0.68} metalness={0.28} />
             </mesh>
             <mesh position={[0, 4.45, 0]}>
               <boxGeometry args={[7.8, 0.35, 14.3]} />
-              <meshStandardMaterial color="#1d4ed8" roughness={0.6} />
+              <meshStandardMaterial map={hangarMetalTex} color="#1d4ed8" roughness={0.55} metalness={0.35} />
             </mesh>
           </group>
           <group position={[-27.5, 0, 18]}>
             <mesh position={[0, 4.5, 0]}>
               <boxGeometry args={[2.2, 9.0, 2.2]} />
-              <meshStandardMaterial color="#e2e8f0" roughness={0.7} />
+              <meshStandardMaterial map={concreteApronTex} color="#e2e8f0" roughness={0.72} />
             </mesh>
+            {/* Kabin kaca kontrol ATC */}
             <mesh position={[0, 9.8, 0]}>
-              <cylinderGeometry args={[2.1, 1.5, 1.8, 8]} />
-              <meshStandardMaterial color="#1e3a5f" roughness={0.25} metalness={0.6} />
+              <cylinderGeometry args={[2.2, 1.5, 1.85, 8]} />
+              <meshStandardMaterial color="#164e63" roughness={0.14} metalness={0.78} />
             </mesh>
-            <mesh position={[0, 11.1, 0]}>
-              <sphereGeometry args={[0.3, 8, 8]} />
+            {/* Atap kabin & Radar Pengawas Berputar */}
+            <mesh position={[0, 10.82, 0]}>
+              <cylinderGeometry args={[2.35, 2.2, 0.25, 8]} />
+              <meshStandardMaterial color="#cbd5e1" roughness={0.55} metalness={0.35} />
+            </mesh>
+            <group ref={atcRadarRef} position={[0, 11.45, 0]}>
+              <mesh>
+                <cylinderGeometry args={[0.14, 0.18, 0.9, 8]} />
+                <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.35} />
+              </mesh>
+              <mesh position={[0, 0.45, 0]}>
+                <boxGeometry args={[2.2, 0.32, 0.18]} />
+                <meshStandardMaterial color="#f8fafc" metalness={0.55} roughness={0.3} />
+              </mesh>
+            </group>
+            <mesh position={[0, 12.15, 0]}>
+              <sphereGeometry args={[0.22, 8, 8]} />
               <meshBasicMaterial color="#ef4444" />
             </mesh>
           </group>
 
-          {/* Daratan hijau pemukiman & jaringan jalan raya kota */}
+          {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-104, -0.1, 0]}>
             <planeGeometry args={[124, CHUNK_LEN]} />
-            <meshStandardMaterial color="#466e4a" roughness={0.95} />
+            <meshStandardMaterial map={airbaseGrassTex} color="#d8e6d5" roughness={0.95} />
           </mesh>
           {/* Jalan raya aspal bermarka */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-56, -0.05, 0]}>
@@ -998,32 +1070,35 @@ export function SkyCloudsEnvironment() {
             </group>
           ))}
 
-          {/* Pesisir pantai & laut berombak di sisi kanan pangkalan */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[18.5, -0.09, 0]}>
-            <planeGeometry args={[6.5, CHUNK_LEN]} />
-            <meshStandardMaterial color="#dfd0a8" roughness={0.95} />
+          {/* Pesisir pantai realistis (pasir kering -> basah -> buih ombak pecah -> toska) & laut berombak */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[20.5, -0.08, 0]}>
+            <planeGeometry args={[11.5, CHUNK_LEN]} />
+            <meshStandardMaterial map={coastlineTex} roughness={0.72} metalness={0.12} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[22.2, -0.07, 0]}>
-            <planeGeometry args={[1.8, CHUNK_LEN]} />
-            <meshBasicMaterial color="#e0f4ff" transparent opacity={0.78} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[84, -0.11, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[86, -0.11, 0]}>
             <planeGeometry args={[124, CHUNK_LEN]} />
             <meshStandardMaterial
               map={oceanTextures.map}
               bumpMap={oceanTextures.bumpMap}
-              bumpScale={0.42}
-              roughness={0.18}
-              metalness={0.44}
+              bumpScale={0.55}
+              roughness={0.14}
+              metalness={0.52}
             />
           </mesh>
         </group>
 
-        {/* === ZONA 2: PEGUNUNGAN HEIGHTMAP 3D REALISTIS & LEMBAH SUNGAI === */}
+        {/* === ZONA 2: PEGUNUNGAN HEIGHTMAP 3D FOTOREALISTIS & LEMBAH SUNGAI === */}
         <group ref={mountainChunkRef} name="biome-mountains">
-          {/* Mesh Pegunungan Heightmap 3D dengan punggungan tajam, lereng hutan, tebing batu & puncak salju */}
+          {/* Mesh Pegunungan Heightmap 3D dengan tekstur kanopi hutan tropis, strata tebing batu & bump map */}
           <mesh geometry={mountainGeo} receiveShadow>
-            <meshStandardMaterial vertexColors roughness={0.92} metalness={0.04} />
+            <meshStandardMaterial
+              vertexColors
+              map={mountainDetailTex.map}
+              bumpMap={mountainDetailTex.bumpMap}
+              bumpScale={0.62}
+              roughness={0.92}
+              metalness={0.04}
+            />
           </mesh>
           {/* Permukaan sungai biru berkilau mengalir di dasar lembah */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]}>
@@ -1031,10 +1106,10 @@ export function SkyCloudsEnvironment() {
             <meshStandardMaterial
               map={oceanTextures.map}
               bumpMap={oceanTextures.bumpMap}
-              bumpScale={0.25}
+              bumpScale={0.32}
               color="#38bdf8"
-              roughness={0.15}
-              metalness={0.5}
+              roughness={0.14}
+              metalness={0.55}
             />
           </mesh>
         </group>
@@ -1047,16 +1122,23 @@ export function SkyCloudsEnvironment() {
             <meshStandardMaterial
               map={oceanTextures.map}
               bumpMap={oceanTextures.bumpMap}
-              bumpScale={0.48}
-              roughness={0.16}
-              metalness={0.46}
+              bumpScale={0.6}
+              roughness={0.14}
+              metalness={0.52}
             />
           </mesh>
 
-          {/* 4 Pulau Tropis Organik (heightmap pantai pasir + perbukitan hijau) */}
+          {/* 4 Pulau Tropis Organik (heightmap pantai pasir + perbukitan hijau bertekstur kanopi) */}
           {islandGeos.map((isl, idx) => (
             <mesh key={idx} geometry={isl.geo} position={[isl.x, -0.05, isl.z]}>
-              <meshStandardMaterial vertexColors roughness={0.92} metalness={0.04} />
+              <meshStandardMaterial
+                vertexColors
+                map={mountainDetailTex.map}
+                bumpMap={mountainDetailTex.bumpMap}
+                bumpScale={0.45}
+                roughness={0.9}
+                metalness={0.04}
+              />
             </mesh>
           ))}
 
