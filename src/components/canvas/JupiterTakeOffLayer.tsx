@@ -295,6 +295,79 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           ty = tightSlot[1];
           tz = tightSlot[2];
           tp = -0.025;
+        } else if (pt < 54.0) {
+          // 47.0..54.0: Menanjak vertikal untuk Heart Maneuver!
+          const p = easeInOut(Math.max(0, (pt - 47.0) / 7.0));
+          tx = baseSlot[0];
+          ty = baseSlot[1] + 5.2 * p;
+          tz = baseSlot[2];
+          tp = -0.58 * Math.sin(p * Math.PI * 0.85);
+        } else if (pt < 68.5) {
+          // 54.0..68.5: J5 & J6 melukis lengkungan Hati; J4 menembus Hati lalu Smoke Off!
+          if (i === 3 || i === 4) {
+            // J5 (kanan) & J6 (kiri) melukis kurva hati raksasa!
+            const s = i === 3 ? 1 : -1;
+            const p = easeInOut(Math.min(1, (pt - 54.0) / 11.0));
+            const angle = p * Math.PI;
+            tx = s * Math.sin(angle) * 20.0;
+            ty = 9.0 + Math.sin(angle * 1.35) * 4.5 - p * 8.5;
+            tz = -3.0;
+            tp = 0.35 * Math.cos(angle);
+            tr = s * -0.55 * Math.sin(angle);
+            smokeOn = true;
+          } else if (i === 2) {
+            // J4 (Arrow / Slot): menembus tengah Hati dari bawah-belakang lalu Smoke Off!
+            if (pt < 63.0) {
+              tx = 0;
+              ty = 4.2;
+              tz = -14.0;
+              tp = -0.04;
+            } else {
+              const p = easeInOut(Math.min(1, (pt - 63.0) / 4.2));
+              tx = 0;
+              ty = THREE.MathUtils.lerp(2.0, 12.5, p);
+              tz = THREE.MathUtils.lerp(-18.0, 10.0, p);
+              tp = -0.45;
+              smokeOn = pt < 66.5; // "Four, piercing the heart! Smoke off!"
+            }
+          } else {
+            tx = baseSlot[0];
+            ty = 4.8;
+            tz = baseSlot[2];
+            tp = -0.04;
+          }
+        } else if (pt < 74.5) {
+          // 68.5..74.5: Semua berkumpul & Pitch Up Vertical untuk Bomb Burst!
+          const p = easeInOut((pt - 68.5) / 6.0);
+          tx = THREE.MathUtils.lerp(tightSlot[0], tightSlot[0] * 0.8, p);
+          ty = 3.0 + 5.6 * p;
+          tz = tightSlot[2] * 0.85;
+          tp = -0.78 * p;
+        } else if (pt < 82.6) {
+          // 74.5..82.6: BOMB BURST! BREAK, BREAK, BREAK! Berpencar ke 6 arah!
+          const p = easeInOut((pt - 74.5) / 8.1);
+          const dirs: [number, number, number, number][] = [
+            [-28, 3.0, -4, 0.85],   // J2 breaking left!
+            [28, 3.0, -4, -0.85],   // J3 breaking right!
+            [0, 15.0, -6, 0.0],     // J4 pulling high!
+            [22, -4.5, -10, -0.65], // J5 breaking down-right!
+            [-22, -4.5, -10, 0.65], // J6 breaking down-left!
+          ];
+          const d = dirs[i];
+          const burst = Math.sin(p * Math.PI);
+          tx = tightSlot[0] * 0.8 + d[0] * burst;
+          ty = 8.6 + d[1] * burst;
+          tz = tightSlot[2] * 0.85 + d[2] * burst;
+          tp = d[1] > 8 ? -0.65 * burst : 0.22 * burst;
+          tr = d[3] * burst;
+          tyaw = (d[0] < 0 ? 0.55 : d[0] > 0 ? -0.55 : 0) * burst;
+          smokeOn = true;
+        } else if (pt < 85.0) {
+          const p = easeInOut((pt - 82.6) / 2.4);
+          tx = baseSlot[0];
+          ty = THREE.MathUtils.lerp(6.0, baseSlot[1], p);
+          tz = baseSlot[2];
+          tp = -0.025;
         } else {
           tx = baseSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
           ty = baseSlot[1] + Math.cos(t * 1.3 + i) * 0.12;

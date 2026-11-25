@@ -528,10 +528,49 @@ export function AircraftModel() {
                 ? '⚡ CLOSING SPEED 400 KNOTS... THREE, TWO, ONE... CROSSING!'
                 : '🔥 OPPOSING PASS CROSSING SUKSES! • REJOIN FORMASI',
           );
+        } else if (pt < 54.0) {
+          // 47.0..54.0: Climbing vertical for the Heart Maneuver!
+          const p = easeInOut(Math.max(0, (pt - 47.0) / 7.0));
+          targetY = 2.95 + 5.2 * p;
+          targetPitch = -0.58 * Math.sin(p * Math.PI * 0.85);
+          targetRoll = 0;
+          setFlightLabel('🎙️ JUPITERS, CLIMBING VERTICAL FOR THE HEART MANEUVER! PULL... PULL...');
+        } else if (pt < 68.5) {
+          // 54.0..68.5: J5 & J6 paint the heart, J4 pierces the heart!
+          targetY = 5.0;
+          targetPitch = -0.04;
+          targetRoll = 0;
+          setFlightLabel(
+            pt < 64.5
+              ? '❤️ HEART MANEUVER • JUPITER 5 & 6 MELUKIS HATI DI LANGIT!'
+              : '💘 JUPITER 4 PIERCING THE HEART! • SMOKE OFF!',
+          );
+        } else if (pt < 74.5) {
+          // 68.5..74.5: All Jupiters pitch up vertical for Bomb Burst!
+          const p = easeInOut((pt - 68.5) / 6.0);
+          targetY = 3.2 + 5.6 * p;
+          targetPitch = -0.78 * p;
+          targetRoll = 0;
+          setFlightLabel('🔥 FINAL MANEUVER: BOMB BURST! • PITCH UP VERTICAL... READY...');
+        } else if (pt < 82.6) {
+          // 74.5..82.6: BREAK, BREAK, BREAK!
+          const p = easeInOut((pt - 74.5) / 8.1);
+          const arch = Math.sin(p * Math.PI);
+          targetY = 8.8 + 3.2 * arch - 5.8 * p;
+          targetZ = 4.0 * arch;
+          targetPitch = THREE.MathUtils.lerp(-0.78, 0.12, p);
+          targetRoll = 0.25 * Math.sin(p * Math.PI);
+          setFlightLabel('💥 BREAK, BREAK, BREAK! • 6-SHIP BOMB BURST FINALE!');
+        } else if (pt < 85.0) {
+          const p = easeInOut((pt - 82.6) / 2.4);
+          targetY = THREE.MathUtils.lerp(6.2, 2.95, p);
+          targetPitch = -0.025;
+          targetRoll = 0;
+          setFlightLabel('JUPITER AEROBATIC TEAM • REJOIN FORMASI');
         } else {
           targetPitch = -0.025 + Math.sin(t * 1.2) * 0.015;
           targetRoll = Math.cos(t * 1.1) * 0.035;
-          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • ASAP PUTIH AKTIF');
+          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • MANUVER PUNCAK SELESAI');
         }
       } else {
         // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
