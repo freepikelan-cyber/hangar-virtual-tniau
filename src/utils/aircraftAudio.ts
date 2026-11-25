@@ -55,8 +55,8 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
   }
   if (isVvip) {
     // 0.2..39.8s: Pengumuman keberangkatan Kapten Pnb Herlani di apron sebelum Take Off!
-    // 40.6s: vvip-voice-takeoff.wav (10.84s) -> 49.8s "Rolling" -> 53.8s Rotation & Liftoff
-    return { voiceStart: 40.6, rollStart: 49.8, rotStart: 53.8, climbStart: 55.6, airborneStart: 58.0 };
+    // 40.6..51.44s: vvip-voice-takeoff.wav (10.84s) selesai penuh -> 51.8s baru mulai Take Off roll!
+    return { voiceStart: 40.6, rollStart: 51.8, rotStart: 55.8, climbStart: 57.6, airborneStart: 60.0 };
   }
   return { voiceStart: 6.0, rollStart: 7.6, rotStart: 10.8, climbStart: 12.5, airborneStart: 14.8 };
 }
