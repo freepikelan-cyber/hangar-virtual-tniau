@@ -128,16 +128,18 @@ export function VvipEscortLayer() {
     const st = timer.current;
 
     // Timeline Pengawalan Udara VVIP setelah mengudara (Pengumuman Keberangkatan sudah diputar sebelum Take Off!):
-    // 0.0..6.0s  : Pesawat VVIP terbang jelajah tenang
-    // 6.0..10.0s : 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
-    // 10.5..27.5s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (~16.8s)
-    // 28.0..41.8s: Balasan Indonesia One kepada Flight Pengawal (13.8s)
-    // 42.2s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
+    // 0.0..6.0s   : Pesawat VVIP terbang jelajah tenang
+    // 6.0..10.0s  : 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
+    // 10.5..27.5s : Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (16.8s)
+    // 27.5..31.0s : Jeda alami 3,5 detik setelah pengawal selesai berbicara
+    // 31.0..44.8s : Balasan Indonesia One kepada Flight Pengawal (13.8s)
+    // 46.2s+      : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
     const ESCORT_APPEAR = 6.0;
     const GREET_START = 10.5;
-    const REPLY_START = 28.0;
-    const SALUTE_START = 42.2;
-    const BURST_START = 44.0;
+    const GREET_END = 27.5;
+    const REPLY_START = 31.0;
+    const SALUTE_START = 46.2;
+    const BURST_START = 48.0;
     const BURST_DUR = 6.2;
 
     if (st < ESCORT_APPEAR) {
@@ -303,10 +305,12 @@ export function VvipEscortLayer() {
       aircraftAudio.playVvipVoice('vvip-reply', soundEnabled);
     }
 
-    if (st >= GREET_START && st < REPLY_START) {
+    if (st >= GREET_START && st < GREET_END) {
       setFlightLabel(
         '📡 LETKOL PNB MUHAMMAD JAKI DIRGANTARA: "SELAMAT PAGI, YANG KAMI HORMATI BAPAK PRESIDEN REPUBLIK INDONESIA... SALAM SWA BHUWANA PAKSA!"',
       );
+    } else if (st >= GREET_END && st < REPLY_START) {
+      setFlightLabel('PENGAWALAN VVIP • FORMASI PENGAWALAN AKTIF (INDONESIA ONE BERSIAP MEMBALAS RADIO)');
     } else if (st >= REPLY_START && st < SALUTE_START) {
       setFlightLabel(
         '🎙️ INDONESIA ONE: "TERIMA KASIH ATAS PENGAWALANNYA DI WILAYAH UDARA RI. SELAMAT BERTUGAS KEMBALI. SALAM SWA BHUWANA PAKSA!"',
