@@ -127,18 +127,18 @@ export function VvipEscortLayer() {
     timer.current += dt;
     const st = timer.current;
 
-    // Timeline lengkap audio & visual Indonesia One (tanpa tumpang tindih!):
-    // 0.6..20.4s : Pengumuman Kapten Pnb Herlani di atas pesawat Kepresidenan RI menuju Sentani Jayapura
-    // 21.0..25.0s: 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
-    // 25.2..42.2s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara
-    // 42.6..49.5s: Balasan Indonesia One kepada Flight Pengawal ("Terima kasih atas pengawalannya...")
-    // 50.0s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
+    // Timeline akurat 100% sesuai durasi nyata WAV 24kHz mono (ZERO tumpang tindih!):
+    // 0.6..40.2s : Pengumuman Kapten Pnb Herlani (39.6s) di atas pesawat Kepresidenan RI menuju Sentani Jayapura
+    // 40.8..44.8s: 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
+    // 45.0..62.0s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (~16.8s)
+    // 62.5..76.3s: Balasan Indonesia One kepada Flight Pengawal (13.8s)
+    // 76.8s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
     const WELCOME_START = 0.6;
-    const ESCORT_APPEAR = 21.0;
-    const GREET_START = 25.2;
-    const REPLY_START = 42.6;
-    const SALUTE_START = 50.0;
-    const BURST_START = 51.8;
+    const ESCORT_APPEAR = 40.8;
+    const GREET_START = 45.0;
+    const REPLY_START = 62.5;
+    const SALUTE_START = 76.8;
+    const BURST_START = 78.6;
     const BURST_DUR = 6.2;
 
     if (st >= WELCOME_START && !welcomePlayed.current) {
@@ -154,7 +154,7 @@ export function VvipEscortLayer() {
       });
       if (flightMode === 'airborne') {
         setFlightLabel(
-          st > 19.2
+          st > 39.0
             ? '📡 RADAR: 2 PESAWAT TEMPUR PENGAWAL TNI AU MENDEKAT...'
             : '🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KABIN MENUJU BANDARA SENTANI JAYAPURA',
         );

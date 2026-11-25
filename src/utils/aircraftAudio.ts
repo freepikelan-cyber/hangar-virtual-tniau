@@ -18,9 +18,20 @@ export interface TakeOffTiming {
   airborneStart: number;
 }
 
+export interface LandingTiming {
+  approachEnd: number;
+  touchTime: number;
+  rolloutEnd: number;
+  brakeEnd: number;
+  holdEnd: number;
+  turnEnd: number;
+  taxiEnd: number;
+  parkEnd: number;
+}
+
 /**
- * Penyelarasan timing Take Off (detik) agar pesawat BERHENTI mantap di runway sampai
- * aba-aba "Rolling / Afterburner on / Power set" benar-benar terucap di rekaman suara kokpit!
+ * Penyelarasan timing Take Off (detik nyata sesuai durasi WAV 24kHz mono) agar pesawat BERHENTI
+ * mantap di runway sampai aba-aba "Afterburner on / Rolling / Power set" benar-benar terucap!
  */
 export function getTakeOffTiming(unitId: string): TakeOffTiming {
   const profile = getSoundProfile(unitId);
@@ -35,18 +46,48 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'a330mrtt';
 
   if (isFighter) {
-    // 6.0s mulai suara -> 10.6s "Afterburner on, rolling" -> 14.3s "Full throttle, airborne"
-    return { voiceStart: 6.0, rollStart: 10.6, rotStart: 14.2, climbStart: 16.0, airborneStart: 18.4 };
+    // fighter-voice-takeoff.wav (18.08s): 6.0s mulai -> 14.5s "Afterburner on, rolling" -> 22.0s "Full throttle, airborne"
+    return { voiceStart: 6.0, rollStart: 14.5, rotStart: 22.0, climbStart: 23.8, airborneStart: 26.2 };
   }
   if (isCargoTransport) {
-    // 6.0s mulai suara -> 14.4s "Power set" -> 16.4s "Rotate!"
-    return { voiceStart: 6.0, rollStart: 14.4, rotStart: 16.4, climbStart: 18.3, airborneStart: 20.6 };
+    // transport-voice-takeoff.wav (20.56s): 6.0s mulai -> 23.0s "Power set" -> 25.8s "Rotate!"
+    return { voiceStart: 6.0, rollStart: 23.0, rotStart: 25.8, climbStart: 27.6, airborneStart: 30.0 };
   }
   if (isVvip) {
-    // 6.0s mulai suara -> 10.8s "Rolling" -> 14.2s Rotation & Liftoff
-    return { voiceStart: 6.0, rollStart: 10.8, rotStart: 14.2, climbStart: 16.0, airborneStart: 18.4 };
+    // vvip-voice-takeoff.wav (10.84s): 6.0s mulai -> 15.4s "Rolling" -> 19.2s Rotation & Liftoff
+    return { voiceStart: 6.0, rollStart: 15.4, rotStart: 19.2, climbStart: 21.0, airborneStart: 23.4 };
   }
   return { voiceStart: 6.0, rollStart: 7.6, rotStart: 10.8, climbStart: 12.5, airborneStart: 14.8 };
+}
+
+/**
+ * Penyelarasan timing Landing (detik nyata) agar roda menyentuh aspal tepat saat aba-aba "Touchdown!"
+ */
+export function getLandingTiming(unitId: string): LandingTiming {
+  const profile = getSoundProfile(unitId);
+  const isFighter = profile === 'fighter_single' || profile === 'fighter_twin';
+  const isVvip = unitId === 'b737vip' || unitId === 'falcon8x';
+  const isCargoTransport =
+    unitId === 'c130j' ||
+    unitId === 'a400m' ||
+    unitId === 'cn295' ||
+    unitId === 'cn235' ||
+    unitId === 'c212' ||
+    unitId === 'a330mrtt';
+
+  // fighter-voice-landing.wav (21.0s): "Touchdown" di 15.8s -> "Drag chute deployed, pengereman aktif" di 18-20s
+  // transport-voice-landing.wav (13.76s): "Touchdown" di 9.0s -> "Reverse thrust aktif" di 10-13s
+  // vvip-voice-landing.wav (19.24s): pengumuman kabin 0-19s, touchdown mulus di 14.5s
+  const touchTime = isFighter ? 15.8 : isCargoTransport ? 9.0 : isVvip ? 14.5 : 5.8;
+  const flareDur = 2.0;
+  const approachEnd = Math.max(2.0, touchTime - flareDur);
+  const rolloutEnd = touchTime + 4.4;
+  const brakeEnd = rolloutEnd + 5.8;
+  const holdEnd = brakeEnd + 1.5;
+  const turnEnd = holdEnd + 3.0;
+  const taxiEnd = turnEnd + 6.0;
+  const parkEnd = taxiEnd + 1.3;
+  return { approachEnd, touchTime, rolloutEnd, brakeEnd, holdEnd, turnEnd, taxiEnd, parkEnd };
 }
 
 export function getSoundProfile(unitId: string): SoundProfile {
@@ -998,23 +1039,24 @@ class AircraftAudioEngine {
         throttle = 0.76 + Math.sin(phaseTime * 1.4) * 0.04;
       }
     } else if (flightMode === 'landing') {
-      if (phaseTime > 0.15 && !this.atcStartPlayed) {
+      if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
           isFighter ? 'fighter-landing' : isCargoTransport ? 'transport-landing' : isVvip ? 'vvip-landing' : 'landing',
         );
       }
       const isHeli = profile === 'helicopter';
-      const touchTime = 5.8;
-      const stopTime = isHeli ? 6.4 : 16.0;
-      const vacateTime = isHeli ? 6.1 : 16.0;
+      const ld = getLandingTiming(unitId);
+      const touchTime = isHeli ? 5.8 : ld.touchTime;
+      const stopTime = isHeli ? 6.4 : ld.brakeEnd;
+      const vacateTime = isHeli ? 6.1 : ld.brakeEnd;
       if (phaseTime > vacateTime && !this.atcVacatePlayed) {
         this.atcVacatePlayed = true;
         this.playAtcRadio('vacate');
       }
       if (phaseTime < touchTime) {
         throttle = 0.62 - (phaseTime / touchTime) * 0.16;
-        if (phaseTime > 1.2 && !this.gearChimePlayed) {
+        if (phaseTime > Math.min(2.2, touchTime * 0.25) && !this.gearChimePlayed) {
           this.gearChimePlayed = true;
           this.playGearServoSfx();
         }
@@ -1024,11 +1066,11 @@ class AircraftAudioEngine {
           this.playTouchdownSfx(isHeli);
         }
         // High-speed rollout + thrust reverser & pengereman panjang mulus sampai berhenti di runway
-        const p = Math.min(1, (phaseTime - touchTime) / (stopTime - touchTime));
+        const p = Math.min(1, (phaseTime - touchTime) / Math.max(0.5, stopTime - touchTime));
         throttle = isHeli ? 0.42 * (1 - p * 0.55) : 0.76 * (1 - p * 0.78);
       } else {
         // Berhenti sejenak -> taxi pelan menyusuri jalur panjang masuk hanggar -> idle mati
-        const taxiEnd = isHeli ? 11.2 : 26.5;
+        const taxiEnd = isHeli ? 11.2 : ld.taxiEnd;
         if (phaseTime < taxiEnd) {
           throttle = 0.21;
         } else {

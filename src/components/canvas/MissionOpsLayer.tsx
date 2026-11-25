@@ -113,30 +113,35 @@ export function MissionOpsLayer() {
 
       setFlightLabel('✨ MISI TEMPUR • FLARE COUNTERMEASURE AKTIF — MENGECOL RUDAL PENCARI PANAS!');
     } else if (isTransport) {
-      // === 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (Sinkron dengan Voice Kokpit Rajawali 1!) ===
-      // 0..5.5s: Persiapan -> 5.5..8.5s: Pintu rampa belakang membuka -> 8.5s+: Lampu Hijau "DROP! DROP! DROP!"
-      const rampOpen = THREE.MathUtils.clamp((mt - 5.2) / 3.0, 0, 1);
+      // === 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (Sinkron tepat dengan transport-voice-airdrop.wav 14.52s!) ===
+      // 0..8.0s: Persiapan 130 knot -> 8.0..10.8s: "Buka pintu rampa belakang" -> 11.0s: "Lampu hijau menyala!" -> 12.0s+: "Drop! Drop! Drop!"
+      const rampOpen = THREE.MathUtils.clamp((mt - 8.0) / 2.8, 0, 1);
       if (rampRef.current) {
         rampRef.current.rotation.x = THREE.MathUtils.lerp(0.15, -0.78, rampOpen);
       }
-      const isGreenLight = mt >= 8.4;
+      const isGreenLight = mt >= 11.0;
       if (jumpLightMatRef.current) {
         jumpLightMatRef.current.color.set(isGreenLight ? '#22c55e' : '#ef4444');
       }
 
-      if (mt < 5.2) {
-        setFlightLabel('📢 RAJAWALI 1 • PERSIAPAN PENERJUNAN — 130 KNOT MENUJU DROP ZONE');
+      if (mt < 8.0) {
+        setFlightLabel('📢 RAJAWALI 1 • 5 MENIT MENUJU TITIK PENERJUNAN — 130 KNOT');
         dropRefs.current.forEach((grp) => {
           if (grp) grp.visible = false;
         });
-      } else if (mt < 8.4) {
+      } else if (mt < 11.0) {
         setFlightLabel('🚪 RAJAWALI 1 • MEMBUKA PINTU RAMPA BELAKANG — LAMPU MERAH SIAGA');
         dropRefs.current.forEach((grp) => {
           if (grp) grp.visible = false;
         });
+      } else if (mt < 12.0) {
+        setFlightLabel('🟢 LAMPU HIJAU MENYALA • SIAP TERJUN!');
+        dropRefs.current.forEach((grp) => {
+          if (grp) grp.visible = false;
+        });
       } else {
-        setFlightLabel('🟢 LAMPU HIJAU MENYALA • DROP! DROP! DROP! — LOGISTIK & TERJUN PAYUNG KOPASGAT');
-        const dropT = mt - 8.4;
+        setFlightLabel('🟢 DROP! DROP! DROP! • DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT');
+        const dropT = mt - 12.0;
         dropRefs.current.forEach((grp, i) => {
           if (!grp) return;
           const delay = i * 1.1;

@@ -7,7 +7,7 @@ import { getJupiterSpec, JUPITER_AUTO_ORDER, type JupiterManeuverId } from '../.
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
 import { invalidateSnapshot } from '../../utils/aircraftSnapshot';
-import { aircraftAudio, getTakeOffTiming } from '../../utils/aircraftAudio';
+import { aircraftAudio, getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
 import { EffectsLayer } from './EffectsLayer';
 import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
@@ -839,50 +839,47 @@ export function AircraftModel() {
           setFlightState('parked', null);
         }
       } else {
-        // LANDING PESAWAT SAYAP TETAP:
-        // Long Final -> Flare -> Touchdown & Melaju Kencang Panjang di Runway (4,4s) -> Pengereman Panjang (5,8s) -> Berhenti -> Belok Pelan -> Taxi Panjang ke Hanggar Jauh!
-        if (pt < 4.0) {
-          // Fase 1: Long Final Approach dari kejauhan (-18.5) turun halus mengikuti glide slope + Roda keluar
-          const p = pt / 4.0;
+        // LANDING PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba "Touchdown!" & pengereman di suara kokpit!):
+        const ld = getLandingTiming(unit.id);
+        if (pt < ld.approachEnd) {
+          // Fase 1: Long Final Approach turun halus mengikuti glide slope + Roda keluar
+          const p = pt / Math.max(0.5, ld.approachEnd);
           targetZ = THREE.MathUtils.lerp(-18.5, -4.0, p);
           targetY = THREE.MathUtils.lerp(8.2, 1.75, p);
           targetPitch = 0.06;
           targetGear = 0;
           gearSpeed = 1.6;
-          setFlightLabel('📡 ATC: CLEARED TO LAND RUNWAY 09 • LONG FINAL APPROACH');
-        } else if (pt < 5.8) {
-          // Fase 2: Landing Flare mulus (hidung mendongak halus sebelum ban menyentuh aspal)
-          const p = (pt - 4.0) / 1.8;
+          setFlightLabel('📡 FINAL APPROACH • RODA PENDARAT TERKUNCI & FLAPS PENUH');
+        } else if (pt < ld.touchTime) {
+          // Fase 2: Landing Flare mulus tepat sebelum Touchdown!
+          const p = (pt - ld.approachEnd) / Math.max(0.5, ld.touchTime - ld.approachEnd);
           const ease = easeInOut(p);
           targetZ = THREE.MathUtils.lerp(-4.0, -1.5, p);
           targetY = THREE.MathUtils.lerp(1.75, 0.05, ease);
           targetPitch = THREE.MathUtils.lerp(0.06, isHeavy ? -0.14 : -0.2, ease);
           targetGear = 0;
-          setFlightLabel('TAHAP 3 • LANDING • FLARE (HIDUNG MENDONGAK)');
-        } else if (pt < 10.2) {
-          // Fase 3: Main Gear Touchdown & HIGH-SPEED RUNWAY ROLLOUT (4,4 detik melaju kencang lurus di runway!)
-          const p = (pt - 5.8) / 4.4;
+          setFlightLabel('TAHAP 3 • LANDING • FLARE — BERSIAP TOUCHDOWN!');
+        } else if (pt < ld.rolloutEnd) {
+          // Fase 3: Main Gear Touchdown tepat di aba-aba "Touchdown!" & High-Speed Runway Rollout!
+          const p = (pt - ld.touchTime) / Math.max(0.5, ld.rolloutEnd - ld.touchTime);
           targetX = 0;
           targetZ = THREE.MathUtils.lerp(-1.5, 1.4, easeInOut(p));
           targetY = p < 0.14 ? Math.sin((p / 0.14) * Math.PI) * 0.04 : 0;
-          // Aerobraking singkat lalu roda depan turun mulus menyentuh aspal
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.14 : -0.2, 0, Math.min(1, p * 1.65));
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('TAHAP 3 • LANDING • TOUCHDOWN & MELAJU KENCANG DI RUNWAY');
-        } else if (pt < 16.0) {
-          // Fase 4: Pengereman Panjang & Halus (5,8 detik lurus di runway sampai benar-benar berhenti!)
-          const p = (pt - 10.2) / 5.8;
+          setFlightLabel('TAHAP 3 • TOUCHDOWN! • DRAG CHUTE / REVERSE THRUST AKTIF');
+        } else if (pt < ld.brakeEnd) {
+          // Fase 4: Pengereman Panjang & Halus lurus di runway sampai berhenti!
+          const p = (pt - ld.rolloutEnd) / Math.max(0.5, ld.brakeEnd - ld.rolloutEnd);
           targetX = 0;
           targetZ = THREE.MathUtils.lerp(1.4, 2.2, easeInOut(p));
           targetY = 0;
-          // Efek suspensi depan sedikit menunduk saat pengereman kuat (braking squat) lalu kembali datar
           targetPitch = Math.sin(p * Math.PI) * 0.018;
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('TAHAP 3 • LANDING • PENGEREMAN PANJANG DI RUNWAY');
-        } else if (pt < 17.5) {
-          // Fase 5: Berhenti mantap di runway sebelum mulai belok keluar menuju hanggar
+          setFlightLabel('TAHAP 3 • LANDING • PENGEREMAN AKTIF DI RUNWAY');
+        } else if (pt < ld.holdEnd) {
           targetX = 0;
           targetZ = 2.2;
           targetY = 0;
@@ -890,26 +887,23 @@ export function AircraftModel() {
           targetYawOffset = 0;
           targetGear = 0;
           setFlightLabel('📡 ATC: BERHENTI DI RUNWAY • BERSIAP TAXI KE HANGGAR');
-        } else if (pt < 20.5) {
-          // Fase 6A: Mulai bergerak pelan sambil belok kiri mulus keluar runway menuju jalur taxiway hanggar
-          const p = easeInOut((pt - 17.5) / 3.0);
+        } else if (pt < ld.turnEnd) {
+          const p = easeInOut((pt - ld.holdEnd) / Math.max(0.5, ld.turnEnd - ld.holdEnd));
           targetX = THREE.MathUtils.lerp(0, -8.0, p);
           targetZ = THREE.MathUtils.lerp(2.2, 3.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, p);
           targetGear = 0;
           setFlightLabel('TAXI IN • BELOK PERLAHAN KELUAR RUNWAY MENUJU HANGGAR');
-        } else if (pt < 26.5) {
-          // Fase 6B: Meluncur perlahan menyusuri jalur taxiway panjang masuk ke Hanggar TNI AU yang jauh
-          const p = easeInOut((pt - 20.5) / 6.0);
+        } else if (pt < ld.taxiEnd) {
+          const p = easeInOut((pt - ld.turnEnd) / Math.max(0.5, ld.taxiEnd - ld.turnEnd));
           targetX = THREE.MathUtils.lerp(-8.0, -31.5, p);
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
           setFlightLabel('TAXI IN • MELUNCUR PERLAHAN MASUK KE DALAM HANGGAR');
-        } else if (pt < 27.8) {
-          // Fase 7: Parkir rapi di dalam hanggar, mesin dimatikan
+        } else if (pt < ld.parkEnd) {
           targetX = -31.5;
           targetZ = 3.5;
           targetY = 0;

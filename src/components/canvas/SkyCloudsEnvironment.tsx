@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
-import { getTakeOffTiming } from '../../utils/aircraftAudio';
+import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
 import {
   buildMountainRangeGeometry,
   buildOrganicIslandGeometry,
@@ -503,6 +503,7 @@ export function SkyCloudsEnvironment() {
     } else if (flightMode === 'landing') {
       // Menyelaraskan Hanggar Landing (local z = +145) tepat di world z = +3.5 saat berhenti!
       const stopScroll = LOOP_LEN + 283.0;
+      const ld = getLandingTiming(selectedId);
       if (isHeli) {
         if (pt < 6.0) {
           const p = Math.min(1, pt / 6.0);
@@ -514,27 +515,26 @@ export function SkyCloudsEnvironment() {
           scrollZ.current = stopScroll;
           groundSpeed = 0;
         }
-      } else if (pt < 5.8) {
-        // Long Final Approach & Flare: mendekati awal Runway 09 dengan kecepatan tinggi (~47 u/s)
-        const p = Math.min(1, pt / 5.8);
+      } else if (pt < ld.touchTime) {
+        // Long Final Approach & Flare: mendekati awal Runway tepat hingga detik Touchdown!
+        const p = Math.min(1, pt / Math.max(0.5, ld.touchTime));
         targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
         scrollZ.current = 740.0 + 273.5 * p;
         groundSpeed = 0;
-      } else if (pt < 10.2) {
-        // Touchdown & High-Speed Runway Rollout (4,4 detik melaju kencang lurus di atas aspal runway!)
-        const p = (pt - 5.8) / 4.4;
+      } else if (pt < ld.rolloutEnd) {
+        // Touchdown & High-Speed Runway Rollout
+        const p = (pt - ld.touchTime) / Math.max(0.5, ld.rolloutEnd - ld.touchTime);
         targetWorldY = -0.02;
         scrollZ.current = 1013.5 + 186.0 * (1.14 * p - 0.14 * p * p);
         groundSpeed = 0;
-      } else if (pt < 16.0) {
-        // Pengereman panjang & halus di runway (5,8 detik deselerasi mulus sampai benar-benar berhenti!)
-        const p = Math.min(1, (pt - 10.2) / 5.8);
+      } else if (pt < ld.brakeEnd) {
+        // Pengereman panjang & halus di runway sampai berhenti total!
+        const p = Math.min(1, (pt - ld.rolloutEnd) / Math.max(0.5, ld.brakeEnd - ld.rolloutEnd));
         const decel = 1 - (1 - p) * (1 - p);
         targetWorldY = -0.02;
         scrollZ.current = 1199.5 + 103.5 * decel;
         groundSpeed = 0;
       } else {
-        // Berhenti total di runway -> Taxi pelan menyusuri jalur panjang menuju Hanggar TNI AU
         targetWorldY = -0.02;
         scrollZ.current = stopScroll;
         groundSpeed = 0;
