@@ -52,6 +52,12 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     // heli-voice-takeoff.wav (15.76s): 4.2..19.96s suara selesai -> 20.8..25.4s naik vertikal perlahan & hover di tempat -> 25.4..29.8s baru maju perlahan & menanjak!
     return { voiceStart: 4.2, rollStart: 20.8, rotStart: 25.4, climbStart: 26.8, airborneStart: 29.8 };
   }
+  if (unitId === 'kt1b') {
+    // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
+    // jupiter-takeoff-prep.wav (~18.14s) diputar saat J1–J6 taxi satu per satu keluar hanggar ke holding point.
+    // Setelah "Cleared for take-off" (18.5s), J1 take off duluan (18.5..24.0s), disusul J2–J6 satu per satu hingga 41.0s!
+    return { voiceStart: 0.3, rollStart: 18.5, rotStart: 20.6, climbStart: 22.0, airborneStart: 41.0 };
+  }
   if (isBasicTrainer) {
     // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
     // Part 1: trainer-voice-takeoff.wav (6.0..18.35s) -> Part 2: trainer-voice-roll.wav (19.0..42.99s)
@@ -378,7 +384,8 @@ class AircraftAudioEngine {
       | 'trainer-takeoff'
       | 'trainer-roll'
       | 'trainer-landing'
-      | 'trainer-landroll',
+      | 'trainer-landroll'
+      | 'jupiter-takeoff-prep',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -427,7 +434,9 @@ class AircraftAudioEngine {
                                               ? '/audio/trainer-voice-landing.wav'
                                               : key === 'trainer-landroll'
                                                 ? '/audio/trainer-voice-landroll.wav'
-                                                : `/audio/atc-${key}.mp3`;
+                                                : key === 'jupiter-takeoff-prep'
+                                                  ? '/audio/jupiter-takeoff-prep.wav'
+                                                  : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -626,7 +635,8 @@ class AircraftAudioEngine {
       | 'trainer-takeoff'
       | 'trainer-roll'
       | 'trainer-landing'
-      | 'trainer-landroll',
+      | 'trainer-landroll'
+      | 'jupiter-takeoff-prep',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1103,21 +1113,29 @@ class AircraftAudioEngine {
 
       if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        if (isBasicTrainer) {
+        if (unitId === 'kt1b') {
+    // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
+    // jupiter-takeoff-prep.wav (~18.14s) diputar saat J1–J6 taxi satu per satu keluar hanggar ke holding point.
+    // Setelah "Cleared for take-off" (18.5s), J1 take off duluan (18.5..24.0s), disusul J2–J6 satu per satu hingga 41.0s!
+    return { voiceStart: 0.3, rollStart: 18.5, rotStart: 20.6, climbStart: 22.0, airborneStart: 41.0 };
+  }
+  if (isBasicTrainer) {
           void this.preloadAtc('trainer-roll');
         }
         this.playAtcRadio(
-          isHeli
-            ? 'heli-takeoff'
-            : isBasicTrainer
-              ? 'trainer-takeoff'
-              : isFighter
-                ? 'fighter-takeoff'
-                : isCargoTransport
-                  ? 'transport-takeoff'
-                  : isVvip
-                    ? 'vvip-takeoff'
-                    : 'takeoff',
+          unitId === 'kt1b'
+            ? 'jupiter-takeoff-prep'
+            : isHeli
+              ? 'heli-takeoff'
+              : isBasicTrainer
+                ? 'trainer-takeoff'
+                : isFighter
+                  ? 'fighter-takeoff'
+                  : isCargoTransport
+                    ? 'transport-takeoff'
+                    : isVvip
+                      ? 'vvip-takeoff'
+                      : 'takeoff',
         );
       }
 
@@ -1146,7 +1164,13 @@ class AircraftAudioEngine {
       const isHeli = profile === 'helicopter';
       if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        if (isBasicTrainer) {
+        if (unitId === 'kt1b') {
+    // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
+    // jupiter-takeoff-prep.wav (~18.14s) diputar saat J1–J6 taxi satu per satu keluar hanggar ke holding point.
+    // Setelah "Cleared for take-off" (18.5s), J1 take off duluan (18.5..24.0s), disusul J2–J6 satu per satu hingga 41.0s!
+    return { voiceStart: 0.3, rollStart: 18.5, rotStart: 20.6, climbStart: 22.0, airborneStart: 41.0 };
+  }
+  if (isBasicTrainer) {
           void this.preloadAtc('trainer-landroll');
         }
         this.playAtcRadio(

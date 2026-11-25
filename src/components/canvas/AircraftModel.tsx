@@ -12,6 +12,7 @@ import { HotspotMarkers } from './HotspotMarkers';
 import { AerodynamicsLayer } from './AerodynamicsLayer';
 import { CockpitPilotLayer } from './CockpitPilotLayer';
 import { GSuitEduLayer } from './GSuitEduLayer';
+import { JupiterTakeOffLayer } from './JupiterTakeOffLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
 import { VvipEscortLayer } from './VvipEscortLayer';
 import { MissionOpsLayer } from './MissionOpsLayer';
@@ -332,7 +333,82 @@ export function AircraftModel() {
         const taxiEnd = isVvipUnit ? 38.5 : 4.2;
         const lineUpEnd = isVvipUnit ? 40.5 : 6.0;
 
-        if (isVvipUnit && pt < taxiStart) {
+        if (unit.id === 'kt1b') {
+          // KHUSUS KT-1B WONG BEE (JUPITER AEROBATIC SHOW):
+          // J1 keluar hanggar duluan (0..6.2s) -> Holding Point Runway 09 (6.2..18.5s) -> J1 Take Off pertama (18.5..24.0s)
+          // -> J1 bertahan di udara sementara J2..J6 Take Off satu per satu (20.5..38.0s) hingga semua mengudara!
+          if (pt < 4.5) {
+            const p = easeInOut(pt / 4.5);
+            targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
+            targetZ = -10.5;
+            targetY = 0;
+            targetYawOffset = Math.PI / 2;
+            targetGear = 0;
+            setFlightLabel('JUPITER 1–6 • TAXI KELUAR DARI HANGGAR MENUJU HOLDING POINT');
+          } else if (pt < 6.2) {
+            const p = easeInOut((pt - 4.5) / 1.7);
+            targetX = THREE.MathUtils.lerp(-6.5, 0, p);
+            targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
+            targetY = 0;
+            targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
+            targetGear = 0;
+            setFlightLabel('JUPITER 1 • LINE UP RUNWAY 09 • JUPITER 2–6 MENYUSUL');
+          } else if (pt < to.rollStart) {
+            targetX = 0;
+            targetZ = -8.5;
+            targetY = 0;
+            targetYawOffset = 0;
+            const nearRoll = pt > to.rollStart - 1.4;
+            targetPitch = nearRoll ? Math.sin(t * 36) * 0.004 : 0;
+            targetGear = 0;
+            setFlightLabel(
+              nearRoll
+                ? '📡 ADISUTJIPTO TOWER: CLEARED FOR TAKE-OFF RUNWAY 09!'
+                : '🎙️ PERSIAPAN & PERMOHONAN TAKE-OFF • HOLDING SHORT RUNWAY 09',
+            );
+          } else if (pt < to.rotStart) {
+            const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
+            targetZ = THREE.MathUtils.lerp(-8.5, 3.8, p * p);
+            targetY = 0;
+            targetPitch = -0.02 * p;
+            targetGear = 0;
+            setFlightLabel('JUPITER 1 • ROLLING TAKE OFF RUNWAY 09');
+          } else if (pt < to.climbStart) {
+            const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
+            const ease = easeInOut(p);
+            targetZ = THREE.MathUtils.lerp(3.8, 5.4, ease);
+            targetY = THREE.MathUtils.lerp(0, 1.85, p * p);
+            targetPitch = -0.25 * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
+            targetGear = 0;
+            setFlightLabel('JUPITER 1 AIRBORNE! • JUPITER 2 BERSIAP TAKE OFF');
+          } else if (pt < 24.5) {
+            const p = easeInOut((pt - to.climbStart) / 2.5);
+            targetZ = THREE.MathUtils.lerp(5.4, 0, p);
+            targetY = THREE.MathUtils.lerp(1.85, 3.05, p);
+            targetPitch = THREE.MathUtils.lerp(-0.24, -0.03, p);
+            targetGear = 1;
+            gearSpeed = 2.2;
+            setFlightLabel('JUPITER 2–6 TAKE OFF BERGANTIAN SATU PER SATU');
+          } else if (pt < to.airborneStart) {
+            targetX = Math.sin(t * 0.55) * 0.25;
+            targetY = 3.0 + Math.sin(t * 1.5) * 0.1;
+            targetZ = 0;
+            targetPitch = -0.025;
+            targetRoll = Math.cos(t * 0.9) * 0.03;
+            targetGear = 1;
+            const seqIdx = Math.min(6, Math.max(2, Math.floor((pt - 20.5) / 3.0) + 2));
+            setFlightLabel(
+              pt < 37.5
+                ? `JUPITER ${seqIdx} TAKE OFF RUNWAY 09 • MEMBENTUK FORMASI`
+                : 'JUPITER AEROBATIC TEAM (6-SHIP) • MENGUDARA DALAM FORMASI!',
+            );
+          } else {
+            targetZ = 0;
+            targetY = 2.95;
+            targetGear = 1;
+            setFlightState('airborne', 'JUPITER AEROBATIC SHOW • 6-SHIP FORMASI MENGUDARA');
+          }
+        } else if (isVvipUnit && pt < taxiStart) {
           // Fase Persiapan & Pengumuman Keberangkatan VVIP di Apron sebelum mulai Taxi & Take Off!
           targetX = -31.5;
           targetZ = -10.5;
@@ -1317,6 +1393,7 @@ export function AircraftModel() {
         <HotspotMarkers hotspots={unit.hotspots} />
       </group>
       <SafetySystemLayer />
+      <JupiterTakeOffLayer sourceGroup={procedural.group} />
       <VvipEscortLayer />
       <MissionOpsLayer />
     </group>

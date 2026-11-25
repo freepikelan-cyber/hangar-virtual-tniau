@@ -436,10 +436,13 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     if (s.flightMode !== 'parked') return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
+    const isJupiter = s.selectedId === 'kt1b';
     set({
       flightMode: 'takeoff',
       flightNonce: s.flightNonce + 1,
-      flightLabel: 'TAHAP 1 • TAKE OFF DI RUNWAY & FULL POWER',
+      flightLabel: isJupiter
+        ? 'JUPITER AEROBATIC SHOW • TAXI & HOLDING POINT RUNWAY 09'
+        : 'TAHAP 1 • TAKE OFF DI RUNWAY & FULL POWER',
       aeroMode: false,
       safetyMode: false,
       oxygenMode: false,
@@ -448,6 +451,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       showcaseMode: false,
       autoRotate: false,
       activeHotspot: null,
+      ...(isJupiter
+        ? { camRequest: { pos: [26.0, 11.5, 28.0] as Vec3, target: [-5.0, 2.0, -3.0] as Vec3, nonce: nonce++ } }
+        : {}),
     });
   },
   triggerManeuver: () => {
