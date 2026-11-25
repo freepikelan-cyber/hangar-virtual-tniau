@@ -1134,28 +1134,29 @@ class AircraftAudioEngine {
           sampleRate = phaseTime < toTiming.rollStart ? 0.98 : 1.04;
         }
       } else if (flightMode === 'landing') {
-        if (phaseTime < 5.8) {
-          // Long Final Approach & Flare: deru jet melandai halus
+        const ld = getLandingTiming(unitId);
+        if (phaseTime < ld.touchTime) {
+          // Long Final Approach & Flare: deru jet melandai halus (suara pilot tetap jernih!)
           desiredTrack = 'fly';
-          const p = phaseTime / 5.8;
-          sampleVol = 0.58 - p * 0.14;
-          sampleRate = 0.98 - p * 0.07;
-        } else if (phaseTime < 10.6) {
-          // Touchdown & High-Speed Rollout di runway: thrust reverser / rollout roar
+          const p = phaseTime / Math.max(0.5, ld.touchTime);
+          sampleVol = 0.44 - p * 0.1;
+          sampleRate = 0.96 - p * 0.08;
+        } else if (phaseTime < ld.rolloutEnd) {
+          // Touchdown & High-Speed Rollout di runway: thrust reverser / drag chute rollout roar
           desiredTrack = 'fly';
-          const p = (phaseTime - 5.8) / 4.8;
-          sampleVol = 0.56 - p * 0.18;
+          const p = (phaseTime - ld.touchTime) / Math.max(0.5, ld.rolloutEnd - ld.touchTime);
+          sampleVol = 0.56 - p * 0.16;
           sampleRate = 0.94 - p * 0.1;
-        } else if (phaseTime < 26.2) {
+        } else if (phaseTime < ld.taxiEnd) {
           // Pengereman akhir -> berhenti di runway -> taxi pelan kembali ke Hanggar
           desiredTrack = 'taxi';
-          const p = Math.min(1, (phaseTime - 10.6) / 5.4);
+          const p = Math.min(1, (phaseTime - ld.rolloutEnd) / Math.max(0.5, ld.brakeEnd - ld.rolloutEnd));
           sampleVol = 0.48 - p * 0.1;
           sampleRate = 0.98 - p * 0.08;
         } else {
           // Parkir di dalam Hanggar: mesin spool-down perlahan hingga mati!
           desiredTrack = 'taxi';
-          const idleP = Math.min(1, (phaseTime - 26.2) / 1.6);
+          const idleP = Math.min(1, (phaseTime - ld.taxiEnd) / 1.4);
           sampleVol = Math.max(0.001, 0.38 * (1 - idleP));
           sampleRate = Math.max(0.45, 0.9 - idleP * 0.45);
         }
