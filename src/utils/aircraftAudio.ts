@@ -54,8 +54,9 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     return { voiceStart: 6.0, rollStart: 23.0, rotStart: 25.8, climbStart: 27.6, airborneStart: 30.0 };
   }
   if (isVvip) {
-    // vvip-voice-takeoff.wav (10.84s): 6.0s mulai -> 15.4s "Rolling" -> 19.2s Rotation & Liftoff
-    return { voiceStart: 6.0, rollStart: 15.4, rotStart: 19.2, climbStart: 21.0, airborneStart: 23.4 };
+    // 0.2..39.8s: Pengumuman keberangkatan Kapten Pnb Herlani di apron sebelum Take Off!
+    // 40.6s: vvip-voice-takeoff.wav (10.84s) -> 49.8s "Rolling" -> 53.8s Rotation & Liftoff
+    return { voiceStart: 40.6, rollStart: 49.8, rotStart: 53.8, climbStart: 55.6, airborneStart: 58.0 };
   }
   return { voiceStart: 6.0, rollStart: 7.6, rotStart: 10.8, climbStart: 12.5, airborneStart: 14.8 };
 }
@@ -158,6 +159,7 @@ class AircraftAudioEngine {
   private atcStartPlayed = false;
   private atcVacatePlayed = false;
   private transportCruisePlayed = false;
+  private vvipWelcomePlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcLoading = new Set<string>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -517,6 +519,7 @@ class AircraftAudioEngine {
     this.atcStartPlayed = false;
     this.atcVacatePlayed = false;
     this.transportCruisePlayed = false;
+    this.vvipWelcomePlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -1015,6 +1018,11 @@ class AircraftAudioEngine {
       const rollStart = isHeli ? 6.0 : toTiming.rollStart;
       const gearUpTime = isHeli ? 8.4 : toTiming.climbStart;
 
+      if (isVvip && phaseTime > 0.25 && !this.vvipWelcomePlayed) {
+        this.vvipWelcomePlayed = true;
+        this.playAtcRadio('vvip-welcome');
+      }
+
       if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
@@ -1022,8 +1030,8 @@ class AircraftAudioEngine {
         );
       }
       if (phaseTime < atcTime) {
-        // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
-        throttle = 0.24 + Math.sin(phaseTime * 2) * 0.03;
+        // Saat pengumuman keberangkatan VVIP di apron, mesin idle super lembut agar suara Kapten sangat jernih
+        throttle = isVvip && phaseTime < 34.0 ? 0.14 : 0.24 + Math.sin(phaseTime * 2) * 0.03;
       } else if (phaseTime < rollStart) {
         // Berhenti di garis start Runway sambil berkomunikasi dengan Tower -> mulai spool-up saat hampir rolling
         const holdDur = Math.max(0.5, rollStart - atcTime);

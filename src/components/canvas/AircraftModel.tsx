@@ -288,18 +288,31 @@ export function AircraftModel() {
       } else {
         // TAKE OFF PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba suara kokpit Tempur, Angkut, & VVIP!):
         const to = getTakeOffTiming(unit.id);
-        if (pt < 4.2) {
+        const isVvipUnit = unit.id === 'b737vip' || unit.id === 'falcon8x';
+        const taxiStart = isVvipUnit ? 34.0 : 0.0;
+        const taxiEnd = isVvipUnit ? 38.5 : 4.2;
+        const lineUpEnd = isVvipUnit ? 40.5 : 6.0;
+
+        if (isVvipUnit && pt < taxiStart) {
+          // Fase Persiapan & Pengumuman Keberangkatan VVIP di Apron sebelum mulai Taxi & Take Off!
+          targetX = -31.5;
+          targetZ = -10.5;
+          targetY = 0;
+          targetYawOffset = Math.PI / 2;
+          targetGear = 0;
+          setFlightLabel('🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KEBERANGKATAN MENUJU SENTANI JAYAPURA');
+        } else if (pt < taxiEnd) {
           // Fase 0A: Taxi keluar perlahan dari Hanggar TNI AU menyusuri jalur taxiway kuning panjang
-          const p = easeInOut(pt / 4.2);
+          const p = easeInOut((pt - taxiStart) / Math.max(0.5, taxiEnd - taxiStart));
           targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
           targetZ = -10.5;
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
           setFlightLabel('TAXI OUT • KELUAR DARI HANGGAR MENUJU RUNWAY');
-        } else if (pt < 6.0) {
+        } else if (pt < lineUpEnd) {
           // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway!
-          const p = easeInOut((pt - 4.2) / 1.8);
+          const p = easeInOut((pt - taxiEnd) / Math.max(0.5, lineUpEnd - taxiEnd));
           targetX = THREE.MathUtils.lerp(-6.5, 0, p);
           targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
           targetY = 0;

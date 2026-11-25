@@ -127,24 +127,18 @@ export function VvipEscortLayer() {
     timer.current += dt;
     const st = timer.current;
 
-    // Timeline akurat 100% sesuai durasi nyata WAV 24kHz mono (ZERO tumpang tindih!):
-    // 0.6..40.2s : Pengumuman Kapten Pnb Herlani (39.6s) di atas pesawat Kepresidenan RI menuju Sentani Jayapura
-    // 40.8..44.8s: 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
-    // 45.0..62.0s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (~16.8s)
-    // 62.5..76.3s: Balasan Indonesia One kepada Flight Pengawal (13.8s)
-    // 76.8s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
-    const WELCOME_START = 0.6;
-    const ESCORT_APPEAR = 40.8;
-    const GREET_START = 45.0;
-    const REPLY_START = 62.5;
-    const SALUTE_START = 76.8;
-    const BURST_START = 78.6;
+    // Timeline Pengawalan Udara VVIP setelah mengudara (Pengumuman Keberangkatan sudah diputar sebelum Take Off!):
+    // 0.0..6.0s  : Pesawat VVIP terbang jelajah tenang
+    // 6.0..10.0s : 2 Pesawat Tempur Pengawal masuk formasi lega di kanan (+21.5) & kiri (-29.0)
+    // 10.5..27.5s: Ucapan radio kokpit Letkol Pnb Muhammad Jaki Dirgantara (~16.8s)
+    // 28.0..41.8s: Balasan Indonesia One kepada Flight Pengawal (13.8s)
+    // 42.2s+     : Salute Wing-Rock + Manuver Bomb Burst Halus Pengawal 1 -> Overwatch!
+    const ESCORT_APPEAR = 6.0;
+    const GREET_START = 10.5;
+    const REPLY_START = 28.0;
+    const SALUTE_START = 42.2;
+    const BURST_START = 44.0;
     const BURST_DUR = 6.2;
-
-    if (st >= WELCOME_START && !welcomePlayed.current) {
-      welcomePlayed.current = true;
-      aircraftAudio.playVvipVoice('vvip-welcome', soundEnabled);
-    }
 
     if (st < ESCORT_APPEAR) {
       if (rightRef.current) rightRef.current.visible = false;
@@ -154,9 +148,9 @@ export function VvipEscortLayer() {
       });
       if (flightMode === 'airborne') {
         setFlightLabel(
-          st > 39.0
+          st > 4.2
             ? '📡 RADAR: 2 PESAWAT TEMPUR PENGAWAL TNI AU MENDEKAT...'
-            : '🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KABIN MENUJU BANDARA SENTANI JAYAPURA',
+            : 'TERBANG JELAJAH VVIP • PESAWAT KEPRESIDENAN RI',
         );
       }
       return;
