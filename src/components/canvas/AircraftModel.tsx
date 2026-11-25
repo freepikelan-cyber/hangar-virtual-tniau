@@ -893,10 +893,10 @@ export function AircraftModel() {
           }
           const mat = mesh.material as THREE.MeshStandardMaterial;
           if (mat && 'emissive' in mat) {
-            mat.emissive.set(simActive ? (isTube ? '#ffb703' : '#00d8ff') : '#000000');
+            mat.emissive.set(simActive ? (isTube ? '#ffb703' : '#00d8ff') : isTube ? '#000000' : '#0284c7');
             mat.emissiveIntensity = THREE.MathUtils.lerp(
               mat.emissiveIntensity,
-              simActive ? (isTube ? 0.55 + pulse * 0.45 : 0.25 + pulse * 0.35) : 0,
+              simActive ? (isTube ? 0.55 + pulse * 0.45 : 0.45 + pulse * 0.45) : isTube ? 0 : 0.28,
               Math.min(1, dt * 6),
             );
           }

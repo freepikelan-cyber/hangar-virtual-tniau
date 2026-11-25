@@ -19,9 +19,9 @@ export function isPortraitMobile() {
 export function getDefaultCamera(unitId?: string): { pos: Vec3; target: Vec3 } {
   if (unitId === 'gsuit') {
     if (isPortraitMobile()) {
-      return { pos: [3.2, 5.2, 16.5], target: [0, 4.9, 0] };
+      return { pos: [3.4, 5.6, 17.8], target: [0, 5.3, 0] };
     }
-    return { pos: [2.8, 5.2, 13.0], target: [0, 4.9, 0] };
+    return { pos: [3.0, 5.6, 14.5], target: [0, 5.3, 0] };
   }
   if (unitId === 'pilot-helmet') {
     if (isPortraitMobile()) {
