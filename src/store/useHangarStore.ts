@@ -88,6 +88,7 @@ interface HangarState {
   autoRotate: boolean;
   soundEnabled: boolean;
   bgmEnabled: boolean;
+  bgmVolume: number;
   timeOfDay: TimeOfDay;
   showcaseMode: boolean;
   aeroMode: boolean;
@@ -139,6 +140,8 @@ interface HangarState {
   triggerMission: () => void;
   triggerJupiterShow: () => void;
   cycleTimeOfDay: () => void;
+  setTimeOfDay: (mode: TimeOfDay) => void;
+  setBgmVolume: (vol: number) => void;
   toggleShowcase: () => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
@@ -183,6 +186,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   autoRotate: false,
   soundEnabled: true,
   bgmEnabled: true,
+  bgmVolume: 0.35,
   timeOfDay: 'day',
   showcaseMode: false,
   aeroMode: false,
@@ -405,6 +409,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     set((s) => ({
       timeOfDay: s.timeOfDay === 'day' ? 'sunset' : s.timeOfDay === 'sunset' ? 'night' : 'day',
     })),
+  setTimeOfDay: (timeOfDay) => set({ timeOfDay }),
+  setBgmVolume: (vol) => set({ bgmVolume: Math.max(0, Math.min(1, vol)) }),
   toggleShowcase: () =>
     set((s) => {
       const next = !s.showcaseMode;

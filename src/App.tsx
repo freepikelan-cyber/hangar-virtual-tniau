@@ -117,6 +117,7 @@ export function App() {
   const showWelcome = useHangarStore((s) => s.showWelcome);
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
   const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
+  const bgmVolume = useHangarStore((s) => s.bgmVolume);
   const flightMode = useHangarStore((s) => s.flightMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
 
@@ -125,6 +126,10 @@ export function App() {
     const shouldPlayBgm = bgmEnabled && (showWelcome || (flightMode === 'parked' && !safetyMode));
     bgmPlayer.sync(shouldPlayBgm);
   }, [bgmEnabled, showWelcome, flightMode, safetyMode]);
+
+  useEffect(() => {
+    bgmPlayer.setVolume(bgmVolume);
+  }, [bgmVolume]);
 
   useEffect(() => {
     if (!showcaseMode) return;

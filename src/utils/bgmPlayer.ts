@@ -8,7 +8,7 @@ class BgmPlayer {
   private audio: HTMLAudioElement | null = null;
   private shouldPlay = false;
   private fadeTimer: number | null = null;
-  private readonly targetVol = 0.34;
+  private targetVol = 0.35;
   private unlockBound = false;
 
   private ensureAudio(): HTMLAudioElement | null {
@@ -94,6 +94,15 @@ class BgmPlayer {
       this.tryStart();
     } else if (!a.paused) {
       this.fadeTo(0, true);
+    }
+  }
+
+  /** Mengatur volume musik latar secara langsung (0.0 .. 1.0). */
+  setVolume(vol: number) {
+    this.targetVol = Math.max(0, Math.min(1, vol));
+    if (this.audio && this.shouldPlay && !this.audio.paused) {
+      this.clearFade();
+      this.audio.volume = this.targetVol;
     }
   }
 
