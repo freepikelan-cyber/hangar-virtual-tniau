@@ -28,6 +28,8 @@ export function MissionOpsLayer() {
 
   const flareRefs = useRef<(THREE.Group | null)[]>([]);
   const dropRefs = useRef<(THREE.Group | null)[]>([]);
+  const rampRef = useRef<THREE.Group>(null);
+  const jumpLightMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const hoistCableRef = useRef<THREE.Mesh>(null);
   const hoistBasketRef = useRef<THREE.Group>(null);
   const survivorInBasketRef = useRef<THREE.Group>(null);
@@ -38,9 +40,10 @@ export function MissionOpsLayer() {
   const flareIdx = useRef(0);
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
-  const isActive = flightMode === 'mission' && !isEquipment;
+  const isVvip = unit.id === 'b737vip' || unit.id === 'falcon8x';
+  const isActive = flightMode === 'mission' && !isEquipment && !isVvip;
   const isHeli = unit.category === 'Helikopter';
-  const isTransport = unit.category === 'Angkut & VIP';
+  const isTransport = unit.category === 'Angkut & VIP' && !isVvip;
   const isFighter = !isHeli && !isTransport;
 
   const flarePool = useMemo<FlareItem[]>(
@@ -110,21 +113,50 @@ export function MissionOpsLayer() {
 
       setFlightLabel('✨ MISI TEMPUR • FLARE COUNTERMEASURE AKTIF — MENGECOL RUDAL PENCARI PANAS!');
     } else if (isTransport) {
-      // === 2. AIRDROP PENERJUNAN PASUKAN KOPASGAT & LOGISTIK ===
-      dropRefs.current.forEach((grp, i) => {
-        if (!grp) return;
-        const cycle = (mt + i * 1.15) % 6.9;
-        const p = cycle / 6.9;
-        const z = THREE.MathUtils.lerp(-5.6, -24.0, p);
-        const y = THREE.MathUtils.lerp(1.4, -7.8, Math.pow(p, 1.15));
-        const x = (i % 2 === 0 ? 1 : -1) * (0.8 + p * 3.8) + Math.sin(t * 1.8 + i) * 0.4;
-        grp.position.set(x, y, z);
-        grp.rotation.z = Math.sin(t * 1.6 + i) * 0.14;
-        const chuteOpen = Math.min(1, Math.max(0.08, (p - 0.08) * 3.2));
-        grp.scale.set(chuteOpen, chuteOpen, chuteOpen);
-      });
+      // === 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (Sinkron dengan Voice Kokpit Rajawali 1!) ===
+      // 0..5.5s: Persiapan -> 5.5..8.5s: Pintu rampa belakang membuka -> 8.5s+: Lampu Hijau "DROP! DROP! DROP!"
+      const rampOpen = THREE.MathUtils.clamp((mt - 5.2) / 3.0, 0, 1);
+      if (rampRef.current) {
+        rampRef.current.rotation.x = THREE.MathUtils.lerp(0.15, -0.78, rampOpen);
+      }
+      const isGreenLight = mt >= 8.4;
+      if (jumpLightMatRef.current) {
+        jumpLightMatRef.current.color.set(isGreenLight ? '#22c55e' : '#ef4444');
+      }
 
-      setFlightLabel('🪂 MISI AIRDROP • PENERJUNAN PASUKAN KOPASGAT & LOGISTIK TNI AU');
+      if (mt < 5.2) {
+        setFlightLabel('📢 RAJAWALI 1 • PERSIAPAN PENERJUNAN — 130 KNOT MENUJU DROP ZONE');
+        dropRefs.current.forEach((grp) => {
+          if (grp) grp.visible = false;
+        });
+      } else if (mt < 8.4) {
+        setFlightLabel('🚪 RAJAWALI 1 • MEMBUKA PINTU RAMPA BELAKANG — LAMPU MERAH SIAGA');
+        dropRefs.current.forEach((grp) => {
+          if (grp) grp.visible = false;
+        });
+      } else {
+        setFlightLabel('🟢 LAMPU HIJAU MENYALA • DROP! DROP! DROP! — LOGISTIK & TERJUN PAYUNG KOPASGAT');
+        const dropT = mt - 8.4;
+        dropRefs.current.forEach((grp, i) => {
+          if (!grp) return;
+          const delay = i * 1.1;
+          if (dropT < delay) {
+            grp.visible = false;
+            return;
+          }
+          grp.visible = true;
+          const cycle = (dropT - delay) % 8.4;
+          const p = cycle / 8.4;
+          const isCargo = i % 2 === 1;
+          const z = THREE.MathUtils.lerp(-5.8, -28.0, p);
+          const y = THREE.MathUtils.lerp(1.25, isCargo ? -9.5 : -8.2, Math.pow(p, 1.12));
+          const x = (i % 2 === 0 ? 1 : -1) * (0.65 + p * 4.4) + Math.sin(t * 1.6 + i) * 0.45;
+          grp.position.set(x, y, z);
+          grp.rotation.z = Math.sin(t * 1.5 + i) * 0.14;
+          const chuteOpen = Math.min(1, Math.max(0.12, (p - 0.06) * 3.4));
+          grp.scale.set(chuteOpen, chuteOpen, chuteOpen);
+        });
+      }
     } else if (isHeli) {
       // === 3. MISI SAR HOIST LAUT (Menurunkan keranjang penyelamat -> Mengangkat korban dari rakit!) ===
       const cycle = mt % 11.0;
@@ -195,47 +227,85 @@ export function MissionOpsLayer() {
           </group>
         ))}
 
-      {/* 2. AIRDROP PARASUT KOPASGAT / LOGISTIK (ANGKUT & VIP) */}
-      {isTransport &&
-        Array.from({ length: 6 }, (_, i) => (
-          <group
-            key={`drop-${i}`}
-            ref={(el) => {
-              dropRefs.current[i] = el;
-            }}
-          >
-            {/* Kubah parasut militer (Hijau Kopasgat / Oranye Logistik) */}
-            <mesh position={[0, 2.1, 0]}>
-              <sphereGeometry args={[1.45, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
-              <meshStandardMaterial color={i % 2 === 0 ? '#4d7c0f' : '#f97316'} roughness={0.68} side={THREE.DoubleSide} />
+      {/* 2. DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT (KHUSUS PESAWAT ANGKUT — BUKAN VVIP) */}
+      {isTransport && (
+        <group>
+          {/* Pintu Rampa Belakang (Cargo Ramp) & Lampu Jump Light Merah/Hijau */}
+          <group ref={rampRef} position={[0, 1.25, -5.2]}>
+            <mesh position={[0, -0.05, -1.0]}>
+              <boxGeometry args={[1.65, 0.12, 2.0]} />
+              <meshStandardMaterial color="#475569" roughness={0.6} metalness={0.4} />
             </mesh>
-            {/* Tali parasut */}
-            {[-0.75, 0.75].map((tx, j) => (
-              <mesh key={j} position={[tx * 0.5, 1.05, 0]} rotation={[0, 0, tx > 0 ? 0.34 : -0.34]}>
-                <cylinderGeometry args={[0.015, 0.015, 2.1, 6]} />
-                <meshBasicMaterial color="#e2e8f0" />
-              </mesh>
-            ))}
-            {/* Prajurit Kopasgat / Palet Logistik */}
-            {i % 2 === 0 ? (
-              <group position={[0, -0.1, 0]}>
-                <mesh>
-                  <capsuleGeometry args={[0.16, 0.42, 6, 10]} />
-                  <meshStandardMaterial color="#365314" roughness={0.8} />
-                </mesh>
-                <mesh position={[0, 0.38, 0]}>
-                  <sphereGeometry args={[0.14, 10, 10]} />
-                  <meshStandardMaterial color="#f97316" roughness={0.5} />
-                </mesh>
-              </group>
-            ) : (
-              <mesh position={[0, -0.1, 0]}>
-                <boxGeometry args={[0.75, 0.58, 0.75]} />
-                <meshStandardMaterial color="#b45309" roughness={0.75} />
-              </mesh>
-            )}
+            <mesh position={[0.72, 0.25, -0.15]}>
+              <sphereGeometry args={[0.14, 10, 10]} />
+              <meshBasicMaterial ref={jumpLightMatRef} color="#ef4444" />
+            </mesh>
           </group>
-        ))}
+
+          {Array.from({ length: 8 }, (_, i) => {
+            const isCargo = i % 2 === 1;
+            return (
+              <group
+                key={`drop-${i}`}
+                ref={(el) => {
+                  dropRefs.current[i] = el;
+                }}
+                visible={false}
+              >
+                {/* Kubah parasut militer (Hijau Kopasgat untuk Prajurit / Oranye-Putih Besar untuk Cargo Pallet) */}
+                <mesh position={[0, 2.25, 0]}>
+                  <sphereGeometry args={[isCargo ? 1.75 : 1.4, 18, 12, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
+                  <meshStandardMaterial color={isCargo ? '#f97316' : '#3f6212'} roughness={0.68} side={THREE.DoubleSide} />
+                </mesh>
+                {/* Tali parasut 4 sisi */}
+                {[-0.72, 0.72].map((tx, j) => (
+                  <mesh key={j} position={[tx * 0.5, 1.15, 0]} rotation={[0, 0, tx > 0 ? 0.34 : -0.34]}>
+                    <cylinderGeometry args={[0.016, 0.016, 2.2, 6]} />
+                    <meshBasicMaterial color="#e2e8f0" />
+                  </mesh>
+                ))}
+                {!isCargo ? (
+                  /* Prajurit Terjun Payung Kopasgat 3D (Helm, Badan Loreng, Ransel, Kaki & Tangan) */
+                  <group position={[0, -0.05, 0]}>
+                    <mesh position={[0, 0.42, 0]}>
+                      <sphereGeometry args={[0.14, 10, 10]} />
+                      <meshStandardMaterial color="#365314" roughness={0.55} />
+                    </mesh>
+                    <mesh position={[0, 0.08, 0]}>
+                      <capsuleGeometry args={[0.16, 0.36, 6, 10]} />
+                      <meshStandardMaterial color="#3f6212" roughness={0.82} />
+                    </mesh>
+                    <mesh position={[0, 0.08, -0.18]}>
+                      <boxGeometry args={[0.26, 0.34, 0.16]} />
+                      <meshStandardMaterial color="#78350f" roughness={0.85} />
+                    </mesh>
+                    <mesh position={[-0.08, -0.32, 0]}>
+                      <capsuleGeometry args={[0.065, 0.32, 4, 8]} />
+                      <meshStandardMaterial color="#1e293b" roughness={0.85} />
+                    </mesh>
+                    <mesh position={[0.08, -0.32, 0]}>
+                      <capsuleGeometry args={[0.065, 0.32, 4, 8]} />
+                      <meshStandardMaterial color="#1e293b" roughness={0.85} />
+                    </mesh>
+                  </group>
+                ) : (
+                  /* Peti Drop Barang Logistik TNI AU dengan Sabuk Pengikat Kuning */
+                  <group position={[0, -0.12, 0]}>
+                    <mesh>
+                      <boxGeometry args={[0.92, 0.68, 0.92]} />
+                      <meshStandardMaterial color="#92400e" roughness={0.78} />
+                    </mesh>
+                    <mesh position={[0, 0, 0]}>
+                      <boxGeometry args={[0.95, 0.12, 0.95]} />
+                      <meshStandardMaterial color="#fbbf24" roughness={0.55} />
+                    </mesh>
+                  </group>
+                )}
+              </group>
+            );
+          })}
+        </group>
+      )}
 
       {/* 3. MISI SAR HOIST LAUT (HELIKOPTER) */}
       {isHeli && (

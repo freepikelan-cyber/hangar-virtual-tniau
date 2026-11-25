@@ -53,11 +53,12 @@ export function BottomDock() {
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
   const isEquipment = isGSuit || isHelmet;
+  const isVvip = selectedId === 'b737vip' || selectedId === 'falcon8x';
   const missionBtnLabel =
     unit.category === 'Helikopter'
       ? 'SAR Hoist Laut'
       : unit.category === 'Angkut & VIP'
-        ? 'Airdrop Kopasgat'
+        ? 'Drop Barang & Terjun Payung'
         : 'Flare Tempur';
   const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
 
@@ -305,22 +306,24 @@ export function BottomDock() {
               Jupiter Aerobatic Show
             </button>
 
-            <button
-              type="button"
-              title="Jalankan Simulasi Misi Operasi TNI AU (Flare / Airdrop Kopasgat / SAR Hoist Laut)"
-              onClick={() => {
-                triggerMission();
-                setSimMenuOpen(false);
-              }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-                flightMode === 'mission'
-                  ? 'border-amber-400 bg-amber-400 text-[#0a1e3c]'
-                  : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
-              }`}
-            >
-              <Sparkles className="h-4 w-4" />
-              {missionBtnLabel}
-            </button>
+            {!isVvip && (
+              <button
+                type="button"
+                title="Jalankan Simulasi Misi Operasi TNI AU (Flare / Drop Barang & Terjun Payung / SAR Hoist Laut)"
+                onClick={() => {
+                  triggerMission();
+                  setSimMenuOpen(false);
+                }}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                  flightMode === 'mission'
+                    ? 'border-amber-400 bg-amber-400 text-[#0a1e3c]'
+                    : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
+                }`}
+              >
+                <Sparkles className="h-4 w-4" />
+                {missionBtnLabel}
+              </button>
+            )}
 
             <button
               type="button"

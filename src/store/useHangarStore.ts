@@ -338,7 +338,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       u.category === 'Helikopter'
         ? 'MISI SAR LAUT • RESCUE HOIST EVAKUASI KORBAN'
         : u.category === 'Angkut & VIP'
-          ? 'MISI AIRDROP • PENERJUNAN PASUKAN KOPASGAT & LOGISTIK'
+          ? 'MISI ANGKUT • DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT'
           : 'MISI TEMPUR • FLARE COUNTERMEASURE & SCRAMBLE INTERSEP';
     set({
       flightMode: 'mission',

@@ -77,6 +77,7 @@ class AircraftAudioEngine {
   private gearChimePlayed = false;
   private atcStartPlayed = false;
   private atcVacatePlayed = false;
+  private transportCruisePlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcLoading = new Set<string>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -110,6 +111,10 @@ class AircraftAudioEngine {
     void this.preloadAtc('fighter-takeoff');
     void this.preloadAtc('fighter-maneuver');
     void this.preloadAtc('fighter-landing');
+    void this.preloadAtc('transport-takeoff');
+    void this.preloadAtc('transport-cruise');
+    void this.preloadAtc('transport-landing');
+    void this.preloadAtc('transport-airdrop');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -244,7 +249,18 @@ class AircraftAudioEngine {
   }
 
   private async preloadAtc(
-    key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort' | 'fighter-takeoff' | 'fighter-maneuver' | 'fighter-landing',
+    key:
+      | 'takeoff'
+      | 'landing'
+      | 'vacate'
+      | 'vvip-escort'
+      | 'fighter-takeoff'
+      | 'fighter-maneuver'
+      | 'fighter-landing'
+      | 'transport-takeoff'
+      | 'transport-cruise'
+      | 'transport-landing'
+      | 'transport-airdrop',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -261,7 +277,15 @@ class AircraftAudioEngine {
               ? '/audio/fighter-voice-maneuver.wav'
               : key === 'fighter-landing'
                 ? '/audio/fighter-voice-landing.wav'
-                : `/audio/atc-${key}.mp3`;
+                : key === 'transport-takeoff'
+                  ? '/audio/transport-voice-takeoff.wav'
+                  : key === 'transport-cruise'
+                    ? '/audio/transport-voice-cruise.wav'
+                    : key === 'transport-landing'
+                      ? '/audio/transport-voice-landing.wav'
+                      : key === 'transport-airdrop'
+                        ? '/audio/transport-voice-airdrop.wav'
+                        : `/audio/atc-${key}.mp3`;
       const res = await fetch(url);
       if (!res.ok) return null;
       const arr = await res.arrayBuffer();
@@ -396,6 +420,7 @@ class AircraftAudioEngine {
     this.gearChimePlayed = false;
     this.atcStartPlayed = false;
     this.atcVacatePlayed = false;
+    this.transportCruisePlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -429,7 +454,18 @@ class AircraftAudioEngine {
    * Highpass 520 Hz -> Lowpass 2300 Hz -> Presence 1550 Hz -> Saturasi AM Radio + Kresek Statis VHF nyata!
    */
   private playAtcRadio(
-    key: 'takeoff' | 'landing' | 'vacate' | 'vvip-escort' | 'fighter-takeoff' | 'fighter-maneuver' | 'fighter-landing',
+    key:
+      | 'takeoff'
+      | 'landing'
+      | 'vacate'
+      | 'vvip-escort'
+      | 'fighter-takeoff'
+      | 'fighter-maneuver'
+      | 'fighter-landing'
+      | 'transport-takeoff'
+      | 'transport-cruise'
+      | 'transport-landing'
+      | 'transport-airdrop',
   ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
@@ -440,9 +476,8 @@ class AircraftAudioEngine {
       const now = ctx.currentTime;
       const isVvipVoice =
         key === 'vvip-escort' ||
-        key === 'fighter-takeoff' ||
-        key === 'fighter-maneuver' ||
-        key === 'fighter-landing';
+        key.startsWith('fighter-') ||
+        key.startsWith('transport-');
       const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli kokpit!
       const dur = buffer.duration / rate;
 
@@ -849,17 +884,24 @@ class AircraftAudioEngine {
     let speedMod = 0;
 
     const isFighter = profile === 'fighter_single' || profile === 'fighter_twin';
+    const isCargoTransport =
+      unitId === 'c130j' ||
+      unitId === 'a400m' ||
+      unitId === 'cn295' ||
+      unitId === 'cn235' ||
+      unitId === 'c212' ||
+      unitId === 'a330mrtt';
 
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
       const atcTime = isHeli ? 4.2 : 6.0;
-      const voiceStart = isFighter ? 3.6 : atcTime;
+      const voiceStart = isFighter ? 3.6 : isCargoTransport ? 1.6 : atcTime;
       const rollStart = isHeli ? 6.0 : 7.6;
       const gearUpTime = isHeli ? 8.4 : 12.4;
 
       if (phaseTime > voiceStart && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio(isFighter ? 'fighter-takeoff' : 'takeoff');
+        this.playAtcRadio(isFighter ? 'fighter-takeoff' : isCargoTransport ? 'transport-takeoff' : 'takeoff');
       }
       if (phaseTime < atcTime) {
         // Taxi keluar dari hanggar: tenaga mesin taxi rendah & halus
@@ -880,7 +922,7 @@ class AircraftAudioEngine {
     } else if (flightMode === 'landing') {
       if (phaseTime > 0.15 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        this.playAtcRadio(isFighter ? 'fighter-landing' : 'landing');
+        this.playAtcRadio(isFighter ? 'fighter-landing' : isCargoTransport ? 'transport-landing' : 'landing');
       }
       const isHeli = profile === 'helicopter';
       const touchTime = 5.8;
@@ -915,6 +957,13 @@ class AircraftAudioEngine {
         }
       }
     } else if (flightMode === 'airborne' || flightMode === 'aar' || flightMode === 'mission') {
+      if (flightMode === 'airborne' && isCargoTransport && phaseTime > 1.2 && !this.transportCruisePlayed) {
+        this.transportCruisePlayed = true;
+        this.playAtcRadio('transport-cruise');
+      } else if (flightMode === 'mission' && isCargoTransport && phaseTime > 0.2 && !this.atcStartPlayed) {
+        this.atcStartPlayed = true;
+        this.playAtcRadio('transport-airdrop');
+      }
       throttle = flightMode === 'mission' ? 0.84 : 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
       speedMod = flightMode === 'mission' ? 0.08 : 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
