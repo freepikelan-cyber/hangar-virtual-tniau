@@ -226,6 +226,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       return {
         rightOpen: next,
         aeroMode: next ? false : s.aeroMode,
+        safetyMode: next ? false : s.safetyMode,
         leftOpen: next && isCompactViewport() ? false : s.leftOpen,
       };
     }),

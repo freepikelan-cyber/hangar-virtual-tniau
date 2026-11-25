@@ -100,15 +100,18 @@ export function SafetyStoryPanel() {
   return (
     <aside
       aria-label="Cerita Simulasi Safety 3D"
-      className="pointer-events-none fixed top-[64px] sm:top-[72px] left-1/2 z-30 w-[min(480px,calc(100vw-1.25rem))] -translate-x-1/2 animate-slidein"
+      className="pointer-events-none fixed top-[74px] sm:top-[84px] right-2.5 sm:right-4 z-30 lg:z-20 flex items-start"
     >
-      <div className="hud-panel pointer-events-auto rounded-2xl border-rose-400/55 bg-[#081933]/92 px-3.5 py-2.5 shadow-[0_12px_32px_rgba(2,10,28,0.85)] space-y-2">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 text-rose-300 font-display text-[11px] sm:text-xs font-bold tracking-[0.14em] uppercase">
-            <ShieldAlert className="h-4 w-4 text-rose-400 shrink-0" />
-            <span className="truncate">{headerTitle}</span>
+      <div className="hud-panel pointer-events-auto w-[min(320px,calc(100vw-1.25rem))] lg:w-[310px] xl:w-[340px] rounded-xl border-rose-400/55 bg-[#081933]/92 px-3.5 py-3 shadow-[0_12px_32px_rgba(2,10,28,0.85)] space-y-2.5 animate-slidein">
+        <div className="flex items-start justify-between gap-2 border-b border-rose-400/20 pb-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-rose-300 font-display text-[10px] sm:text-[11px] font-bold tracking-[0.14em] uppercase">
+              <ShieldAlert className="h-3.5 w-3.5 text-rose-400 shrink-0" />
+              <span className="truncate">{headerTitle}</span>
+            </div>
+            <div className="mt-0.5 font-display text-sm font-bold text-white truncate">{unit.name}</div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
               onClick={replaySafety}
@@ -129,34 +132,47 @@ export function SafetyStoryPanel() {
           </div>
         </div>
 
-        {/* 4 Babak Cerita */}
-        <div className="grid grid-cols-4 gap-1">
+        {/* 4 Babak Cerita (vertikal ringkas di panel kanan agar area 3D tengah 100% bebas!) */}
+        <div className="space-y-1.5">
           {story.map((ch, idx) => {
             const active = idx === safetyStep;
             const done = idx < safetyStep;
             return (
               <div
                 key={ch.short}
-                className={`rounded-md border px-1.5 py-1 text-center font-display text-[9px] sm:text-[10px] font-bold tracking-wider uppercase transition-all ${
+                className={`rounded-lg border px-2.5 py-1.5 transition-all ${
                   active
-                    ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703]'
+                    ? 'border-[#ffb703] bg-[#ffb703]/15'
                     : done
-                      ? 'border-emerald-400/45 bg-emerald-500/15 text-emerald-300'
-                      : 'border-slate-700/70 bg-slate-900/50 text-slate-400'
+                      ? 'border-emerald-400/35 bg-emerald-500/10'
+                      : 'border-slate-700/60 bg-slate-900/40 opacity-65'
                 }`}
               >
-                {ch.short}
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className={`font-display text-[10px] font-bold tracking-wider uppercase ${
+                      active ? 'text-[#ffb703]' : done ? 'text-emerald-300' : 'text-slate-400'
+                    }`}
+                  >
+                    {ch.short}
+                  </span>
+                  {active && (
+                    <span className="rounded bg-[#ffb703]/25 px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider text-[#ffb703] uppercase">
+                      AKTIF
+                    </span>
+                  )}
+                </div>
+                {active && (
+                  <>
+                    <div className="font-display text-xs font-bold text-white mt-0.5 leading-snug">
+                      {current.title}
+                    </div>
+                    <p className="text-[11px] text-slate-200 leading-snug mt-0.5">{current.desc}</p>
+                  </>
+                )}
               </div>
             );
           })}
-        </div>
-
-        {/* Narasi Aktif */}
-        <div className="rounded-lg border border-white/10 bg-[#0b2347]/80 px-2.5 py-1.5">
-          <div className="font-display text-xs font-bold text-[#ffb703] tracking-wide uppercase">
-            {current.title}
-          </div>
-          <p className="text-[11px] sm:text-xs text-slate-200 leading-snug mt-0.5">{current.desc}</p>
         </div>
       </div>
     </aside>
