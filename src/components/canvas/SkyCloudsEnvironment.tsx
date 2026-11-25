@@ -464,9 +464,9 @@ export function SkyCloudsEnvironment() {
       }
     } else if (flightMode === 'takeoff') {
       const to = getTakeOffTiming(selectedId);
-      const rollStart = isHeli ? 6.0 : to.rollStart;
-      const rotStart = isHeli ? 8.0 : to.rotStart;
-      const airborneStart = isHeli ? 10.2 : to.airborneStart;
+      const rollStart = to.rollStart;
+      const rotStart = to.rotStart;
+      const airborneStart = to.airborneStart;
       if (pt < rollStart) {
         // Taxi keluar dari Hanggar -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai!
         targetWorldY = -0.02;

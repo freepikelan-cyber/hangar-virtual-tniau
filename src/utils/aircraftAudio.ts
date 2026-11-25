@@ -45,6 +45,10 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'c212' ||
     unitId === 'a330mrtt';
 
+  if (profile === 'helicopter') {
+    // heli-voice-takeoff.wav (15.76s): 4.2s..19.96s suara selesai penuh + jeda -> 20.8s baru mulai Hover & Lift Off!
+    return { voiceStart: 4.2, rollStart: 20.8, rotStart: 23.0, climbStart: 23.2, airborneStart: 25.4 };
+  }
   if (isFighter) {
     // fighter-voice-takeoff.wav (18.08s): 6.0s..24.08s suara selesai penuh -> 24.4s baru mulai Take Off roll!
     return { voiceStart: 6.0, rollStart: 24.4, rotStart: 28.0, climbStart: 29.8, airborneStart: 32.2 };
@@ -201,6 +205,7 @@ class AircraftAudioEngine {
     void this.preloadAtc('vvip-welcome');
     void this.preloadAtc('vvip-reply');
     void this.preloadAtc('vvip-landing');
+    void this.preloadAtc('heli-takeoff');
     void this.preloadJetAudio('taxi');
     void this.preloadJetAudio('takeoff');
     void this.preloadJetAudio('fly');
@@ -350,7 +355,8 @@ class AircraftAudioEngine {
       | 'vvip-takeoff'
       | 'vvip-welcome'
       | 'vvip-reply'
-      | 'vvip-landing',
+      | 'vvip-landing'
+      | 'heli-takeoff',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -385,7 +391,9 @@ class AircraftAudioEngine {
                                 ? '/audio/vvip-voice-reply.wav'
                                 : key === 'vvip-landing'
                                   ? '/audio/vvip-voice-landing.wav'
-                                  : `/audio/atc-${key}.mp3`;
+                                  : key === 'heli-takeoff'
+                                    ? '/audio/heli-voice-takeoff.wav'
+                                    : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -574,7 +582,8 @@ class AircraftAudioEngine {
       | 'vvip-takeoff'
       | 'vvip-welcome'
       | 'vvip-reply'
-      | 'vvip-landing',
+      | 'vvip-landing'
+      | 'heli-takeoff',
   ) {
     if (!this.ctx) return;
     const run = (buffer: AudioBuffer) => {
@@ -586,7 +595,8 @@ class AircraftAudioEngine {
       const isVvipVoice =
         key.startsWith('vvip-') ||
         key.startsWith('fighter-') ||
-        key.startsWith('transport-');
+        key.startsWith('transport-') ||
+        key.startsWith('heli-');
       const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli kokpit!
       const dur = buffer.duration / rate;
 
@@ -1031,9 +1041,9 @@ class AircraftAudioEngine {
 
     if (flightMode === 'takeoff') {
       const isHeli = profile === 'helicopter';
-      const atcTime = isHeli ? 4.2 : toTiming.voiceStart;
-      const rollStart = isHeli ? 6.0 : toTiming.rollStart;
-      const gearUpTime = isHeli ? 8.4 : toTiming.climbStart;
+      const atcTime = toTiming.voiceStart;
+      const rollStart = toTiming.rollStart;
+      const gearUpTime = toTiming.climbStart;
 
       if (isVvip && phaseTime > 0.25 && !this.vvipWelcomePlayed) {
         this.vvipWelcomePlayed = true;
@@ -1043,7 +1053,15 @@ class AircraftAudioEngine {
       if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
         this.playAtcRadio(
-          isFighter ? 'fighter-takeoff' : isCargoTransport ? 'transport-takeoff' : isVvip ? 'vvip-takeoff' : 'takeoff',
+          isHeli
+            ? 'heli-takeoff'
+            : isFighter
+              ? 'fighter-takeoff'
+              : isCargoTransport
+                ? 'transport-takeoff'
+                : isVvip
+                  ? 'vvip-takeoff'
+                  : 'takeoff',
         );
       }
       if (phaseTime < atcTime) {

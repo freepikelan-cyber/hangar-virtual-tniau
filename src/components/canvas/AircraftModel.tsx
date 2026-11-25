@@ -250,7 +250,8 @@ export function AircraftModel() {
 
     if (flightMode === 'takeoff') {
       if (isHeli) {
-        // TAKE OFF HELIKOPTER: Keluar hanggar yang jauh ke helipad runway -> Spool-up -> Hover vertikal -> Menanjak
+        // TAKE OFF HELIKOPTER: Keluar hanggar ke helipad -> Tunggu suara Semplak Tower selesai penuh -> Hover vertikal -> Menanjak!
+        const to = getTakeOffTiming(unit.id);
         if (pt < 4.2) {
           const p = easeInOut(pt / 4.2);
           targetX = THREE.MathUtils.lerp(-31.5, 0, p);
@@ -258,28 +259,28 @@ export function AircraftModel() {
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.65) / 0.35));
           targetGear = 0;
-          setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU LANDASAN');
-        } else if (pt < 6.0) {
+          setFlightLabel('TAXI OUT • HELIKOPTER KELUAR HANGGAR MENUJU HELIPAD');
+        } else if (pt < to.rollStart) {
           targetX = 0;
           targetZ = -2.0;
           targetY = 0;
           targetYawOffset = 0;
           targetGear = 0;
-          setFlightLabel('📡 ATC: CLEARED FOR TAKE OFF • ROTOR SPOOL-UP FULL POWER');
-        } else if (pt < 8.0) {
-          const p = easeInOut((pt - 6.0) / 2.0);
+          setFlightLabel('📡 SEMPLAK TOWER • CARACAL 01 PERSIAPAN START ENGINE & ROTOR 100%');
+        } else if (pt < to.rotStart) {
+          const p = easeInOut((pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart));
           targetZ = -2.0;
           targetY = THREE.MathUtils.lerp(0, 1.8, p);
           targetPitch = -0.03 * Math.sin(p * Math.PI);
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL (HOVER)');
-        } else if (pt < 10.2) {
-          const p = easeInOut((pt - 8.0) / 2.2);
+          setFlightLabel('TAHAP 1 • TAKE OFF • ANGKAT VERTIKAL (HOVER — LIFTING OFF!)');
+        } else if (pt < to.airborneStart) {
+          const p = easeInOut((pt - to.rotStart) / Math.max(0.5, to.airborneStart - to.rotStart));
           targetY = THREE.MathUtils.lerp(1.8, 3.0, p);
           targetZ = THREE.MathUtils.lerp(-2.0, 0, p);
           targetPitch = 0.09 * Math.sin(p * Math.PI);
           targetGear = p > 0.2 ? 1 : 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK & RODA MASUK');
+          setFlightLabel('TAHAP 1 • TAKE OFF • MENANJAK MENUJU UTARA & RODA MASUK');
         } else {
           targetY = 2.95;
           targetGear = 1;
