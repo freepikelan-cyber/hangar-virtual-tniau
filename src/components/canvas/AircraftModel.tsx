@@ -16,6 +16,7 @@ import { GSuitEduLayer } from './GSuitEduLayer';
 import { JupiterFormationLayer } from './JupiterFormationLayer';
 import { SafetySystemLayer } from './SafetySystemLayer';
 import { VvipEscortLayer } from './VvipEscortLayer';
+import { MissionOpsLayer } from './MissionOpsLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
 
 interface SavedMatProps {
@@ -221,6 +222,7 @@ export function AircraftModel() {
     flightMode === 'maneuver' ||
     flightMode === 'landing' ||
     flightMode === 'aar' ||
+    flightMode === 'mission' ||
     safetyMode ||
     aeroMode;
 
@@ -390,6 +392,33 @@ export function AircraftModel() {
         targetRoll = -0.62 * Math.sin(p * Math.PI * 0.85);
         targetPitch = 0.08 * Math.sin(p * Math.PI);
         targetYawOffset = -0.22 * p;
+      }
+    } else if (flightMode === 'mission') {
+      if (isHeli) {
+        // SAR Hoist Laut: Hover stabil di atas permukaan ombak sambil mengulur tali winch & tandu penyelamatan
+        targetX = Math.sin(t * 0.65) * 0.22;
+        targetY = 4.45 + Math.sin(t * 1.4) * 0.1;
+        targetZ = 0;
+        targetPitch = 0.03 + Math.sin(t * 1.1) * 0.015;
+        targetRoll = Math.cos(t * 1.0) * 0.028;
+        targetGear = 0;
+      } else if (isHeavy) {
+        // Airdrop Kopasgat & Logistik: Terbang datar mantap di ketinggian penerjunan
+        targetX = Math.sin(t * 0.55) * 0.25;
+        targetY = 3.25 + Math.sin(t * 1.2) * 0.12;
+        targetZ = 0;
+        targetPitch = -0.04;
+        targetRoll = Math.cos(t * 0.85) * 0.03;
+        targetGear = 1;
+      } else {
+        // Flare Countermeasure Pesawat Tempur / Latih: Manuver menghindar rudal S-turn sambil melepaskan flare!
+        targetX = Math.sin(t * 1.35) * 2.2;
+        targetY = 3.0 + Math.cos(t * 1.15) * 0.45;
+        targetZ = 0;
+        targetRoll = -Math.cos(t * 1.35) * 0.62;
+        targetPitch = -0.08 + Math.sin(t * 1.2) * 0.08;
+        targetYawOffset = -Math.cos(t * 1.35) * 0.18;
+        targetGear = 1;
       }
     } else if (flightMode === 'maneuver') {
       const baseH = Math.max(2.6, procedural.hoverHeight + 1.15);
@@ -1231,6 +1260,7 @@ export function AircraftModel() {
       <SafetySystemLayer />
       <JupiterFormationLayer sourceGroup={procedural.group} />
       <VvipEscortLayer />
+      <MissionOpsLayer />
     </group>
   );
 }

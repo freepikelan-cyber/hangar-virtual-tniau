@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { CheckCircle2, X, XCircle } from 'lucide-react';
 import { HangarScene } from './components/canvas/HangarScene';
 import { TopHeader } from './components/hud/TopHeader';
@@ -13,6 +14,7 @@ import { FighterManeuverPanel } from './components/hud/FighterManeuverPanel';
 import { GSuitControlPanel } from './components/hud/GSuitControlPanel';
 import { JupiterManeuverPanel } from './components/hud/JupiterManeuverPanel';
 import { SafetyStoryPanel } from './components/hud/SafetyStoryPanel';
+import { PilotRoomOverlay } from './components/hud/PilotRoomOverlay';
 import { useHangarStore, useSelectedUnit } from './store/useHangarStore';
 
 /** Banner Kuis 3D ringkas saat panel kanan ditutup (terutama di layar smartphone). */
@@ -79,7 +81,23 @@ function FloatingQuizBanner() {
   );
 }
 
+const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16', 'kt1b', 'c130j', 'b737vip', 'ec725'];
+
 export function App() {
+  const showcaseMode = useHangarStore((s) => s.showcaseMode);
+  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
+
+  useEffect(() => {
+    if (!showcaseMode) return;
+    let idx = Math.max(0, SHOWCASE_FLEET.indexOf(useHangarStore.getState().selectedId));
+    const timer = window.setInterval(() => {
+      idx = (idx + 1) % SHOWCASE_FLEET.length;
+      useHangarStore.getState().selectAircraft(SHOWCASE_FLEET[idx]);
+      useHangarStore.setState({ autoRotate: true, leftOpen: false, rightOpen: false });
+    }, 12000);
+    return () => window.clearInterval(timer);
+  }, [showcaseMode]);
+
   return (
     <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#0a1e3c]">
       {/* Kanvas 3D Interaktif */}
@@ -87,7 +105,7 @@ export function App() {
 
       {/* Lapisan HUD Militer */}
       <TopHeader />
-      <FleetSidebar />
+      {!pilotRoomOpen && <FleetSidebar />}
       <InfoPanel />
       <AeroControlPanel />
       <AarStatusPanel />
@@ -95,6 +113,7 @@ export function App() {
       <GSuitControlPanel />
       <JupiterManeuverPanel />
       <SafetyStoryPanel />
+      <PilotRoomOverlay />
       <FloatingQuizBanner />
       <HotspotCard />
       <BottomDock />

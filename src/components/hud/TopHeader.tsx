@@ -1,4 +1,4 @@
-import { Radio, Volume2, VolumeX } from 'lucide-react';
+import { Moon, Radio, Sun, Sunset, Tv, Volume2, VolumeX } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -8,7 +8,17 @@ export function TopHeader() {
   const unit = useSelectedUnit();
   const openWelcome = useHangarStore((s) => s.openWelcome);
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
+  const timeOfDay = useHangarStore((s) => s.timeOfDay);
+  const showcaseMode = useHangarStore((s) => s.showcaseMode);
+  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
   const toggle = useHangarStore((s) => s.toggle);
+  const cycleTimeOfDay = useHangarStore((s) => s.cycleTimeOfDay);
+  const toggleShowcase = useHangarStore((s) => s.toggleShowcase);
+
+  if (pilotRoomOpen) return null;
+
+  const TimeIcon = timeOfDay === 'sunset' ? Sunset : timeOfDay === 'night' ? Moon : Sun;
+  const timeLabel = timeOfDay === 'sunset' ? 'Senja' : timeOfDay === 'night' ? 'Malam' : 'Siang';
 
   return (
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
@@ -38,6 +48,38 @@ export function TopHeader() {
             </span>
           </div>
         </div>
+
+        {/* Ikon Mode Waktu (Siang / Senja / Malam) */}
+        <button
+          type="button"
+          onClick={cycleTimeOfDay}
+          aria-label={`Mode Waktu: ${timeLabel}`}
+          title={`Mode Cuaca & Waktu: ${timeLabel} (Klik untuk ganti Siang / Senja / Malam)`}
+          className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border transition-all cursor-pointer active:scale-95 ${
+            timeOfDay === 'sunset'
+              ? 'border-amber-400/70 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30'
+              : timeOfDay === 'night'
+                ? 'border-indigo-400/70 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30'
+                : 'border-sky-400/60 bg-sky-500/15 text-sky-300 hover:bg-sky-500/25'
+          }`}
+        >
+          <TimeIcon className="h-4 w-4" />
+        </button>
+
+        {/* Ikon Mode Pameran (Auto-Showcase) */}
+        <button
+          type="button"
+          onClick={toggleShowcase}
+          aria-label={showcaseMode ? 'Matikan Mode Pameran' : 'Aktifkan Mode Pameran'}
+          title={showcaseMode ? 'Mode Pameran Aktif (Klik untuk Berhenti)' : 'Mode Pameran / Auto-Showcase Armada'}
+          className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border transition-all cursor-pointer active:scale-95 ${
+            showcaseMode
+              ? 'border-[#ffb703] bg-[#ffb703]/25 text-[#ffb703] shadow-amber'
+              : 'border-slate-600/70 bg-[#0c2448]/80 text-slate-300 hover:border-[#4da6ff] hover:text-white'
+          }`}
+        >
+          <Tv className="h-4 w-4" />
+        </button>
 
         {/* Ikon Sound ringkas (mobile & desktop) */}
         <button

@@ -81,13 +81,20 @@ function RadarPlatform() {
 }
 
 function StudioLighting() {
+  const timeOfDay = useHangarStore((s) => s.timeOfDay);
+  const ambientColor = timeOfDay === 'sunset' ? '#ffd1a3' : timeOfDay === 'night' ? '#4a6ea8' : '#b8d4f0';
+  const ambientInt = timeOfDay === 'sunset' ? 0.36 : timeOfDay === 'night' ? 0.22 : 0.42;
+  const sunColor = timeOfDay === 'sunset' ? '#ffad66' : timeOfDay === 'night' ? '#7ea8e8' : '#ffffff';
+  const sunInt = timeOfDay === 'sunset' ? 1.55 : timeOfDay === 'night' ? 0.72 : 1.7;
+  const rimColor = timeOfDay === 'sunset' ? '#ff8552' : timeOfDay === 'night' ? '#38bdf8' : '#7fd8ff';
+
   return (
     <>
-      <ambientLight intensity={0.42} color="#b8d4f0" />
+      <ambientLight intensity={ambientInt} color={ambientColor} />
       <directionalLight
-        position={[12, 24, 14]}
-        intensity={1.7}
-        color="#ffffff"
+        position={timeOfDay === 'sunset' ? [22, 12, 18] : [12, 24, 14]}
+        intensity={sunInt}
+        color={sunColor}
         castShadow
         shadow-mapSize={[2048, 2048]}
         shadow-camera-left={-48}
@@ -96,8 +103,8 @@ function StudioLighting() {
         shadow-camera-bottom={-48}
         shadow-camera-far={140}
       />
-      <directionalLight position={[-14, 10, -10]} intensity={0.85} color="#7fd8ff" />
-      <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={1.2} color="#e6f5ff" />
+      <directionalLight position={[-14, 10, -10]} intensity={timeOfDay === 'night' ? 0.55 : 0.85} color={rimColor} />
+      <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={timeOfDay === 'night' ? 0.8 : 1.2} color="#e6f5ff" />
 
       {/* Studio Hangar IBL dengan panel softbox Lightformer */}
       <Environment resolution={256} frames={1}>
@@ -118,6 +125,9 @@ function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
   const { camera, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
+  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
+  const pilotRoomStage = useHangarStore((s) => s.pilotRoomStage);
+  const isCockpitPov = pilotRoomOpen && pilotRoomStage === 'cockpit';
 
   const initial = useMemo(() => getDefaultCamera(), []);
   const desiredPos = useRef(new THREE.Vector3(...initial.pos));
@@ -128,19 +138,27 @@ function CameraRig() {
   useEffect(() => {
     const cam = camera as THREE.PerspectiveCamera;
     if (!cam.isPerspectiveCamera) return;
-    const nextFov = size.width < size.height ? 52 : 42;
+    const nextFov = isCockpitPov ? 64 : size.width < size.height ? 52 : 42;
     if (cam.fov !== nextFov) {
       cam.fov = nextFov;
       cam.updateProjectionMatrix();
     }
-  }, [camera, size.width, size.height]);
+  }, [camera, size.width, size.height, isCockpitPov]);
 
   useEffect(() => {
-    if (!camRequest) return;
+    if (isCockpitPov) {
+      desiredPos.current.set(0, 3.25, 6.2);
+      desiredTarget.current.set(0, 2.75, 42.0);
+      animating.current = true;
+    }
+  }, [isCockpitPov]);
+
+  useEffect(() => {
+    if (!camRequest || isCockpitPov) return;
     desiredPos.current.set(...camRequest.pos);
     desiredTarget.current.set(...camRequest.target);
     animating.current = true;
-  }, [camRequest]);
+  }, [camRequest, isCockpitPov]);
 
   useFrame((_, delta) => {
     if (!animating.current || !controlsRef.current) return;
@@ -161,6 +179,7 @@ function CameraRig() {
     <OrbitControls
       ref={controlsRef}
       makeDefault
+      enabled={!isCockpitPov}
       enableDamping
       dampingFactor={0.07}
       enablePan

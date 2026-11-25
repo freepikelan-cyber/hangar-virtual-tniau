@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Award,
   BookOpen,
@@ -6,6 +7,7 @@ import {
   ChevronRight,
   Compass,
   Crosshair,
+  Download,
   Gauge,
   HelpCircle,
   MapPin,
@@ -16,13 +18,16 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useHangarStore, useSelectedUnit, type InfoTab } from '../../store/useHangarStore';
+import { QuizCertificateModal } from './QuizCertificateModal';
 
 export function InfoPanel() {
   const unit = useSelectedUnit();
+  const [showCert, setShowCert] = useState(false);
   const rightOpen = useHangarStore((s) => s.rightOpen);
   const aeroMode = useHangarStore((s) => s.aeroMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
   const flightMode = useHangarStore((s) => s.flightMode);
+  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
   const toggleRight = useHangarStore((s) => s.toggleRight);
   const infoTab = useHangarStore((s) => s.infoTab);
   const setInfoTab = useHangarStore((s) => s.setInfoTab);
@@ -48,6 +53,7 @@ export function InfoPanel() {
   const isJupiterManeuver = unit.id === 'kt1b' && flightMode === 'maneuver';
   const isFighterManeuver = unit.category === 'Tempur' && flightMode === 'maneuver';
   const isAar = flightMode === 'aar';
+  if (pilotRoomOpen) return null;
   if ((aeroMode || safetyMode || isJupiterManeuver || isFighterManeuver || isAar) && !isEquipment) return null;
 
   return (
@@ -369,7 +375,15 @@ export function InfoPanel() {
                         );
                       })}
                     </div>
-                    <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCert(true)}
+                      className="hud-btn w-full gap-2 border-[#ffb703] bg-[#ffb703]/20 font-display text-xs font-bold tracking-widest text-[#ffb703] uppercase hover:bg-[#ffb703] hover:text-[#0a1e3c] shadow-amber"
+                    >
+                      <Download className="h-4 w-4" />
+                      UNDUH SERTIFIKAT KADET TNI AU
+                    </button>
+                    <div className="flex gap-2 pt-1">
                       <button
                         type="button"
                         onClick={startQuiz}
@@ -392,6 +406,13 @@ export function InfoPanel() {
             )}
           </div>
         </div>
+      )}
+      {showCert && (
+        <QuizCertificateModal
+          score={quiz.score}
+          total={quiz.order.length}
+          onClose={() => setShowCert(false)}
+        />
       )}
     </aside>
   );

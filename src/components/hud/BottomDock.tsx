@@ -6,6 +6,7 @@ import {
   FileText,
   Flame,
   Fuel,
+  Gauge,
   Lock,
   Mail,
   MapPin,
@@ -15,6 +16,7 @@ import {
   Rotate3d,
   RotateCcw,
   ShieldAlert,
+  Sparkles,
   Square,
   Waves,
   Wind,
@@ -34,6 +36,7 @@ export function BottomDock() {
   const oxygenMode = useHangarStore((s) => s.oxygenMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
+  const pilotRoomOpen = useHangarStore((s) => s.pilotRoomOpen);
 
   const toggle = useHangarStore((s) => s.toggle);
   const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
@@ -41,15 +44,25 @@ export function BottomDock() {
   const triggerManeuver = useHangarStore((s) => s.triggerManeuver);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const triggerAar = useHangarStore((s) => s.triggerAar);
+  const triggerMission = useHangarStore((s) => s.triggerMission);
+  const openPilotRoom = useHangarStore((s) => s.openPilotRoom);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
   const setFlightState = useHangarStore((s) => s.setFlightState);
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const [simMenuOpen, setSimMenuOpen] = useState(false);
 
+  if (pilotRoomOpen) return null;
+
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
   const isEquipment = isGSuit || isHelmet;
+  const missionBtnLabel =
+    unit.category === 'Helikopter'
+      ? 'SAR Hoist Laut'
+      : unit.category === 'Angkut & VIP'
+        ? 'Airdrop Kopasgat'
+        : 'Flare Tempur';
   const anySimActive = flightMode !== 'parked' || safetyMode || oxygenMode;
 
   const canTakeOff = flightMode === 'parked';
@@ -117,6 +130,18 @@ export function BottomDock() {
             onClick: () => {
               setSimMenuOpen(false);
               toggle('safetyMode');
+            },
+          },
+          {
+            id: 'pilot-room',
+            label: 'Pilot Room',
+            short: 'Pilot',
+            icon: Gauge,
+            active: pilotRoomOpen,
+            accent: 'emerald' as const,
+            onClick: () => {
+              setSimMenuOpen(false);
+              openPilotRoom();
             },
           },
         ]),
@@ -196,6 +221,7 @@ export function BottomDock() {
             {flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver atau 3. Landing'}
             {flightMode === 'maneuver' && 'Manuver udara aktif! Klik 3. Landing untuk mendarat di Runway'}
             {flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
+            {flightMode === 'mission' && `Misi Operasi TNI AU aktif: ${missionBtnLabel}`}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -277,6 +303,23 @@ export function BottomDock() {
             </button>
 
             <div className="mx-0.5 h-6 w-px bg-[#4da6ff]/25 hidden sm:block" />
+
+            <button
+              type="button"
+              title="Jalankan Simulasi Misi Operasi TNI AU (Flare / Airdrop Kopasgat / SAR Hoist Laut)"
+              onClick={() => {
+                triggerMission();
+                setSimMenuOpen(false);
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                flightMode === 'mission'
+                  ? 'border-amber-400 bg-amber-400 text-[#0a1e3c]'
+                  : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
+              }`}
+            >
+              <Sparkles className="h-4 w-4" />
+              {missionBtnLabel}
+            </button>
 
             <button
               type="button"

@@ -57,18 +57,34 @@ const CHUNK_LEN = 340;
 const LOOP_LEN = CHUNK_LEN * 3; // 3 zona dinamis: Runway/Kota -> Pegunungan -> Laut & Kepulauan
 const RUNWAY_OFFSET = 141.5;
 
-function makeBlueSkyTexture(): THREE.CanvasTexture {
+function makeSkyTexture(mode: 'day' | 'sunset' | 'night'): THREE.CanvasTexture {
   const c = document.createElement('canvas');
   c.width = 64;
   c.height = 512;
   const ctx = c.getContext('2d')!;
   const grad = ctx.createLinearGradient(0, 0, 0, 512);
-  grad.addColorStop(0.0, '#0f4c9c');
-  grad.addColorStop(0.28, '#267ae8');
-  grad.addColorStop(0.47, '#75c4ff');
-  grad.addColorStop(0.55, '#d6efff');
-  grad.addColorStop(0.62, '#8bc5f0');
-  grad.addColorStop(1.0, '#1e538e');
+  if (mode === 'sunset') {
+    grad.addColorStop(0.0, '#161b48');
+    grad.addColorStop(0.24, '#4c2b63');
+    grad.addColorStop(0.42, '#c8553d');
+    grad.addColorStop(0.52, '#ff9f43');
+    grad.addColorStop(0.58, '#ffd27d');
+    grad.addColorStop(0.7, '#7c3f4a');
+    grad.addColorStop(1.0, '#1d1c38');
+  } else if (mode === 'night') {
+    grad.addColorStop(0.0, '#020612');
+    grad.addColorStop(0.32, '#061129');
+    grad.addColorStop(0.5, '#0e2245');
+    grad.addColorStop(0.62, '#091730');
+    grad.addColorStop(1.0, '#020612');
+  } else {
+    grad.addColorStop(0.0, '#0f4c9c');
+    grad.addColorStop(0.28, '#267ae8');
+    grad.addColorStop(0.47, '#75c4ff');
+    grad.addColorStop(0.55, '#d6efff');
+    grad.addColorStop(0.62, '#8bc5f0');
+    grad.addColorStop(1.0, '#1e538e');
+  }
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, 64, 512);
 
@@ -110,6 +126,7 @@ export function SkyCloudsEnvironment() {
   const safetyMode = useHangarStore((s) => s.safetyMode);
   const safetyNonce = useHangarStore((s) => s.safetyNonce);
   const selectedId = useHangarStore((s) => s.selectedId);
+  const timeOfDay = useHangarStore((s) => s.timeOfDay);
 
   const unit = getUnit(selectedId);
   const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
@@ -143,10 +160,40 @@ export function SkyCloudsEnvironment() {
     } else if (flightMode === 'landing') {
       worldY.current = -12.5;
       scrollZ.current = 0;
+    } else if (flightMode === 'mission') {
+      worldY.current = isHeli ? -0.02 : -19.5;
+      scrollZ.current = isHeli ? RUNWAY_OFFSET + CHUNK_LEN * 2 : 260;
     }
-  }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety]);
+  }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety, isHeli]);
 
-  const skyTex = useMemo(() => makeBlueSkyTexture(), []);
+  const skyTextures = useMemo(
+    () => ({
+      day: makeSkyTexture('day'),
+      sunset: makeSkyTexture('sunset'),
+      night: makeSkyTexture('night'),
+    }),
+    [],
+  );
+  const starGeo = useMemo(() => {
+    const count = 240;
+    const positions = new Float32Array(count * 3);
+    let seed = 9137;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    for (let i = 0; i < count; i++) {
+      const theta = rand() * Math.PI * 2;
+      const phi = rand() * (Math.PI * 0.48);
+      const r = 235;
+      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta);
+      positions[i * 3 + 1] = r * Math.cos(phi);
+      positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    return geo;
+  }, []);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
   const skyscraperTex = useMemo(() => makeSkyscraperGlassTexture(), []);
   const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
@@ -198,7 +245,10 @@ export function SkyCloudsEnvironment() {
 
   useEffect(() => {
     return () => {
-      skyTex.dispose();
+      skyTextures.day.dispose();
+      skyTextures.sunset.dispose();
+      skyTextures.night.dispose();
+      starGeo.dispose();
       runwayTex.dispose();
       skyscraperTex.dispose();
       houseWallTex.dispose();
@@ -212,7 +262,8 @@ export function SkyCloudsEnvironment() {
       cloudBottomMat.dispose();
     };
   }, [
-    skyTex,
+    skyTextures,
+    starGeo,
     runwayTex,
     skyscraperTex,
     houseWallTex,
@@ -225,8 +276,16 @@ export function SkyCloudsEnvironment() {
     cloudBottomMat,
   ]);
 
-  const hangarBg = useMemo(() => new THREE.Color('#0a1e3c'), []);
-  const skyBg = useMemo(() => new THREE.Color('#53aef5'), []);
+  const hangarBgDay = useMemo(() => new THREE.Color('#0a1e3c'), []);
+  const hangarBgNight = useMemo(() => new THREE.Color('#050c1c'), []);
+  const skyBgMap = useMemo(
+    () => ({
+      day: new THREE.Color('#53aef5'),
+      sunset: new THREE.Color('#d97142'),
+      night: new THREE.Color('#08152e'),
+    }),
+    [],
+  );
   const tmpColor = useMemo(() => new THREE.Color(), []);
 
   // 26 gugusan Awan 3D Cumulus bertingkat
@@ -341,6 +400,8 @@ export function SkyCloudsEnvironment() {
     skyOpacity.current = THREE.MathUtils.lerp(skyOpacity.current, targetMix, Math.min(1, dt * 3.2));
     const mix = skyOpacity.current;
 
+    const hangarBg = timeOfDay === 'night' ? hangarBgNight : hangarBgDay;
+    const skyBg = skyBgMap[timeOfDay];
     tmpColor.copy(hangarBg).lerp(skyBg, mix);
     if (scene.background instanceof THREE.Color) {
       scene.background.copy(tmpColor);
@@ -359,13 +420,20 @@ export function SkyCloudsEnvironment() {
       sunGroupRef.current.visible = mix > 0.05;
     }
 
-    // Awan 3D muncul saat terbang tinggi (airborne / maneuver / aar) atau Safety Tempur di udara!
+    // Awan 3D muncul saat terbang tinggi (airborne / maneuver / aar / mission non-heli) atau Safety Tempur di udara!
     const showClouds =
       isOutdoorSim &&
-      (flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'aar' || (safetyMode && isEjectionSafety));
+      (flightMode === 'airborne' ||
+        flightMode === 'maneuver' ||
+        flightMode === 'aar' ||
+        (flightMode === 'mission' && !isHeli) ||
+        (safetyMode && isEjectionSafety));
     cloudOpacity.current = THREE.MathUtils.lerp(cloudOpacity.current, showClouds ? 1 : 0, Math.min(1, dt * 2.2));
     const cMix = cloudOpacity.current;
 
+    cloudTopMat.color.set(timeOfDay === 'sunset' ? '#ffd4b0' : timeOfDay === 'night' ? '#2c4268' : '#ffffff');
+    cloudTopMat.emissive.set(timeOfDay === 'sunset' ? '#ff9f66' : timeOfDay === 'night' ? '#13233f' : '#fff6e8');
+    cloudBottomMat.color.set(timeOfDay === 'sunset' ? '#9e6274' : timeOfDay === 'night' ? '#16243d' : '#c7ddf4');
     cloudTopMat.opacity = cMix * 0.92;
     cloudTopMat.visible = cMix > 0.01;
     cloudBottomMat.opacity = cMix * 0.86;
@@ -414,6 +482,16 @@ export function SkyCloudsEnvironment() {
     } else if (flightMode === 'airborne' || flightMode === 'aar') {
       targetWorldY = -19.5;
       groundSpeed = 46;
+    } else if (flightMode === 'mission') {
+      if (isHeli) {
+        // SAR Hoist Helikopter: terkunci langsung di atas Zona Laut 3D!
+        scrollZ.current = RUNWAY_OFFSET + CHUNK_LEN * 2;
+        targetWorldY = -0.02;
+        groundSpeed = 0;
+      } else {
+        targetWorldY = -19.5;
+        groundSpeed = 48;
+      }
     } else if (flightMode === 'maneuver') {
       targetWorldY = -19.5;
       groundSpeed = 58;
@@ -497,12 +575,12 @@ export function SkyCloudsEnvironment() {
 
   return (
     <group name="sky-clouds-env">
-      {/* 1. Kubah Langit Biru 3D Cerah */}
+      {/* 1. Kubah Langit 3D Dinamis (Siang / Senja / Malam) */}
       <mesh>
         <sphereGeometry args={[260, 32, 24]} />
         <meshBasicMaterial
           ref={skyMatRef}
-          map={skyTex}
+          map={skyTextures[timeOfDay]}
           side={THREE.BackSide}
           transparent
           opacity={0}
@@ -511,17 +589,32 @@ export function SkyCloudsEnvironment() {
         />
       </mesh>
 
-      {/* 2. Matahari Hangat + Halo Atmosfer */}
-      <group ref={sunGroupRef} position={[92, 80, 115]} visible={false}>
+      {/* Bintang-bintang malam untuk Mode Night Ops */}
+      {timeOfDay === 'night' && isOutdoorSim && (
+        <points geometry={starGeo}>
+          <pointsMaterial color="#e0f2fe" size={1.45} sizeAttenuation={false} transparent opacity={0.85} fog={false} />
+        </points>
+      )}
+
+      {/* 2. Matahari / Bulan + Halo Atmosfer */}
+      <group
+        ref={sunGroupRef}
+        position={timeOfDay === 'sunset' ? [95, 28, 130] : [92, 80, 115]}
+        visible={false}
+      >
         <mesh>
-          <sphereGeometry args={[7.5, 20, 20]} />
-          <meshBasicMaterial color="#fff9df" fog={false} />
+          <sphereGeometry args={[timeOfDay === 'night' ? 5.6 : 7.5, 20, 20]} />
+          <meshBasicMaterial
+            color={timeOfDay === 'sunset' ? '#ff9d42' : timeOfDay === 'night' ? '#e2f1ff' : '#fff9df'}
+            fog={false}
+          />
         </mesh>
-        <sprite scale={[40, 40, 1]}>
+        <sprite scale={timeOfDay === 'night' ? [26, 26, 1] : [40, 40, 1]}>
           <spriteMaterial
             map={sunHaloTex}
+            color={timeOfDay === 'sunset' ? '#ff8b3d' : timeOfDay === 'night' ? '#8cc8ff' : '#ffffff'}
             transparent
-            opacity={0.75}
+            opacity={timeOfDay === 'night' ? 0.45 : 0.75}
             blending={THREE.AdditiveBlending}
             depthWrite={false}
             fog={false}

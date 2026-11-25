@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { aircraftAudio } from '../../utils/aircraftAudio';
 
 /** Tekstur sprite api lembut realistis (inti putih-kuning -> oranye terang -> tepi merah menyala). */
 function makeFireSpriteTexture(): THREE.CanvasTexture {
@@ -59,10 +60,12 @@ export function SafetySystemLayer() {
   const unit = useSelectedUnit();
   const safetyMode = useHangarStore((s) => s.safetyMode);
   const safetyNonce = useHangarStore((s) => s.safetyNonce);
+  const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const setFlightLabel = useHangarStore((s) => s.setFlightLabel);
   const setSafetyStep = useHangarStore((s) => s.setSafetyStep);
 
   const timer = useRef(0);
+  const sfxPlayed = useRef({ hit: false, eject: false, splash: false });
 
   // Refs Pesawat Tempur / Latih
   const missileRef = useRef<THREE.Group>(null);
@@ -113,6 +116,7 @@ export function SafetySystemLayer() {
 
   useEffect(() => {
     timer.current = 0;
+    sfxPlayed.current = { hit: false, eject: false, splash: false };
     if (!safetyMode) {
       setFlightLabel(null);
       setSafetyStep(0);
@@ -204,6 +208,10 @@ export function SafetySystemLayer() {
           if (explosionRef.current) explosionRef.current.visible = false;
           setFlightLabel('⚠ PERINGATAN RADAR • RUDAL MUSUH MENDEKAT!');
         } else {
+          if (!sfxPlayed.current.hit) {
+            sfxPlayed.current.hit = true;
+            aircraftAudio.playMissileExplosionSfx(soundEnabled);
+          }
           const p = (st - hitTime) / (5.8 - hitTime);
           if (missileRef.current) missileRef.current.visible = false;
           if (explosionRef.current) {
@@ -216,6 +224,10 @@ export function SafetySystemLayer() {
         if (canopyFlyRef.current) canopyFlyRef.current.visible = false;
         if (seatGroupRef.current) seatGroupRef.current.visible = false;
       } else if (st < 8.2) {
+        if (!sfxPlayed.current.eject) {
+          sfxPlayed.current.eject = true;
+          aircraftAudio.playEjectionRocketSfx(soundEnabled);
+        }
         setSafetyStep(2);
         const p = (st - 5.8) / 2.4;
         const ease = 1 - Math.pow(1 - p, 2);
@@ -327,6 +339,10 @@ export function SafetySystemLayer() {
         if (transportSmokeRef.current) transportSmokeRef.current.visible = p < 0.7;
         if (splashRef.current) {
           const touching = p > 0.45;
+          if (touching && !sfxPlayed.current.splash) {
+            sfxPlayed.current.splash = true;
+            aircraftAudio.playWaterSplashSfx(soundEnabled);
+          }
           splashRef.current.visible = touching;
           if (touching) {
             const sp = (p - 0.45) / 0.55;
@@ -401,6 +417,10 @@ export function SafetySystemLayer() {
           floatsRef.current.scale.set(1, 1, 1);
         }
         if (heliSplashRef.current) {
+          if (!sfxPlayed.current.splash) {
+            sfxPlayed.current.splash = true;
+            aircraftAudio.playWaterSplashSfx(soundEnabled);
+          }
           heliSplashRef.current.visible = p < 0.55;
           const s = Math.sin(Math.min(1, p / 0.55) * Math.PI) * 1.15 + 0.2;
           heliSplashRef.current.scale.set(s, s * 0.7, s);

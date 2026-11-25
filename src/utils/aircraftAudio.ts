@@ -545,6 +545,128 @@ class AircraftAudioEngine {
     });
   }
 
+  /** Efek ledakan rudal berat realistis (sub-bass impact + deru api crackle) untuk mode Safety. */
+  playMissileExplosionSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    const boomSrc = this.createNoiseSource(1.4);
+    if (boomSrc) {
+      const lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(220, now);
+      lp.frequency.exponentialRampToValueAtTime(38, now + 1.2);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.75, now + 0.025);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.35);
+      boomSrc.connect(lp);
+      lp.connect(g);
+      g.connect(ctx.destination);
+      boomSrc.start(now);
+      boomSrc.stop(now + 1.38);
+    }
+
+    const crackSrc = this.createNoiseSource(0.85);
+    if (crackSrc) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(980, now);
+      bp.Q.value = 1.2;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.32, now + 0.04);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.82);
+      crackSrc.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      crackSrc.start(now);
+      crackSrc.stop(now + 0.84);
+    }
+  }
+
+  /** Efek roket kursi lontar Zero-Zero (canopy jettison pop + semburan roket padat). */
+  playEjectionRocketSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    const rocketSrc = this.createNoiseSource(1.65);
+    if (rocketSrc) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(1400, now);
+      bp.frequency.exponentialRampToValueAtTime(320, now + 1.5);
+      bp.Q.value = 0.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.52, now + 0.03);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
+      rocketSrc.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      rocketSrc.start(now);
+      rocketSrc.stop(now + 1.62);
+    }
+  }
+
+  /** Efek kanopi parasut mengembang (hentakan kain + desiran angin) & cipratan air laut (water ditching). */
+  playWaterSplashSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    const src = this.createNoiseSource(1.3);
+    if (src) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(680, now);
+      bp.frequency.exponentialRampToValueAtTime(220, now + 1.2);
+      bp.Q.value = 0.7;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.45, now + 0.08);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.25);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      src.start(now);
+      src.stop(now + 1.28);
+    }
+  }
+
+  /** Efek letupan suar Flare Countermeasure yang tegas & singkat. */
+  playFlarePopSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+    const src = this.createNoiseSource(0.24);
+    if (src) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(1250, now);
+      bp.Q.value = 1.8;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.26, now + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      src.start(now);
+      src.stop(now + 0.23);
+    }
+  }
+
   /** Helper membuat buffer white noise pendek untuk sintesis akustik realistis (non-arcade). */
   private createNoiseSource(durationSec: number): AudioBufferSourceNode | null {
     if (!this.ctx) return null;
@@ -769,9 +891,9 @@ class AircraftAudioEngine {
           throttle = Math.max(0.03, 0.16 * (1 - idleP * 0.8));
         }
       }
-    } else if (flightMode === 'airborne' || flightMode === 'aar') {
-      throttle = 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
-      speedMod = 0.02;
+    } else if (flightMode === 'airborne' || flightMode === 'aar' || flightMode === 'mission') {
+      throttle = flightMode === 'mission' ? 0.84 : 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
+      speedMod = flightMode === 'mission' ? 0.08 : 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
       const cycle = phaseTime % 20;
       if (cycle < 5) {

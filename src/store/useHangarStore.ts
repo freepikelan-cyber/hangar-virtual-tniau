@@ -6,7 +6,8 @@ import type { JupiterManeuverId } from '../data/jupiterManeuvers';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
-export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim' | 'aar';
+export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim' | 'aar' | 'mission';
+export type TimeOfDay = 'day' | 'sunset' | 'night';
 export type AeroManeuver = 'liftDemo' | 'climb' | 'descend' | 'turnLeft' | 'turnRight' | 'level';
 export type Vec3 = [number, number, number];
 
@@ -80,6 +81,11 @@ interface HangarState {
   showPins: boolean;
   autoRotate: boolean;
   soundEnabled: boolean;
+  timeOfDay: TimeOfDay;
+  showcaseMode: boolean;
+  pilotRoomOpen: boolean;
+  pilotRoomStage: 'gear' | 'cockpit';
+  canopyOpen: boolean;
   aeroMode: boolean;
   safetyMode: boolean;
   safetyNonce: number;
@@ -124,6 +130,13 @@ interface HangarState {
   setGForceLevel: (g: 1 | 4 | 9) => void;
   triggerAar: () => void;
   setAarProgress: (fuel: number, step: number) => void;
+  triggerMission: () => void;
+  cycleTimeOfDay: () => void;
+  toggleShowcase: () => void;
+  openPilotRoom: () => void;
+  closePilotRoom: () => void;
+  setPilotRoomStage: (stage: 'gear' | 'cockpit') => void;
+  toggleCanopy: () => void;
   replaySafety: () => void;
   setSafetyStep: (step: number) => void;
 
@@ -174,6 +187,11 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   showPins: false,
   autoRotate: false,
   soundEnabled: true,
+  timeOfDay: 'day',
+  showcaseMode: false,
+  pilotRoomOpen: false,
+  pilotRoomStage: 'gear',
+  canopyOpen: true,
   aeroMode: false,
   safetyMode: false,
   safetyNonce: 0,
@@ -320,6 +338,78 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       set({ aarFuel, aarStep });
     }
   },
+  triggerMission: () => {
+    const s = get();
+    const u = getUnit(s.selectedId);
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
+    const label =
+      u.category === 'Helikopter'
+        ? 'MISI SAR LAUT • RESCUE HOIST EVAKUASI KORBAN'
+        : u.category === 'Angkut & VIP'
+          ? 'MISI AIRDROP • PENERJUNAN PASUKAN KOPASGAT & LOGISTIK'
+          : 'MISI TEMPUR • FLARE COUNTERMEASURE & SCRAMBLE INTERSEP';
+    set({
+      flightMode: 'mission',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: label,
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      autoRotate: false,
+      activeHotspot: null,
+      camRequest:
+        u.category === 'Helikopter'
+          ? { pos: [14.5, 6.2, 16.5] as Vec3, target: [0, 1.8, 0] as Vec3, nonce: nonce++ }
+          : { pos: [17.5, 7.5, 21.0] as Vec3, target: [0, 2.2, -2.5] as Vec3, nonce: nonce++ },
+    });
+  },
+  cycleTimeOfDay: () =>
+    set((s) => ({
+      timeOfDay: s.timeOfDay === 'day' ? 'sunset' : s.timeOfDay === 'sunset' ? 'night' : 'day',
+    })),
+  toggleShowcase: () =>
+    set((s) => {
+      const next = !s.showcaseMode;
+      return {
+        showcaseMode: next,
+        autoRotate: next,
+        leftOpen: next ? false : s.leftOpen,
+        rightOpen: next ? false : s.rightOpen,
+        pilotRoomOpen: false,
+      };
+    }),
+  openPilotRoom: () =>
+    set({
+      pilotRoomOpen: true,
+      pilotRoomStage: 'gear',
+      canopyOpen: true,
+      showcaseMode: false,
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      autoRotate: false,
+      activeHotspot: null,
+      leftOpen: false,
+      rightOpen: false,
+    }),
+  closePilotRoom: () => {
+    const s = get();
+    set({
+      pilotRoomOpen: false,
+      pilotRoomStage: 'gear',
+      canopyOpen: true,
+      flightMode: 'parked',
+      flightLabel: null,
+      camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+    });
+  },
+  setPilotRoomStage: (pilotRoomStage) =>
+    set({
+      pilotRoomStage,
+      canopyOpen: pilotRoomStage === 'cockpit' ? true : false,
+    }),
+  toggleCanopy: () => set((s) => ({ canopyOpen: !s.canopyOpen })),
   replaySafety: () => set((s) => ({ safetyNonce: s.safetyNonce + 1, safetyStep: 0 })),
   setSafetyStep: (safetyStep) => {
     if (get().safetyStep !== safetyStep) set({ safetyStep });
