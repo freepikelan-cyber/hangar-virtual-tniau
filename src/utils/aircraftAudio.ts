@@ -83,6 +83,13 @@ class AircraftAudioEngine {
   private activeAtcCarrier: AudioBufferSourceNode | null = null;
   private radioCurve: Float32Array | null = null;
 
+  // Rekaman audio asli pesawat tempur (Take Off, Terbang, & Taxiway)
+  private jetBuffers = new Map<'takeoff' | 'fly' | 'taxi', AudioBuffer>();
+  private jetLoading = new Set<'takeoff' | 'fly' | 'taxi'>();
+  private activeJetKey: 'takeoff' | 'fly' | 'taxi' | null = null;
+  private activeJetSrc: AudioBufferSourceNode | null = null;
+  private activeJetGain: GainNode | null = null;
+
   /** Wajib dipanggil dari event klik pengguna agar AudioContext browser aktif. */
   unlock() {
     if (typeof window === 'undefined') return;
@@ -95,10 +102,94 @@ class AircraftAudioEngine {
     if (this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
     }
-    // Preload rekaman suara ATC asli agar langsung siap saat Take Off & Landing tanpa jeda
+    // Preload rekaman suara ATC & suara asli pesawat tempur (Take Off, Terbang, Taxiway)
     void this.preloadAtc('takeoff');
     void this.preloadAtc('landing');
     void this.preloadAtc('vacate');
+    void this.preloadJetAudio('taxi');
+    void this.preloadJetAudio('takeoff');
+    void this.preloadJetAudio('fly');
+  }
+
+  private async preloadJetAudio(key: 'takeoff' | 'fly' | 'taxi'): Promise<AudioBuffer | null> {
+    if (!this.ctx) return null;
+    const cached = this.jetBuffers.get(key);
+    if (cached) return cached;
+    if (this.jetLoading.has(key)) return null;
+    this.jetLoading.add(key);
+    try {
+      const res = await fetch(`/audio/fighter-${key}.mp3`);
+      if (!res.ok) return null;
+      const arr = await res.arrayBuffer();
+      const decoded = await this.ctx.decodeAudioData(arr);
+      this.jetBuffers.set(key, decoded);
+      return decoded;
+    } catch {
+      return null;
+    } finally {
+      this.jetLoading.delete(key);
+    }
+  }
+
+  private stopJetSample(fadeSec = 0.25) {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    const oldSrc = this.activeJetSrc;
+    const oldGain = this.activeJetGain;
+    this.activeJetSrc = null;
+    this.activeJetGain = null;
+    this.activeJetKey = null;
+    if (oldGain) {
+      try {
+        oldGain.gain.cancelScheduledValues(now);
+        oldGain.gain.setTargetAtTime(0.0001, now, fadeSec * 0.35);
+      } catch {
+        // ignore
+      }
+    }
+    if (oldSrc) {
+      setTimeout(() => {
+        try {
+          oldSrc.stop();
+        } catch {
+          // already stopped
+        }
+      }, Math.max(80, fadeSec * 1000));
+    }
+  }
+
+  /** Memutar & melakukan crossfade halus antar rekaman audio asli pesawat tempur (taxi / takeoff / fly). */
+  private updateJetSample(desiredKey: 'takeoff' | 'fly' | 'taxi', targetVol: number, playbackRate = 1.0): boolean {
+    if (!this.ctx) return false;
+    const buf = this.jetBuffers.get(desiredKey);
+    if (!buf) {
+      void this.preloadJetAudio(desiredKey);
+      return false;
+    }
+    const now = this.ctx.currentTime;
+    if (this.activeJetKey !== desiredKey || !this.activeJetSrc || !this.activeJetGain) {
+      this.stopJetSample(0.28);
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      src.loop = true;
+      src.playbackRate.value = playbackRate;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(targetVol, now + 0.32);
+
+      src.connect(gain);
+      gain.connect(this.ctx.destination);
+      src.start(now);
+
+      this.activeJetKey = desiredKey;
+      this.activeJetSrc = src;
+      this.activeJetGain = gain;
+    } else {
+      this.activeJetGain.gain.setTargetAtTime(targetVol, now, 0.14);
+      this.activeJetSrc.playbackRate.setTargetAtTime(playbackRate, now, 0.16);
+    }
+    return true;
   }
 
   private async preloadAtc(key: 'takeoff' | 'landing' | 'vacate'): Promise<AudioBuffer | null> {
@@ -507,6 +598,7 @@ class AircraftAudioEngine {
 
     if (!active) {
       this.masterGain.gain.setTargetAtTime(0, now, 0.18);
+      this.stopJetSample(0.22);
       return;
     }
 
@@ -605,6 +697,53 @@ class AircraftAudioEngine {
         throttle = 0.78 + Math.sin(((cycle - 15) / 5) * Math.PI) * 0.18;
         speedMod = -0.1;
       }
+    }
+
+    // Gunakan rekaman audio asli pesawat tempur (Take Off, Terbang, & Taxiway) untuk seluruh jet tempur TNI AU!
+    if (profile === 'fighter_single' || profile === 'fighter_twin') {
+      let desiredTrack: 'takeoff' | 'fly' | 'taxi' = 'fly';
+      let sampleVol = 0.65;
+      let sampleRate = 1.0;
+
+      if (flightMode === 'takeoff') {
+        if (phaseTime < 6.0) {
+          desiredTrack = 'taxi';
+          sampleVol = 0.58;
+          sampleRate = 0.96 + (phaseTime / 6.0) * 0.1;
+        } else {
+          desiredTrack = 'takeoff';
+          sampleVol = 0.78;
+          sampleRate = 1.0;
+        }
+      } else if (flightMode === 'landing') {
+        if (phaseTime < 10.2) {
+          desiredTrack = 'fly';
+          sampleVol = Math.max(0.24, 0.62 - (phaseTime / 10.2) * 0.25);
+          sampleRate = 0.95;
+        } else if (phaseTime < 26.5) {
+          desiredTrack = 'taxi';
+          sampleVol = 0.52;
+          sampleRate = 0.94;
+        } else {
+          desiredTrack = 'taxi';
+          const idleP = Math.min(1, (phaseTime - 26.5) / 1.3);
+          sampleVol = Math.max(0.02, 0.42 * (1 - idleP));
+          sampleRate = 0.85;
+        }
+      } else {
+        // airborne, maneuver, aar, engineSim
+        desiredTrack = 'fly';
+        sampleVol = flightMode === 'maneuver' ? 0.72 : 0.58;
+        sampleRate = 1.0 + speedMod * 0.45;
+      }
+
+      if (this.updateJetSample(desiredTrack, sampleVol, sampleRate)) {
+        // Matikan sintesis osilator saat rekaman asli pesawat tempur aktif agar suara bersih & 100% autentik!
+        this.masterGain.gain.setTargetAtTime(0, now, 0.12);
+        return;
+      }
+    } else if (this.activeJetSrc) {
+      this.stopJetSample(0.2);
     }
 
     // Terapkan parameter akustik spesifik tiap pesawat
@@ -732,6 +871,7 @@ class AircraftAudioEngine {
     if (this.ctx && this.masterGain) {
       this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.12);
     }
+    this.stopJetSample(0.18);
     this.stopAtcPlayback();
   }
 }
