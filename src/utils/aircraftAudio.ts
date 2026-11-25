@@ -54,8 +54,9 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
   }
   if (isBasicTrainer) {
     // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
-    // trainer-voice-takeoff.wav (12.35s): 6.0s..18.35s Budiarto Tower selesai penuh + jeda -> 19.0s baru mulai Take Off roll!
-    return { voiceStart: 6.0, rollStart: 19.0, rotStart: 22.6, climbStart: 24.4, airborneStart: 26.8 };
+    // Part 1: trainer-voice-takeoff.wav (6.0..18.35s) -> Part 2: trainer-voice-roll.wav (19.0..42.99s)
+    // "Full power" di ~25.8s (rollStart) -> "40..50..55.. Rotate!" di 38.8s (rotStart) -> "Oke selamat terbang" 40.8..43.4s (airborne)!
+    return { voiceStart: 6.0, rollStart: 25.8, rotStart: 38.8, climbStart: 40.8, airborneStart: 43.4 };
   }
   if (unitId === 'rafale') {
     // Khusus Dassault Rafale: fighter-voice-takeoff.wav (6.0..24.08s) + audio khusus rafale-takeoff.mp3 (~17s)
@@ -177,6 +178,7 @@ class AircraftAudioEngine {
   private atcVacatePlayed = false;
   private transportCruisePlayed = false;
   private vvipWelcomePlayed = false;
+  private trainerRollPlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -367,7 +369,8 @@ class AircraftAudioEngine {
       | 'heli-takeoff'
       | 'heli-cruise'
       | 'heli-landing'
-      | 'trainer-takeoff',
+      | 'trainer-takeoff'
+      | 'trainer-roll',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -410,7 +413,9 @@ class AircraftAudioEngine {
                                         ? '/audio/heli-voice-landing.wav'
                                         : key === 'trainer-takeoff'
                                           ? '/audio/trainer-voice-takeoff.wav'
-                                          : `/audio/atc-${key}.mp3`;
+                                          : key === 'trainer-roll'
+                                            ? '/audio/trainer-voice-roll.wav'
+                                            : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -552,6 +557,7 @@ class AircraftAudioEngine {
     this.atcVacatePlayed = false;
     this.transportCruisePlayed = false;
     this.vvipWelcomePlayed = false;
+    this.trainerRollPlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -604,7 +610,8 @@ class AircraftAudioEngine {
       | 'heli-takeoff'
       | 'heli-cruise'
       | 'heli-landing'
-      | 'trainer-takeoff',
+      | 'trainer-takeoff'
+      | 'trainer-roll',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1081,6 +1088,9 @@ class AircraftAudioEngine {
 
       if (phaseTime > atcTime && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
+        if (isBasicTrainer) {
+          void this.preloadAtc('trainer-roll');
+        }
         this.playAtcRadio(
           isHeli
             ? 'heli-takeoff'
@@ -1094,6 +1104,11 @@ class AircraftAudioEngine {
                     ? 'vvip-takeoff'
                     : 'takeoff',
         );
+      }
+
+      if (isBasicTrainer && phaseTime > 19.0 && !this.trainerRollPlayed) {
+        this.trainerRollPlayed = true;
+        this.playAtcRadio('trainer-roll');
       }
       if (phaseTime < atcTime) {
         // Saat pengumuman keberangkatan VVIP di apron, mesin idle super lembut agar suara Kapten sangat jernih
