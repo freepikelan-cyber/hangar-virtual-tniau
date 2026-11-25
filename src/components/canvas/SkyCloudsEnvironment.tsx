@@ -505,8 +505,13 @@ export function SkyCloudsEnvironment() {
       const stopScroll = LOOP_LEN + 283.0;
       const ld = getLandingTiming(selectedId);
       if (isHeli) {
-        if (pt < 6.0) {
-          const p = Math.min(1, pt / 6.0);
+        if (pt < 19.0) {
+          // Hover menunggu seluruh suara persiapan landing Halim Tower selesai
+          targetWorldY = -13.5;
+          scrollZ.current = stopScroll - 220;
+          groundSpeed = 0;
+        } else if (pt < 25.0) {
+          const p = Math.min(1, (pt - 19.0) / 6.0);
           targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
           scrollZ.current = THREE.MathUtils.lerp(stopScroll - 220, stopScroll, 1 - (1 - p) * (1 - p));
           groundSpeed = 0;

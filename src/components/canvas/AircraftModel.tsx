@@ -817,38 +817,45 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'landing') {
       if (isHeli) {
-        // LANDING HELIKOPTER: Long Approach dari jauh -> Roda keluar -> Hover rendah -> Touchdown vertikal -> Taxi ke Hanggar jauh
-        if (pt < 3.4) {
-          const p = easeInOut(pt / 3.4);
+        // LANDING HELIKOPTER: Tunggu suara Halim Tower (18.08s) selesai penuh di udara -> baru turun Approach -> Hover -> Touchdown -> Taxi Hanggar!
+        if (pt < 19.0) {
+          targetZ = -10.5;
+          targetY = 6.4 + Math.sin(t * 1.4) * 0.1;
+          targetPitch = 0.03;
+          targetGear = 0;
+          gearSpeed = 2.0;
+          setFlightLabel('📡 HALIM TOWER • CARACAL 01 PERSIAPAN LANDING MENUJU HELIPAD SELATAN');
+        } else if (pt < 22.4) {
+          const p = easeInOut((pt - 19.0) / 3.4);
           targetZ = THREE.MathUtils.lerp(-10.5, 0, p);
           targetY = THREE.MathUtils.lerp(6.4, 1.8, p);
           targetPitch = 0.06 * (1 - p);
           targetGear = 0;
           gearSpeed = 2.0;
-          setFlightLabel('TAHAP 3 • LANDING • LONG FINAL APPROACH & RODA KELUAR');
-        } else if (pt < 6.0) {
-          const p = easeInOut((pt - 3.4) / 2.6);
+          setFlightLabel('TAHAP 3 • LANDING • TURUN PERLAHAN MENUJU HELIPAD SELATAN');
+        } else if (pt < 25.0) {
+          const p = easeInOut((pt - 22.4) / 2.6);
           targetZ = 0;
           targetY = THREE.MathUtils.lerp(1.8, 0, p);
           targetPitch = -0.08 * Math.sin(p * Math.PI);
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 11.2) {
+        } else if (pt < 30.2) {
           // Helikopter taxi pelan menyusuri jalur panjang menuju Hanggar TNI AU yang jauh
-          const p = easeInOut((pt - 6.0) / 5.2);
+          const p = easeInOut((pt - 25.0) / 5.2);
           targetX = THREE.MathUtils.lerp(0, -31.5, p);
           targetZ = THREE.MathUtils.lerp(0, 3.5, Math.min(1, p * 2.2));
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, Math.min(1, p * 2.4));
           targetGear = 0;
-          setFlightLabel('📡 ATC: WELCOME BACK • TAXI PERLAHAN MENUJU HANGGAR');
-        } else if (pt < 12.6) {
+          setFlightLabel('📡 HALIM TOWER • TAXI PERLAHAN MENUJU HANGGAR');
+        } else if (pt < 31.6) {
           targetX = -31.5;
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('PARKIR DI HANGGAR • ROTOR IDLE');
+          setFlightLabel('PARKIR DI HANGGAR • ROTOR IDLE — MISI SELESAI');
         } else {
           setFlightState('parked', null);
         }
