@@ -48,14 +48,14 @@ const LEFT_ECHELON_SLOTS: [number, number, number][] = [
   [-26.0, 2.7, -23.0],
 ];
 
-// Formasi 6-Ship SIAP TAKE OFF berjarak LEGA & MAJU jauh dari tepi laut di Runway 09 3-jalur!
-// (J1 berada paling depan di [0, +16]; setiap pesawat keluar hanggar satu per satu tanpa pernah saling tabrak!)
+// Formasi 6-Ship SIAP TAKE OFF berjarak LEGA & MAJU jauh dari tepi laut di Runway 09 3-jalur (WORLD SPACE)!
+// (J1 paling depan di [0, +16]; J4 di [0, -4] berjarak 20m penuh di belakang J1; semua bebas numpuk!)
 const RUNWAY_FORM_SPOTS: [number, number][] = [
   [14.0, 6.0],   // Jupiter 2 (Jalur kanan, 14m kanan & 10m belakang J1)
   [-14.0, 6.0],  // Jupiter 3 (Jalur kiri, 14m kiri & 10m belakang J1)
-  [0.0, -4.0],   // Jupiter 4 (Jalur tengah, 20m belakang J1)
-  [14.0, -10.0], // Jupiter 5 (Jalur kanan, 16m belakang J2)
-  [-14.0, -10.0],// Jupiter 6 (Jalur kiri, 16m belakang J3)
+  [0.0, -4.0],   // Jupiter 4 (Jalur tengah, 20m penuh di belakang J1!)
+  [14.0, -14.0], // Jupiter 5 (Jalur kanan, 20m belakang J2)
+  [-14.0, -14.0],// Jupiter 6 (Jalur kiri, 20m belakang J3)
 ];
 
 const HEART_SEGMENTS = 64;
@@ -77,6 +77,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   const phaseTime = useRef(0);
   const wingRefs = useRef<(THREE.Group | null)[]>([]);
   const smokeRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const labelRefs = useRef<(HTMLDivElement | null)[]>([]);
   const leaderSmokeRef = useRef<THREE.Mesh>(null);
   const gearStates = useRef<number[]>([0, 0, 0, 0, 0]);
   const heartRightRef = useRef<THREE.Points>(null);
@@ -577,8 +578,13 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       }
 
       grp.visible = visible;
+      const lbl = labelRefs.current[i];
+      if (lbl) {
+        lbl.style.display = visible ? 'block' : 'none';
+      }
       if (!visible) {
         grp.position.set(tx, ty, tz);
+        grp.rotation.set(0, tyaw, 0);
         continue;
       }
 
@@ -653,7 +659,13 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             visible={false}
           />
           <Html position={[0, 2.35, 0]} center distanceFactor={28}>
-            <div className="pointer-events-none select-none whitespace-nowrap rounded border border-rose-400/70 bg-slate-950/80 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-rose-200 shadow">
+            <div
+              ref={(el) => {
+                labelRefs.current[i] = el;
+              }}
+              style={{ display: 'none' }}
+              className="pointer-events-none select-none whitespace-nowrap rounded border border-rose-400/70 bg-slate-950/80 px-1.5 py-0.5 font-mono text-[9px] font-bold tracking-wider text-rose-200 shadow"
+            >
               JUPITER {i + 2}
             </div>
           </Html>

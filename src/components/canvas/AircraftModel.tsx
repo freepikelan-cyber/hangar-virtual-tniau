@@ -1498,30 +1498,33 @@ export function AircraftModel() {
   });
 
   return (
-    <group ref={rootRef} name="aircraft-root">
-      <group ref={airframeRef} name="aircraft-airframe">
-        <primitive object={activeGroup} />
-        <CockpitPilotLayer />
-        <EffectsLayer
-          nozzles={procedural.nozzles}
-          spinners={procedural.spinners}
-          navLights={procedural.navLights}
-          glowMats={procedural.glowMats}
-          engineSim={isEngineVisualActive}
-          rotorWash={
-            procedural.rotorWash &&
-            (flightMode === 'takeoff' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'engineSim')
-          }
-        />
-        <AerodynamicsLayer />
-        <GSuitEduLayer />
-        <OxygenSystemLayer />
-        <HotspotMarkers hotspots={unit.hotspots} />
+    <>
+      <group ref={rootRef} name="aircraft-root">
+        <group ref={airframeRef} name="aircraft-airframe">
+          <primitive object={activeGroup} />
+          <CockpitPilotLayer />
+          <EffectsLayer
+            nozzles={procedural.nozzles}
+            spinners={procedural.spinners}
+            navLights={procedural.navLights}
+            glowMats={procedural.glowMats}
+            engineSim={isEngineVisualActive}
+            rotorWash={
+              procedural.rotorWash &&
+              (flightMode === 'takeoff' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'engineSim')
+            }
+          />
+          <AerodynamicsLayer />
+          <GSuitEduLayer />
+          <OxygenSystemLayer />
+          <HotspotMarkers hotspots={unit.hotspots} />
+        </group>
+        <SafetySystemLayer />
+        <VvipEscortLayer />
+        <MissionOpsLayer />
       </group>
-      <SafetySystemLayer />
+      {/* JupiterTakeOffLayer harus berada di WORLD SPACE agar posisi hanggar, runway 3-jalur, dan manuver solo J5/J6 tidak ikut bergeser dengan rootRef J1! */}
       <JupiterTakeOffLayer sourceGroup={procedural.group} />
-      <VvipEscortLayer />
-      <MissionOpsLayer />
-    </group>
+    </>
   );
 }
