@@ -452,7 +452,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       autoRotate: false,
       activeHotspot: null,
       ...(isJupiter
-        ? { camRequest: { pos: [34.0, 15.0, 36.0] as Vec3, target: [-2.0, 2.0, -16.0] as Vec3, nonce: nonce++ } }
+        ? { camRequest: { pos: [34.0, 15.5, 44.0] as Vec3, target: [-2.0, 2.0, 2.0] as Vec3, nonce: nonce++ } }
         : {}),
     });
   },
