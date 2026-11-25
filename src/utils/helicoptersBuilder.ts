@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { addDecal, buildAirfoilSurface, buildLoftGeometry, lerp, mkMesh, smoothstep } from './aeroGeo';
+import { addConformalCanopy } from './helicoptersPackBuilder';
 import { camoTexture, flagTexture, roundelTexture, solidNoiseTexture, textTexture } from './textures';
 import type { BuildResult, NavLightFx, SpinnerFx } from './proceduralBuilder';
 
@@ -164,43 +165,36 @@ export function buildDetailedCaracal(liveryId = 'camo'): BuildResult {
   const glowMats: THREE.MeshStandardMaterial[] = [m.glow];
 
   // ---- 1. FUSELAGE UTAMA H225M CARACAL (LOFT ORGANIK HALUS z = -1.7 .. +5.35) ----
+  const caracalCross = (z: number, th: number): [number, number] => {
+    let rx = 1.08;
+    let ryTop = 1.02;
+    let ryBot = 0.78;
+    let cy = 1.48;
+    if (z > 2.4) {
+      const t = smoothstep(2.4, 5.35, z);
+      rx = lerp(1.08, 0.14, Math.pow(t, 1.45));
+      ryTop = lerp(1.02, 0.12, Math.pow(t, 1.3));
+      ryBot = lerp(0.78, 0.12, Math.pow(t, 1.55));
+      cy = lerp(1.48, 1.06, Math.pow(t, 1.2));
+    } else if (z < -0.7) {
+      const t = smoothstep(-0.7, -1.85, z);
+      rx = lerp(1.08, 0.56, t);
+      ryTop = lerp(1.02, 0.62, t);
+      ryBot = lerp(0.78, 0.34, t);
+      cy = lerp(1.48, 1.82, t);
+    }
+    const s = Math.sin(th);
+    const c = Math.cos(th);
+    const sq = 0.76;
+    const px = Math.sign(s) * Math.pow(Math.abs(s), sq) * rx;
+    const ry = c >= 0 ? ryTop : ryBot;
+    const py = cy + Math.sign(c) * Math.pow(Math.abs(c), sq) * ry;
+    return [px, py];
+  };
   const fuseZs: number[] = [];
   for (let i = 0; i <= 32; i++) fuseZs.push(lerp(-1.85, 5.35, i / 32));
   const fuseGeo = buildLoftGeometry(
-    fuseZs.map((z) => {
-      let rx = 1.08;
-      let ryTop = 1.02;
-      let ryBot = 0.78;
-      let cy = 1.48;
-      if (z > 2.4) {
-        // Hidung melandai aerodinamis + radome radar cuaca bulat di depan
-        const t = smoothstep(2.4, 5.35, z);
-        rx = lerp(1.08, 0.14, Math.pow(t, 1.45));
-        ryTop = lerp(1.02, 0.12, Math.pow(t, 1.3));
-        ryBot = lerp(0.78, 0.12, Math.pow(t, 1.55));
-        cy = lerp(1.48, 1.06, Math.pow(t, 1.2));
-      } else if (z < -0.7) {
-        // Transisi buritan kabin menuju tail boom
-        const t = smoothstep(-0.7, -1.85, z);
-        rx = lerp(1.08, 0.56, t);
-        ryTop = lerp(1.02, 0.62, t);
-        ryBot = lerp(0.78, 0.34, t);
-        cy = lerp(1.48, 1.82, t);
-      }
-      return {
-        z,
-        point: (th) => {
-          const s = Math.sin(th);
-          const c = Math.cos(th);
-          // Superelips khas kabin Caracal: dinding samping agak datar, dasar rata
-          const sq = 0.76;
-          const px = Math.sign(s) * Math.pow(Math.abs(s), sq) * rx;
-          const ry = c >= 0 ? ryTop : ryBot;
-          const py = cy + Math.sign(c) * Math.pow(Math.abs(c), sq) * ry;
-          return [px, py];
-        },
-      };
-    }),
+    fuseZs.map((z) => ({ z, point: (th) => caracalCross(z, th) })),
     44,
     true,
     true,
@@ -208,18 +202,17 @@ export function buildDetailedCaracal(liveryId = 'camo'): BuildResult {
   const fuseMesh = mkMesh(fuseGeo, m.skin);
   g.add(fuseMesh);
 
-  // ---- 2. KOKPIT KACA PANORAMIK 4 PANEL + JENDELA DAGU BAWAH ----
-  const windshield = mkMesh(new THREE.SphereGeometry(1.02, 28, 18, -Math.PI * 0.42, Math.PI * 0.84, Math.PI * 0.18, Math.PI * 0.34), m.glass, 'glass');
-  windshield.rotation.y = Math.PI / 2;
-  windshield.scale.set(1.06, 0.86, 1.38);
-  windshield.position.set(0, 1.68, 3.22);
-  g.add(windshield);
-
-  // Bingkai pilar tengah kaca kokpit
-  const centerPillar = mkMesh(new THREE.BoxGeometry(0.06, 0.72, 0.08), m.darkMetal);
-  centerPillar.position.set(0, 1.88, 4.18);
-  centerPillar.rotation.x = -0.58;
-  g.add(centerPillar);
+  // ---- 2. KOKPIT KACA PANORAMIK CONFORMAL MENYATU MULUS + JENDELA DAGU ----
+  addConformalCanopy(g, caracalCross, {
+    zBack: 2.55,
+    zFront: 4.35,
+    thHalf: Math.PI * 0.37,
+    centerY: 1.35,
+    pillars: [0, -Math.PI * 0.24, Math.PI * 0.24],
+    glassMat: m.glass,
+    frameMat: m.darkMetal,
+    chinWindows: true,
+  });
 
   // Jendela kabin samping (4 jendela besar per sisi + pintu geser)
   for (const s of [1, -1] as const) {
@@ -532,40 +525,34 @@ export function buildDetailedColibri(liveryId = 'grey'): BuildResult {
   });
 
   // ---- 1. FUSELAGE TEARDROP RAMPING KHAS EC120B COLIBRI (z = -1.35 .. +4.15) ----
+  const colibriCross = (z: number, th: number): [number, number] => {
+    let rx = 0.94;
+    let ryTop = 0.96;
+    let ryBot = 0.68;
+    let cy = 1.62;
+    if (z > 1.35) {
+      const t = smoothstep(1.35, 4.18, z);
+      rx = lerp(0.94, 0.12, Math.pow(t, 1.35));
+      ryTop = lerp(0.96, 0.10, Math.pow(t, 1.22));
+      ryBot = lerp(0.68, 0.10, Math.pow(t, 1.48));
+      cy = lerp(1.62, 1.34, Math.pow(t, 1.15));
+    } else if (z < -0.15) {
+      const t = smoothstep(-0.15, -1.35, z);
+      rx = lerp(0.94, 0.32, t);
+      ryTop = lerp(0.96, 0.40, t);
+      ryBot = lerp(0.68, 0.24, t);
+      cy = lerp(1.62, 1.94, t);
+    }
+    const s = Math.sin(th);
+    const c = Math.cos(th);
+    const px = Math.sign(s) * Math.pow(Math.abs(s), 0.84) * rx;
+    const ry = c >= 0 ? ryTop : ryBot;
+    const py = cy + Math.sign(c) * Math.pow(Math.abs(c), 0.84) * ry;
+    return [px, py];
+  };
   const fuseZs = Array.from({ length: 32 }, (_, i) => lerp(-1.35, 4.18, i / 31));
   const fuseGeo = buildLoftGeometry(
-    fuseZs.map((z) => {
-      let rx = 0.94;
-      let ryTop = 0.96;
-      let ryBot = 0.68;
-      let cy = 1.62;
-      if (z > 1.35) {
-        // Hidung membulat penuh & landai khas EC120B
-        const t = smoothstep(1.35, 4.18, z);
-        rx = lerp(0.94, 0.12, Math.pow(t, 1.35));
-        ryTop = lerp(0.96, 0.10, Math.pow(t, 1.22));
-        ryBot = lerp(0.68, 0.10, Math.pow(t, 1.48));
-        cy = lerp(1.62, 1.34, Math.pow(t, 1.15));
-      } else if (z < -0.15) {
-        // Transisi punggung mesin & perut kabin miring naik ke tail boom
-        const t = smoothstep(-0.15, -1.35, z);
-        rx = lerp(0.94, 0.32, t);
-        ryTop = lerp(0.96, 0.40, t);
-        ryBot = lerp(0.68, 0.24, t);
-        cy = lerp(1.62, 1.94, t);
-      }
-      return {
-        z,
-        point: (th) => {
-          const s = Math.sin(th);
-          const c = Math.cos(th);
-          const px = Math.sign(s) * Math.pow(Math.abs(s), 0.84) * rx;
-          const ry = c >= 0 ? ryTop : ryBot;
-          const py = cy + Math.sign(c) * Math.pow(Math.abs(c), 0.84) * ry;
-          return [px, py];
-        },
-      };
-    }),
+    fuseZs.map((z) => ({ z, point: (th) => colibriCross(z, th) })),
     44,
     true,
     true,
@@ -574,23 +561,26 @@ export function buildDetailedColibri(liveryId = 'grey'): BuildResult {
   g.add(fuseMesh);
 
   // Garis pemisah diagonal putih-abu elegan di sisi badan (sesuai foto HL-1211)
-  for (const s of [1, -1] as const) {
-    const diagStripe = mkMesh(new THREE.BoxGeometry(0.03, 0.09, 2.75), colWhite);
-    diagStripe.position.set(s * 0.93, 1.68, 1.15);
-    diagStripe.rotation.x = 0.42;
-    g.add(diagStripe);
+  if (!isGreyOps) {
+    for (const s of [1, -1] as const) {
+      const diagStripe = mkMesh(new THREE.BoxGeometry(0.03, 0.09, 2.75), colWhite);
+      diagStripe.position.set(s * 0.93, 1.68, 1.15);
+      diagStripe.rotation.x = 0.42;
+      g.add(diagStripe);
+    }
   }
 
-  // ---- 2. KOKPIT GELEMBUNG PANORAMIK HITAM-GELAP & JENDELA SAMPING BESAR ----
-  const bubble = mkMesh(
-    new THREE.SphereGeometry(0.96, 36, 24, -Math.PI * 0.46, Math.PI * 0.92, Math.PI * 0.14, Math.PI * 0.42),
-    m.glass,
-    'glass',
-  );
-  bubble.rotation.y = Math.PI / 2;
-  bubble.scale.set(1.03, 0.98, 1.72);
-  bubble.position.set(0, 1.72, 2.22);
-  g.add(bubble);
+  // ---- 2. KOKPIT GELEMBUNG PANORAMIK CONFORMAL MENYATU 100% MULUS KHAS COLIBRI ----
+  addConformalCanopy(g, colibriCross, {
+    zBack: 1.55,
+    zFront: 3.72,
+    thHalf: Math.PI * 0.45,
+    centerY: 1.52,
+    pillars: [0, -Math.PI * 0.3, Math.PI * 0.3],
+    glassMat: m.glass,
+    frameMat: colBlack,
+    chinWindows: true,
+  });
 
   // Bingkai kaca depan & jendela pintu samping gelap khas Colibri
   for (const s of [1, -1] as const) {

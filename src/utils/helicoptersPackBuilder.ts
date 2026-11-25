@@ -19,6 +19,121 @@ function loftStations(zMin: number, zMax: number, rings: number, radSegs: number
   return buildLoftGeometry(stations, radSegs, true, true);
 }
 
+/** Membuat patch permukaan 3D yang 100% menyatu (conformal) mengikuti persamaan penampang fuselage helikopter. */
+function buildConformalPatch(
+  cross: (z: number, th: number) => [number, number],
+  z0: number,
+  z1: number,
+  th0: number,
+  th1: number,
+  centerY: number,
+  outOffset: number,
+  nz = 16,
+  nt = 24,
+): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const uvs: number[] = [];
+  const indices: number[] = [];
+  const cols = nt + 1;
+
+  for (let iz = 0; iz <= nz; iz++) {
+    const vz = iz / nz;
+    const z = lerp(z0, z1, vz);
+    for (let it = 0; it <= nt; it++) {
+      const ut = it / nt;
+      const th = lerp(th0, th1, ut);
+      const [rx, ry] = cross(z, th);
+      const dx = rx;
+      const dy = ry - centerY;
+      const len = Math.hypot(dx, dy) || 1;
+      const x = rx + (dx / len) * outOffset;
+      const y = ry + (dy / len) * outOffset;
+      positions.push(Number.isFinite(x) ? x : 0, Number.isFinite(y) ? y : centerY, z);
+      uvs.push(ut, vz);
+    }
+  }
+
+  for (let iz = 0; iz < nz; iz++) {
+    for (let it = 0; it < nt; it++) {
+      const a = iz * cols + it;
+      const b = a + 1;
+      const c = (iz + 1) * cols + it;
+      const d = c + 1;
+      indices.push(a, d, b);
+      indices.push(a, c, d);
+    }
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+/**
+ * Membangun kaca kanopi kokpit & bingkai pilar melengkung yang 100% MENYATU dengan kontur hidung helikopter
+ * (tanpa kotak/bola menonjol keluar, persis bentuk kaca helikopter sungguhan).
+ */
+export function addConformalCanopy(
+  g: THREE.Group,
+  cross: (z: number, th: number) => [number, number],
+  cfg: {
+    zBack: number;
+    zFront: number;
+    thHalf: number;
+    centerY: number;
+    pillars: number[];
+    glassMat: THREE.Material;
+    frameMat: THREE.Material;
+    chinWindows?: boolean;
+  },
+) {
+  const { zBack, zFront, thHalf, centerY, pillars, glassMat, frameMat, chinWindows } = cfg;
+  const borderZ = 0.09;
+  const borderTh = 0.055;
+
+  // 1. Bingkai luar gelap menyatu di sekeliling kaca kokpit
+  g.add(
+    mkMesh(
+      buildConformalPatch(cross, zBack - borderZ, zFront + borderZ, -thHalf - borderTh, thHalf + borderTh, centerY, 0.02, 16, 28),
+      frameMat,
+    ),
+  );
+
+  // 2. Kaca kanopi gelap glossy melengkung persis mengikuti kontur hidung
+  g.add(
+    mkMesh(
+      buildConformalPatch(cross, zBack, zFront, -thHalf, thHalf, centerY, 0.032, 18, 30),
+      glassMat,
+      'glass',
+    ),
+  );
+
+  // 3. Pilar pembagi kaca melengkung (pilar tengah & pilar A kiri-kanan)
+  for (const pTh of pillars) {
+    g.add(
+      mkMesh(
+        buildConformalPatch(cross, zBack - borderZ, zFront + borderZ, pTh - 0.028, pTh + 0.028, centerY, 0.042, 12, 3),
+        frameMat,
+      ),
+    );
+  }
+
+  // 4. Jendela observasi dagu bawah (chin windows) khas helikopter modern
+  if (chinWindows) {
+    const cz0 = lerp(zBack, zFront, 0.42);
+    const cz1 = zFront + 0.14;
+    for (const s of [1, -1]) {
+      const a0 = s > 0 ? thHalf + 0.09 : -(thHalf + 0.28);
+      const a1 = s > 0 ? thHalf + 0.28 : -(thHalf + 0.09);
+      g.add(mkMesh(buildConformalPatch(cross, cz0 - 0.04, cz1 + 0.04, a0 - 0.02, a1 + 0.02, centerY, 0.02, 8, 8), frameMat));
+      g.add(mkMesh(buildConformalPatch(cross, cz0, cz1, a0, a1, centerY, 0.032, 8, 8), glassMat, 'glass'));
+    }
+  }
+}
+
 function makeHeliGlass() {
   return new THREE.MeshPhysicalMaterial({
     color: '#0a1826',
@@ -202,7 +317,7 @@ export function buildSuperPuma(): BuildResult {
   const yellowMat = new THREE.MeshStandardMaterial({ color: '#f5be18', roughness: 0.34, metalness: 0.2 });
 
   // Fuselage lofted Super Puma (panjang 18,7 m -> 12.6 unit)
-  const fuseGeo = loftStations(-2.3, 4.75, 48, 36, (z, th) => {
+  const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
     let rx = 1.08;
@@ -226,24 +341,26 @@ export function buildSuperPuma(): BuildResult {
     const px = Math.sign(s) * Math.pow(Math.abs(s), 0.78) * rx;
     const py = Math.sign(c) * Math.pow(Math.abs(c), 0.82) * (c >= 0 ? ryT : ryB);
     return [px, yC + ys + py];
-  });
-  const fuseMesh = mkMesh(fuseGeo, fuseMat);
+  };
+  const fuseMesh = mkMesh(loftStations(-2.3, 4.75, 48, 36, cross), fuseMat);
   g.add(fuseMesh);
 
-  // Hidung radome hitam khas Super Puma + kaca kokpit berbingkai hitam
+  // Hidung radome hitam khas Super Puma + Kanopi Conformal menyatu mulus dengan hidung!
   const nose = mkMesh(new THREE.SphereGeometry(0.46, 20, 14), mats.frame);
   nose.scale.set(1.02, 0.82, 1.25);
   nose.position.set(0, yC - 0.34, 4.62);
   g.add(nose);
 
-  // Windshield depan kokpit miring & berbingkai tegas
-  const wind = mkMesh(new THREE.BoxGeometry(1.52, 0.76, 1.12), mats.glass, 'glass');
-  wind.rotation.x = 0.52;
-  wind.position.set(0, yC + 0.28, 3.35);
-  const pillar = mkMesh(new THREE.BoxGeometry(0.08, 0.82, 1.16), mats.frame);
-  pillar.rotation.x = 0.52;
-  pillar.position.set(0, yC + 0.28, 3.38);
-  g.add(wind, pillar);
+  addConformalCanopy(g, cross, {
+    zBack: 2.38,
+    zFront: 3.92,
+    thHalf: Math.PI * 0.36,
+    centerY: yC - 0.1,
+    pillars: [0, -Math.PI * 0.24, Math.PI * 0.24],
+    glassMat: mats.glass,
+    frameMat: mats.frame,
+    chinWindows: true,
+  });
 
   // 4 Jendela kabin samping berbingkai hitam di kiri & kanan
   addSideWindows(g, 1.06, yC + 0.12, [2.15, 1.15, 0.15, -0.82], 0.64, 0.52, mats.glass, mats.frame);
@@ -359,7 +476,7 @@ export function buildAW101(): BuildResult {
   const skinMat = new THREE.MeshStandardMaterial({ map: camo, roughness: 0.56, metalness: 0.26 });
 
   // Badan besar boxy-aerodinamis AW101 (panjang 22,8 m -> 13.4 unit)
-  const fuseGeo = loftStations(-2.5, 4.95, 50, 36, (z, th) => {
+  const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
     let rx = 1.24;
@@ -383,18 +500,21 @@ export function buildAW101(): BuildResult {
     const px = Math.sign(s) * Math.pow(Math.abs(s), 0.72) * rx;
     const py = Math.sign(c) * Math.pow(Math.abs(c), 0.76) * (c >= 0 ? ryT : ryB);
     return [px, yC + ys + py];
-  });
-  const fuseMesh = mkMesh(fuseGeo, skinMat);
+  };
+  const fuseMesh = mkMesh(loftStations(-2.5, 4.95, 50, 36, cross), skinMat);
   g.add(fuseMesh);
 
-  // Kaca kokpit besar khas AW101 + 4 jendela kotak besar ikonik di kedua sisi kabin!
-  const wind = mkMesh(new THREE.BoxGeometry(1.75, 0.88, 1.18), mats.glass, 'glass');
-  wind.rotation.x = 0.52;
-  wind.position.set(0, yC + 0.34, 3.55);
-  const pillar = mkMesh(new THREE.BoxGeometry(0.08, 0.92, 1.22), mats.frame);
-  pillar.rotation.x = 0.52;
-  pillar.position.set(0, yC + 0.34, 3.58);
-  g.add(wind, pillar);
+  // Kanopi kokpit 4-panel besar Conformal menyatu mulus dengan hidung AW101!
+  addConformalCanopy(g, cross, {
+    zBack: 2.55,
+    zFront: 4.18,
+    thHalf: Math.PI * 0.38,
+    centerY: yC - 0.12,
+    pillars: [0, -Math.PI * 0.22, Math.PI * 0.22],
+    glassMat: mats.glass,
+    frameMat: mats.frame,
+    chinWindows: true,
+  });
 
   addSideWindows(g, 1.23, yC + 0.08, [1.85, 0.92, -0.02, -0.95], 0.62, 0.68, mats.glass, mats.frame);
 
@@ -498,7 +618,7 @@ export function buildH145(): BuildResult {
   });
 
   // Kabin ramping & modern H145 (clamshell rear door + high tail boom)
-  const fuseGeo = loftStations(-1.85, 3.85, 44, 34, (z, th) => {
+  const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
     let rx = 0.92;
@@ -522,18 +642,21 @@ export function buildH145(): BuildResult {
     const px = Math.sign(s) * Math.pow(Math.abs(s), 0.78) * rx;
     const py = Math.sign(c) * Math.pow(Math.abs(c), 0.82) * (c >= 0 ? ryT : ryB);
     return [px, yC + ys + py];
-  });
-  const fuseMesh = mkMesh(fuseGeo, skinMat);
+  };
+  const fuseMesh = mkMesh(loftStations(-1.85, 3.85, 44, 34, cross), skinMat);
   g.add(fuseMesh);
 
-  // Kaca kokpit panoramik gelap mengkilap + 3 jendela samping berbingkai hitam
-  const wind = mkMesh(new THREE.SphereGeometry(0.86, 22, 16), mats.glass, 'glass');
-  wind.scale.set(0.96, 0.76, 1.38);
-  wind.position.set(0, yC + 0.16, 2.48);
-  const pillar = mkMesh(new THREE.BoxGeometry(0.06, 0.85, 1.35), mats.frame);
-  pillar.rotation.x = 0.45;
-  pillar.position.set(0, yC + 0.24, 2.75);
-  g.add(wind, pillar);
+  // Kanopi panoramik luas H145 Conformal menyatu 100% mulus dengan hidung!
+  addConformalCanopy(g, cross, {
+    zBack: 1.82,
+    zFront: 3.42,
+    thHalf: Math.PI * 0.42,
+    centerY: yC - 0.1,
+    pillars: [0, -Math.PI * 0.28, Math.PI * 0.28],
+    glassMat: mats.glass,
+    frameMat: mats.frame,
+    chinWindows: true,
+  });
 
   addSideWindows(g, 0.91, yC + 0.14, [1.62, 0.72, -0.18], 0.62, 0.5, mats.glass, mats.frame);
 
@@ -655,7 +778,7 @@ export function buildAS365(): BuildResult {
   });
 
   // Bodi sangat ramping berhidung panjang lumba-lumba khas AS365 Dauphin!
-  const fuseGeo = loftStations(-2.1, 4.65, 48, 34, (z, th) => {
+  const cross = (z: number, th: number): [number, number] => {
     const s = Math.sin(th);
     const c = Math.cos(th);
     let rx = 0.92;
@@ -679,18 +802,21 @@ export function buildAS365(): BuildResult {
     const px = Math.sign(s) * Math.pow(Math.abs(s), 0.8) * rx;
     const py = Math.sign(c) * Math.pow(Math.abs(c), 0.84) * (c >= 0 ? ryT : ryB);
     return [px, yC + ys + py];
-  });
-  const fuseMesh = mkMesh(fuseGeo, skinMat);
+  };
+  const fuseMesh = mkMesh(loftStations(-2.1, 4.65, 48, 34, cross), skinMat);
   g.add(fuseMesh);
 
-  // Kaca kokpit ramping & 4 jendela kabin menyatu rapi di sisi kiri-kanan
-  const wind = mkMesh(new THREE.BoxGeometry(1.36, 0.72, 1.25), mats.glass, 'glass');
-  wind.rotation.x = 0.6;
-  wind.position.set(0, yC + 0.22, 2.88);
-  const pillar = mkMesh(new THREE.BoxGeometry(0.06, 0.76, 1.28), mats.frame);
-  pillar.rotation.x = 0.6;
-  pillar.position.set(0, yC + 0.22, 2.9);
-  g.add(wind, pillar);
+  // Kanopi ramping aerodinamis Dauphin Conformal menyatu mulus ke hidung lancip!
+  addConformalCanopy(g, cross, {
+    zBack: 1.85,
+    zFront: 3.55,
+    thHalf: Math.PI * 0.38,
+    centerY: yC - 0.12,
+    pillars: [0, -Math.PI * 0.25, Math.PI * 0.25],
+    glassMat: mats.glass,
+    frameMat: mats.frame,
+    chinWindows: true,
+  });
 
   addSideWindows(g, 0.91, yC + 0.12, [1.85, 1.02, 0.2, -0.58], 0.56, 0.48, mats.glass, mats.frame);
 
