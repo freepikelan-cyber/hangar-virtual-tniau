@@ -21,6 +21,7 @@ import {
   Wind,
 } from 'lucide-react';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { aircraftAudio } from '../../utils/aircraftAudio';
 
 export function BottomDock() {
   const unit = useSelectedUnit();
@@ -72,6 +73,7 @@ export function BottomDock() {
   const takeOffDone = isAirborneReady || flightMode === 'landing';
 
   const stopAllSim = () => {
+    aircraftAudio.stop();
     if (safetyMode) toggle('safetyMode');
     if (oxygenMode) toggle('oxygenMode');
     setFlightState('parked', null);

@@ -524,6 +524,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   },
   setFlightState: (flightMode, flightLabel) => {
     const s = get();
+    if (flightMode === 'parked') {
+      aircraftAudio.stop();
+    }
     const isVvip = s.selectedId === 'b737vip' || s.selectedId === 'falcon8x';
     set({
       flightMode,

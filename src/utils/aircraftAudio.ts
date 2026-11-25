@@ -1022,8 +1022,11 @@ class AircraftAudioEngine {
     const active = soundEnabled && flightMode !== 'parked';
 
     if (!active) {
-      this.masterGain.gain.setTargetAtTime(0, now, 0.18);
-      this.stopJetSample(0.22);
+      this.masterGain.gain.setTargetAtTime(0, now, 0.05);
+      this.stopJetSample(0.08);
+      if (this.activeAtcSrc || this.activeAtcCarrier) {
+        this.stopAtcPlayback();
+      }
       return;
     }
 
@@ -1420,10 +1423,13 @@ class AircraftAudioEngine {
   }
 
   stop() {
+    this.resetPhaseTriggers();
     if (this.ctx && this.masterGain) {
-      this.masterGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.12);
+      const now = this.ctx.currentTime;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.setValueAtTime(0, now);
     }
-    this.stopJetSample(0.18);
+    this.stopJetSample(0.04);
     this.stopAtcPlayback();
   }
 }
