@@ -197,6 +197,7 @@ class AircraftAudioEngine {
   private jupiterArrowheadPlayed = false;
   private jupiterOpposingPlayed = false;
   private jupiterHeartPlayed = false;
+  private jupiterRejoinPlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
   private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
@@ -396,7 +397,8 @@ class AircraftAudioEngine {
       | 'jupiter-airborne'
       | 'jupiter-arrowhead-roll'
       | 'jupiter-opposing-pass'
-      | 'jupiter-heart-bombburst',
+      | 'jupiter-heart-bombburst'
+      | 'jupiter-rejoin-landing',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -457,7 +459,9 @@ class AircraftAudioEngine {
                                                           ? '/audio/jupiter-opposing-pass.wav'
                                                           : key === 'jupiter-heart-bombburst'
                                                             ? '/audio/jupiter-heart-bombburst.wav'
-                                                            : `/audio/atc-${key}.mp3`;
+                                                            : key === 'jupiter-rejoin-landing'
+                                                              ? '/audio/jupiter-rejoin-landing.wav'
+                                                              : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -606,6 +610,7 @@ class AircraftAudioEngine {
     this.jupiterArrowheadPlayed = false;
     this.jupiterOpposingPlayed = false;
     this.jupiterHeartPlayed = false;
+    this.jupiterRejoinPlayed = false;
     this.stopAtcPlayback();
   }
 
@@ -667,7 +672,8 @@ class AircraftAudioEngine {
       | 'jupiter-airborne'
       | 'jupiter-arrowhead-roll'
       | 'jupiter-opposing-pass'
-      | 'jupiter-heart-bombburst',
+      | 'jupiter-heart-bombburst'
+      | 'jupiter-rejoin-landing',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1273,6 +1279,9 @@ class AircraftAudioEngine {
         if (!this.atcBuffers.has('jupiter-heart-bombburst')) {
           void this.preloadAtc('jupiter-heart-bombburst');
         }
+        if (!this.atcBuffers.has('jupiter-rejoin-landing')) {
+          void this.preloadAtc('jupiter-rejoin-landing');
+        }
         if (phaseTime > 10.0 && !this.jupiterArrowheadPlayed) {
           this.jupiterArrowheadPlayed = true;
           this.playAtcRadio('jupiter-arrowhead-roll');
@@ -1284,6 +1293,10 @@ class AircraftAudioEngine {
         if (phaseTime > 47.0 && !this.jupiterHeartPlayed) {
           this.jupiterHeartPlayed = true;
           this.playAtcRadio('jupiter-heart-bombburst');
+        }
+        if (phaseTime > 83.5 && !this.jupiterRejoinPlayed) {
+          this.jupiterRejoinPlayed = true;
+          this.playAtcRadio('jupiter-rejoin-landing');
         }
       } else if (flightMode === 'airborne' && isCargoTransport && phaseTime > 1.2 && !this.transportCruisePlayed) {
         this.transportCruisePlayed = true;

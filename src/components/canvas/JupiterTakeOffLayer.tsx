@@ -31,6 +31,15 @@ const TIGHT_ARROW_SLOTS: [number, number, number][] = [
   [-10.8, 2.75, -10.0],
 ];
 
+// Formasi Left Echelon (J2–J6 berjajar rapi di sayap kiri Jupiter 1) saat Rejoin & persiapan Landing
+const LEFT_ECHELON_SLOTS: [number, number, number][] = [
+  [-5.2, 2.9, -4.6],
+  [-10.4, 2.85, -9.2],
+  [-15.6, 2.8, -13.8],
+  [-20.8, 2.75, -18.4],
+  [-26.0, 2.7, -23.0],
+];
+
 // Formasi 6-Ship SIAP TAKE OFF di Runway 09 saat "Jupiters, check in! Two! Three! Four! Five! Six!"
 const RUNWAY_FORM_SPOTS: [number, number][] = [
   [4.8, -11.5],  // Jupiter 2 (Kanan belakang J1)
@@ -115,9 +124,10 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     const pt = phaseTime.current;
     const t = state.clock.getElapsedTime();
 
-    // Asap putih tebal menyala saat airborne atau setelah aba-aba "Smoke on!" di takeoff (pt >= 31s)
+    // Asap putih tebal menyala saat airborne (hingga aba-aba "Smoke off!" di pt = 86.5s) atau setelah "Smoke on!" di takeoff (pt >= 31s)
     if (leaderSmokeRef.current) {
-      const leaderSmokeOn = flightMode === 'airborne' || (flightMode === 'takeoff' && pt >= 31.0);
+      const leaderSmokeOn =
+        (flightMode === 'airborne' && pt < 86.5) || (flightMode === 'takeoff' && pt >= 31.0);
       leaderSmokeRef.current.visible = leaderSmokeOn;
       if (leaderSmokeOn) {
         leaderSmokeRef.current.position.set(
@@ -364,16 +374,21 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           smokeOn = true;
         } else if (pt < 85.0) {
           const p = easeInOut((pt - 82.6) / 2.4);
-          tx = baseSlot[0];
-          ty = THREE.MathUtils.lerp(6.0, baseSlot[1], p);
-          tz = baseSlot[2];
+          const echSlot = LEFT_ECHELON_SLOTS[i];
+          tx = THREE.MathUtils.lerp(baseSlot[0], echSlot[0], p);
+          ty = THREE.MathUtils.lerp(6.0, echSlot[1], p);
+          tz = THREE.MathUtils.lerp(baseSlot[2], echSlot[2], p);
           tp = -0.025;
+          smokeOn = true;
         } else {
-          tx = baseSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
-          ty = baseSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
-          tz = baseSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
+          // 85.0s+: Rejoin Left Echelon Formation & Smoke Off ("prepare for landing" -> Tower cleared to land)
+          const echSlot = LEFT_ECHELON_SLOTS[i];
+          tx = echSlot[0] + Math.sin(t * 0.8 + i) * 0.14;
+          ty = echSlot[1] + Math.cos(t * 1.1 + i) * 0.1;
+          tz = echSlot[2] + Math.sin(t * 0.6 + i) * 0.12;
           tp = -0.025;
-          tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
+          tr = Math.cos(t * 0.9 + i * 0.4) * 0.025;
+          smokeOn = pt < 86.5;
         }
       }
 

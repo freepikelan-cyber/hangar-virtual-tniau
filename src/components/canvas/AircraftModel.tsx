@@ -566,11 +566,21 @@ export function AircraftModel() {
           targetY = THREE.MathUtils.lerp(6.2, 2.95, p);
           targetPitch = -0.025;
           targetRoll = 0;
-          setFlightLabel('JUPITER AEROBATIC TEAM • REJOIN FORMASI');
+          setFlightLabel('🎙️ JUPITERS, REJOIN ON MY LEFT WING, ECHELON FORMATION • SMOKE OFF');
+        } else if (pt < 102.0) {
+          targetPitch = -0.025 + Math.sin(t * 1.1) * 0.012;
+          targetRoll = Math.cos(t * 0.9) * 0.025;
+          setFlightLabel(
+            pt < 90.0
+              ? '🎙️ JUPITERS, REJOIN ON MY LEFT WING, ECHELON FORMATION • SMOKE OFF'
+              : pt < 96.5
+                ? '🎙️ ADISUTJIPTO TOWER, SHOW COMPLETE • INITIAL RUNWAY 09 FULL STOP LANDING'
+                : '📡 ADISUTJIPTO TOWER: WELCOME BACK • CLEARED TO LAND RUNWAY 09!',
+          );
         } else {
           targetPitch = -0.025 + Math.sin(t * 1.2) * 0.015;
           targetRoll = Math.cos(t * 1.1) * 0.035;
-          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • MANUVER PUNCAK SELESAI');
+          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • FORMASI ECHELON • SIAP 3. LANDING');
         }
       } else {
         // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
