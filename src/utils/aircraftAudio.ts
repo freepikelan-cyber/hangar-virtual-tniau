@@ -46,8 +46,8 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     unitId === 'a330mrtt';
 
   if (isFighter) {
-    // fighter-voice-takeoff.wav (18.08s): 6.0s mulai -> 14.5s "Afterburner on, rolling" -> 22.0s "Full throttle, airborne"
-    return { voiceStart: 6.0, rollStart: 14.5, rotStart: 22.0, climbStart: 23.8, airborneStart: 26.2 };
+    // fighter-voice-takeoff.wav (18.08s): 6.0s..24.08s suara selesai penuh -> 24.4s baru mulai Take Off roll!
+    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 28.0, climbStart: 29.8, airborneStart: 32.2 };
   }
   if (isCargoTransport) {
     // transport-voice-takeoff.wav (20.56s): 6.0s mulai -> 23.0s "Power set" -> 25.8s "Rotate!"
