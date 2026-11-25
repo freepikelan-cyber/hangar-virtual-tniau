@@ -94,10 +94,14 @@ export function getLandingTiming(unitId: string): LandingTiming {
     unitId === 'c212' ||
     unitId === 'a330mrtt';
 
+  const isBasicTrainer =
+    unitId === 'g120tp' || unitId === 'c182' || unitId === 't41' || unitId === 'sgs233' || unitId === 'dg1000';
+
   // fighter-voice-landing.wav (21.0s): selesai penuh di 21.1s + jeda -> baru Flare & Touchdown di 24.5s!
   // transport-voice-landing.wav (13.76s): selesai penuh di 13.86s + jeda -> baru Flare & Touchdown di 17.6s!
+  // trainer-voice-landing.wav (13.34s): selesai penuh di 13.44s + jeda -> baru Flare & Touchdown di 17.0s!
   // vvip-voice-landing.wav (19.24s): pengumuman persiapan mendarat selesai di 19.34s -> baru turun & Touchdown di 25.4s!
-  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isVvip ? 25.4 : 5.8;
+  const touchTime = isFighter ? 24.5 : isCargoTransport ? 17.6 : isBasicTrainer ? 17.0 : isVvip ? 25.4 : 5.8;
   const flareDur = 2.0;
   const approachEnd = Math.max(2.0, touchTime - flareDur);
   const rolloutEnd = touchTime + 4.4;
@@ -370,7 +374,8 @@ class AircraftAudioEngine {
       | 'heli-cruise'
       | 'heli-landing'
       | 'trainer-takeoff'
-      | 'trainer-roll',
+      | 'trainer-roll'
+      | 'trainer-landing',
   ): Promise<AudioBuffer | null> {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
@@ -415,7 +420,9 @@ class AircraftAudioEngine {
                                           ? '/audio/trainer-voice-takeoff.wav'
                                           : key === 'trainer-roll'
                                             ? '/audio/trainer-voice-roll.wav'
-                                            : `/audio/atc-${key}.mp3`;
+                                            : key === 'trainer-landing'
+                                              ? '/audio/trainer-voice-landing.wav'
+                                              : `/audio/atc-${key}.mp3`;
         const res = await fetch(url);
         if (!res.ok || !this.ctx) return null;
         const arr = await res.arrayBuffer();
@@ -611,7 +618,8 @@ class AircraftAudioEngine {
       | 'heli-cruise'
       | 'heli-landing'
       | 'trainer-takeoff'
-      | 'trainer-roll',
+      | 'trainer-roll'
+      | 'trainer-landing',
   ) {
     if (!this.ctx) return;
     const myEpoch = ++this.voiceEpoch;
@@ -1134,13 +1142,15 @@ class AircraftAudioEngine {
         this.playAtcRadio(
           isHeli
             ? 'heli-landing'
-            : isFighter
-              ? 'fighter-landing'
-              : isCargoTransport
-                ? 'transport-landing'
-                : isVvip
-                  ? 'vvip-landing'
-                  : 'landing',
+            : isBasicTrainer
+              ? 'trainer-landing'
+              : isFighter
+                ? 'fighter-landing'
+                : isCargoTransport
+                  ? 'transport-landing'
+                  : isVvip
+                    ? 'vvip-landing'
+                    : 'landing',
         );
       }
       const ld = getLandingTiming(unitId);
