@@ -84,7 +84,18 @@ function StudioLighting() {
   return (
     <>
       <ambientLight intensity={0.42} color="#b8d4f0" />
-      <directionalLight position={[12, 18, 12]} intensity={1.7} color="#ffffff" castShadow shadow-mapSize={[1024, 1024]} />
+      <directionalLight
+        position={[12, 24, 14]}
+        intensity={1.7}
+        color="#ffffff"
+        castShadow
+        shadow-mapSize={[2048, 2048]}
+        shadow-camera-left={-48}
+        shadow-camera-right={48}
+        shadow-camera-top={48}
+        shadow-camera-bottom={-48}
+        shadow-camera-far={140}
+      />
       <directionalLight position={[-14, 10, -10]} intensity={0.85} color="#7fd8ff" />
       <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={1.2} color="#e6f5ff" />
 

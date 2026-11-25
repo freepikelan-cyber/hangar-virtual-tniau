@@ -35,6 +35,12 @@ export function VvipEscortLayer() {
     const f16Base = buildDetailedF16();
     const gear = f16Base.group.getObjectByName('landing-gear');
     if (gear) gear.visible = false;
+    f16Base.group.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        obj.castShadow = true;
+        obj.receiveShadow = true;
+      }
+    });
     const right = f16Base.group;
     const left = f16Base.group.clone(true);
     return { right, left };
@@ -113,22 +119,42 @@ export function VvipEscortLayer() {
         if (rightSmokeRef.current) rightSmokeRef.current.visible = false;
         if (rightFlameRef.current) rightFlameRef.current.scale.set(1, 1, 1);
       } else {
-        // AKSI MANUVER BOMB BURST: Full afterburner menanjak tajam + gulingan 360° + asap putih melesat tinggi!
-        const bp = Math.min(1, (st - BOMB_BURST_START) / 5.5);
+        // AKSI MANUVER BOMB BURST: Full afterburner menanjak tajam + gulingan 360° + asap putih,
+        // lalu tetap TERLIHAT mengawal dari posisi tinggi-jauh (CAP Overwatch)!
+        const burstElapsed = st - BOMB_BURST_START;
+        const bp = Math.min(1, burstElapsed / 5.2);
         const bEase = bp * bp * (3 - 2 * bp);
-        rightRef.current.position.set(
-          THREE.MathUtils.lerp(21.5, 58.0, bEase),
-          THREE.MathUtils.lerp(1.0, 29.0, bEase * bEase),
-          THREE.MathUtils.lerp(-7.5, 16.0, bEase),
-        );
-        rightRef.current.rotation.x = -0.68 * Math.sin(Math.min(1, bp * 1.3) * (Math.PI / 2));
-        rightRef.current.rotation.z = -bp * Math.PI * 2.25;
-        rightRef.current.rotation.y = -0.38 * bEase;
-        rightRef.current.visible = bp < 0.96;
 
-        if (rightSmokeRef.current) rightSmokeRef.current.visible = true;
-        if (rightFlameRef.current) {
-          rightFlameRef.current.scale.set(1.45, 2.2 + Math.sin(t * 40) * 0.35, 1.45);
+        rightRef.current.visible = true;
+        if (burstElapsed < 5.2) {
+          rightRef.current.position.set(
+            THREE.MathUtils.lerp(21.5, 35.5, bEase),
+            THREE.MathUtils.lerp(1.0, 12.5, bEase),
+            THREE.MathUtils.lerp(-7.5, -14.5, bEase),
+          );
+          rightRef.current.rotation.x = -0.58 * Math.sin(bp * Math.PI);
+          rightRef.current.rotation.z = -bp * Math.PI * 2;
+          rightRef.current.rotation.y = -0.25 * Math.sin(bp * Math.PI);
+          if (rightSmokeRef.current) rightSmokeRef.current.visible = true;
+          if (rightFlameRef.current) {
+            rightFlameRef.current.scale.set(1.45, 2.2 + Math.sin(t * 40) * 0.35, 1.45);
+          }
+        } else {
+          // Setelah Bomb Burst selesai: Pengawal 1 tetap terlihat di kejauhan atas-kanan mengawal VVIP!
+          rightRef.current.position.set(
+            35.5 + Math.sin(t * 0.75) * 0.4,
+            12.5 + Math.sin(t * 1.1) * 0.28,
+            -14.5 + Math.cos(t * 0.7) * 0.35,
+          );
+          rightRef.current.rotation.x = THREE.MathUtils.lerp(rightRef.current.rotation.x, -0.02, Math.min(1, dt * 3));
+          rightRef.current.rotation.y = THREE.MathUtils.lerp(rightRef.current.rotation.y, 0, Math.min(1, dt * 3));
+          rightRef.current.rotation.z = THREE.MathUtils.lerp(
+            rightRef.current.rotation.z,
+            Math.sin(t * 0.9) * 0.04,
+            Math.min(1, dt * 3),
+          );
+          if (rightSmokeRef.current) rightSmokeRef.current.visible = false;
+          if (rightFlameRef.current) rightFlameRef.current.scale.set(1, 1, 1);
         }
       }
     }
