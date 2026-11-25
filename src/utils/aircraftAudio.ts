@@ -189,28 +189,7 @@ class AircraftAudioEngine {
     if (this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => { });
     }
-    // Preload rekaman suara ATC & suara asli pesawat tempur (Take Off, Terbang, Taxiway)
-    void this.preloadAtc('takeoff');
-    void this.preloadAtc('landing');
-    void this.preloadAtc('vacate');
-    void this.preloadAtc('vvip-escort');
-    void this.preloadAtc('fighter-takeoff');
-    void this.preloadAtc('fighter-maneuver');
-    void this.preloadAtc('fighter-landing');
-    void this.preloadAtc('transport-takeoff');
-    void this.preloadAtc('transport-cruise');
-    void this.preloadAtc('transport-landing');
-    void this.preloadAtc('transport-airdrop');
-    void this.preloadAtc('vvip-takeoff');
-    void this.preloadAtc('vvip-welcome');
-    void this.preloadAtc('vvip-reply');
-    void this.preloadAtc('vvip-landing');
-    void this.preloadAtc('heli-takeoff');
-    void this.preloadAtc('heli-cruise');
-    void this.preloadAtc('heli-landing');
-    void this.preloadJetAudio('taxi');
-    void this.preloadJetAudio('takeoff');
-    void this.preloadJetAudio('fly');
+    // Audio dimuat secara on-demand (lazy) tepat saat dipakai agar bebas loading 18MB di awal!
   }
 
   /**
