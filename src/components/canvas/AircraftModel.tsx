@@ -24,11 +24,20 @@ interface SavedMatProps {
   opacity: number;
   depthWrite: boolean;
   emissiveIntensity: number;
+  colorHex: number | null;
+  roughness: number | null;
+  metalness: number | null;
 }
 
 const savedMaterials = new WeakMap<THREE.Material, SavedMatProps>();
 
-function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boolean, clearCanopy = false) {
+function applyVisualModes(
+  root: THREE.Object3D,
+  cutaway: boolean,
+  wireframe: boolean,
+  clearCanopy = false,
+  darkFighterCanopy = false,
+) {
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
     if (!mesh.isMesh) return;
@@ -45,6 +54,9 @@ function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boo
           opacity: mat.opacity,
           depthWrite: mat.depthWrite,
           emissiveIntensity: 'emissiveIntensity' in std ? std.emissiveIntensity : 0,
+          colorHex: 'color' in std && std.color ? std.color.getHex() : null,
+          roughness: 'roughness' in std ? std.roughness : null,
+          metalness: 'metalness' in std ? std.metalness : null,
         });
       }
       const orig = savedMaterials.get(mat)!;
@@ -68,7 +80,18 @@ function applyVisualModes(root: THREE.Object3D, cutaway: boolean, wireframe: boo
         if ('wireframe' in std) std.wireframe = wireframe;
       } else if (role === 'glass') {
         mat.transparent = true;
-        mat.opacity = cutaway ? 0.16 : clearCanopy ? Math.min(orig.opacity, 0.28) : orig.opacity;
+        if (darkFighterCanopy && !cutaway) {
+          // Kanopi kaca gelap (smoked stealth tint) khas pesawat tempur agar pilot terlihat samar-samar & sangat keren!
+          mat.opacity = 0.78;
+          if ('color' in std && std.color) std.color.set('#081322');
+          if ('roughness' in std) std.roughness = 0.08;
+          if ('metalness' in std) std.metalness = 0.78;
+        } else {
+          mat.opacity = cutaway ? 0.16 : clearCanopy ? Math.min(orig.opacity, 0.28) : orig.opacity;
+          if ('color' in std && std.color && orig.colorHex !== null) std.color.setHex(orig.colorHex);
+          if ('roughness' in std && orig.roughness !== null) std.roughness = orig.roughness;
+          if ('metalness' in std && orig.metalness !== null) std.metalness = orig.metalness;
+        }
         mat.depthWrite = false;
         if ('wireframe' in std) std.wireframe = wireframe;
       } else {
@@ -208,11 +231,12 @@ export function AircraftModel() {
     }
   }, [safetyMode, safetyNonce, flightMode, unit.id]);
 
-  // Saat simulasi aktif, kaca kanopi dibuat lebih bening agar Pilot 3D di dalam kokpit terlihat jelas!
+  // Kanopi pesawat tempur dibuat gelap (smoked stealth tint) sehingga pilot di dalam kokpit terlihat samar-samar & elegan!
   const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
+  const isFighterCanopy = unit.category === 'Tempur';
   useEffect(() => {
-    applyVisualModes(activeGroup, false, wireframe, isAnySimActive);
-  }, [activeGroup, wireframe, isAnySimActive]);
+    applyVisualModes(activeGroup, false, wireframe, isAnySimActive, isFighterCanopy);
+  }, [activeGroup, wireframe, isAnySimActive, isFighterCanopy]);
 
   // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, AAR, safety, & demo aerodinamika!
   const isEngineVisualActive =
