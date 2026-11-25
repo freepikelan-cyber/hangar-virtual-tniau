@@ -13,7 +13,7 @@ function easeInOut(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-// Formasi Arrowhead 5 wingmen (J2–J6) relatif terhadap Jupiter 1 (Lead)
+// Formasi Arrowhead 5 wingmen (J2–J6) relatif terhadap Jupiter 1 (Lead) di udara
 const ARROWHEAD_SLOTS: [number, number, number][] = [
   [7.0, 2.8, -6.5],    // Jupiter 2 (Kanan)
   [-7.0, 2.8, -6.5],   // Jupiter 3 (Kiri)
@@ -22,21 +22,21 @@ const ARROWHEAD_SLOTS: [number, number, number][] = [
   [-14.0, 2.6, -13.0], // Jupiter 6 (Synchro Kiri)
 ];
 
-// Posisi antre di taxiway / holding point sebelum giliran masuk runway
-const QUEUE_SPOTS: { x: number; z: number; yaw: number }[] = [
-  { x: -5.2, z: -10.8, yaw: Math.PI * 0.35 }, // J2 siap di holding point
-  { x: -11.0, z: -10.5, yaw: Math.PI / 2 },   // J3
-  { x: -17.0, z: -10.5, yaw: Math.PI / 2 },   // J4
-  { x: -23.0, z: -10.5, yaw: Math.PI / 2 },   // J5
-  { x: -29.0, z: -10.5, yaw: Math.PI / 2 },   // J6
+// Formasi 6-Ship SIAP TAKE OFF di Runway 09 saat "Jupiters, check in! Two! Three! Four! Five! Six!"
+const RUNWAY_FORM_SPOTS: [number, number][] = [
+  [4.8, -11.5],  // Jupiter 2 (Kanan belakang J1)
+  [-4.8, -11.5], // Jupiter 3 (Kiri belakang J1)
+  [0.0, -14.5],  // Jupiter 4 (Tengah belakang)
+  [9.6, -14.5],  // Jupiter 5 (Kanan luar)
+  [-9.6, -14.5], // Jupiter 6 (Kiri luar)
 ];
 
 /**
  * Menampilkan 5 pesawat pendamping Jupiter Aerobatic Team (Jupiter 2 s/d Jupiter 6)
  * saat simulasi Take Off KT-1B Wong Bee:
- * 1. Keluar dari hanggar satu per satu menuju Holding Point Runway 09 (J1 -> J2 -> J3 -> J4 -> J5 -> J6)
- * 2. Take Off secara bergantian SATU PER SATU (bukan bersamaan!) setelah J1 lepas landas
- * 3. Bergabung dalam formasi Arrowhead saat mengudara
+ * 1. Keluar dari hanggar satu per satu menuju titik Take Off (0..18.5s)
+ * 2. Semua 6 pesawat berbaris rapi membentuk Formasi Take Off di Runway 09 saat Check-In ("Jupiters, check in! 2..6") (18.5..26.5s)
+ * 3. Take Off bergantian SATU PER SATU (26.5..46.5s) hingga semua mengudara dalam formasi Arrowhead
  */
 export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -85,7 +85,6 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       const grp = wingRefs.current[i];
       if (!grp) continue;
 
-      // Putar baling-baling KT-1B tiap pesawat
       const clone = wingClones[i];
       clone.traverse((child) => {
         if (child.name.includes('prop') || child.name.includes('blade') || child.name.includes('spinner')) {
@@ -102,83 +101,81 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       let targetGear = 0;
 
       if (flightMode === 'takeoff') {
-        const taxiStart = 2.2 + i * 2.1; // J2 mulai 2.2s, J3 4.3s, J4 6.4s, J5 8.5s, J6 10.6s
-        const taxiEnd = taxiStart + 4.5;
-        const queue = QUEUE_SPOTS[i];
+        // Tahap 1 (0..18.5s): Keluar dari hanggar satu per satu menuju posisi formasi Take Off di Runway 09
+        const taxiStart = 2.0 + i * 2.2; // J2: 2.0s, J3: 4.2s, J4: 6.4s, J5: 8.6s, J6: 10.8s
+        const taxiEnd = taxiStart + 4.4;
+        const turnEnd = taxiEnd + 1.8;
         const spawnX = -35.0 - i * 3.8;
         const spawnZ = -10.5;
+        const formSpot = RUNWAY_FORM_SPOTS[i];
 
-        // Jadwal take off berurutan SATU PER SATU setelah Jupiter 1 (J1 roll 18.5..22.0):
-        const lineUpStart = 20.5 + i * 3.0; // J2: 20.5s, J3: 23.5s, J4: 26.5s, J5: 29.5s, J6: 32.5s
-        const rollStart = lineUpStart + 1.4;
-        const rotStart = rollStart + 1.8;
-        const climbEnd = rotStart + 2.2;
+        // Tahap 2 (18.5..26.5s): Semua 6 pesawat berada di formasi Take Off di Runway 09 ("Jupiters, check in!")
+        // Tahap 3 (26.5..46.5s): Take Off bergantian SATU PER SATU setelah J1 (J1 roll 26.5..28.6s)
+        const rollStart = 29.0 + i * 2.5; // J2: 29.0s, J3: 31.5s, J4: 34.0s, J5: 36.5s, J6: 39.0s
+        const rotStart = rollStart + 1.9;
+        const climbEnd = rotStart + 2.4;
 
-        const formSlot = ARROWHEAD_SLOTS[i];
+        const airSlot = ARROWHEAD_SLOTS[i];
 
         if (pt < taxiStart) {
-          // Masih menunggu giliran di dalam/depan hanggar
           tx = spawnX;
           ty = 0;
           tz = spawnZ;
           tyaw = Math.PI / 2;
           targetGear = 0;
         } else if (pt < taxiEnd) {
-          // Taxi keluar satu per satu dari hanggar menyusuri taxiway menuju holding point
           const p = easeInOut((pt - taxiStart) / (taxiEnd - taxiStart));
-          tx = THREE.MathUtils.lerp(spawnX, queue.x, p);
-          tz = THREE.MathUtils.lerp(spawnZ, queue.z, p);
+          tx = THREE.MathUtils.lerp(spawnX, formSpot[0] - 4.0, p);
+          tz = THREE.MathUtils.lerp(spawnZ, formSpot[1], p);
           ty = 0;
-          tyaw = THREE.MathUtils.lerp(Math.PI / 2, queue.yaw, p);
+          tyaw = Math.PI / 2;
           targetGear = 0;
-        } else if (pt < lineUpStart) {
-          // Menunggu giliran take off di holding point / antrean runway
-          tx = queue.x;
-          tz = queue.z;
+        } else if (pt < turnEnd) {
+          // Belok rapi masuk posisi formasi Take Off di Runway 09
+          const p = easeInOut((pt - taxiEnd) / (turnEnd - taxiEnd));
+          tx = THREE.MathUtils.lerp(formSpot[0] - 4.0, formSpot[0], p);
+          tz = formSpot[1];
           ty = 0;
-          tyaw = queue.yaw;
+          tyaw = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
           targetGear = 0;
         } else if (pt < rollStart) {
-          // Masuk ke garis tengah Runway 09 (Line-Up)
-          const p = easeInOut((pt - lineUpStart) / (rollStart - lineUpStart));
-          tx = THREE.MathUtils.lerp(queue.x, 0, p);
-          tz = THREE.MathUtils.lerp(queue.z, -8.5, p);
+          // Siap di posisi formasi Take Off sambil menunggu "Jupiters, check in!" & giliran lepas landas satu per satu
+          tx = formSpot[0];
+          tz = formSpot[1];
           ty = 0;
-          tyaw = THREE.MathUtils.lerp(queue.yaw, 0, p);
+          tyaw = 0;
           targetGear = 0;
         } else if (pt < rotStart) {
-          // Akselerasi penuh di sepanjang aspal Runway
+          // Akselerasi penuh di runway!
           const p = (pt - rollStart) / (rotStart - rollStart);
-          tx = 0;
-          tz = THREE.MathUtils.lerp(-8.5, 4.0, p * p);
+          tx = formSpot[0];
+          tz = THREE.MathUtils.lerp(formSpot[1], 4.0, p * p);
           ty = 0;
           tp = -0.02 * p;
           tyaw = 0;
           targetGear = 0;
         } else if (pt < climbEnd) {
-          // Rotate & Liftoff menanjak ke langit sambil menarik roda!
+          // Rotate, Liftoff & Gear Up menuju posisi formasi udara
           const p = easeInOut((pt - rotStart) / (climbEnd - rotStart));
-          tx = THREE.MathUtils.lerp(0, formSlot[0], p * p);
-          tz = THREE.MathUtils.lerp(4.0, formSlot[2], p);
-          ty = THREE.MathUtils.lerp(0, formSlot[1], p);
+          tx = THREE.MathUtils.lerp(formSpot[0], airSlot[0], p);
+          tz = THREE.MathUtils.lerp(4.0, airSlot[2], p);
+          ty = THREE.MathUtils.lerp(0, airSlot[1], p);
           tp = -0.25 * Math.sin(p * Math.PI);
-          tr = (formSlot[0] > 0 ? -0.14 : formSlot[0] < 0 ? 0.14 : 0) * Math.sin(p * Math.PI);
+          tr = (airSlot[0] > 0 ? -0.14 : airSlot[0] < 0 ? 0.14 : 0) * Math.sin(p * Math.PI);
           targetGear = p > 0.35 ? 1 : 0;
         } else {
-          // Sudah di udara menunggu sisa formasi bergabung!
-          tx = formSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
-          ty = formSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
-          tz = formSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
+          tx = airSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
+          ty = airSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
+          tz = airSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
           tp = -0.025;
           tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
           targetGear = 1;
         }
       } else {
-        // Mode Airborne: terbang stabil dalam formasi 6-ship Arrowhead bersama Jupiter 1
-        const formSlot = ARROWHEAD_SLOTS[i];
-        tx = formSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
-        ty = formSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
-        tz = formSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
+        const airSlot = ARROWHEAD_SLOTS[i];
+        tx = airSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
+        ty = airSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
+        tz = airSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
         tp = -0.025;
         tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
         targetGear = 1;

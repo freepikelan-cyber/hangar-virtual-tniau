@@ -601,12 +601,12 @@ export function SkyCloudsEnvironment() {
         }
       } else if (selectedId === 'kt1b') {
         // Khusus KT-1B (Jupiter Aerobatic Show): runway tetap diam di tempat sampai keenam pesawat selesai take off satu per satu!
-        if (pt < 37.0) {
+        if (pt < 42.5) {
           targetWorldY = -0.02;
           groundSpeed = 0;
           scrollZ.current = 0;
         } else {
-          const p = Math.min(1, (pt - 37.0) / Math.max(0.5, airborneStart - 37.0));
+          const p = Math.min(1, (pt - 42.5) / Math.max(0.5, airborneStart - 42.5));
           targetWorldY = THREE.MathUtils.lerp(-0.02, -28.0, p * p);
           groundSpeed = 48 * p;
         }

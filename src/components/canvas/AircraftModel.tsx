@@ -335,8 +335,9 @@ export function AircraftModel() {
 
         if (unit.id === 'kt1b') {
           // KHUSUS KT-1B WONG BEE (JUPITER AEROBATIC SHOW):
-          // J1 keluar hanggar duluan (0..6.2s) -> Holding Point Runway 09 (6.2..18.5s) -> J1 Take Off pertama (18.5..24.0s)
-          // -> J1 bertahan di udara sementara J2..J6 Take Off satu per satu (20.5..38.0s) hingga semua mengudara!
+          // 1. J1–J6 keluar hanggar satu per satu ke Runway 09 (0..18.5s)
+          // 2. Semua 6 pesawat membentuk formasi Take Off di Runway 09 saat "Jupiters, check in!" (18.5..26.5s)
+          // 3. J1 Take Off pertama (26.5..32.0s), disusul J2..J6 Take Off satu per satu (29.0..43.4s)!
           if (pt < 4.5) {
             const p = easeInOut(pt / 4.5);
             targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
@@ -344,7 +345,7 @@ export function AircraftModel() {
             targetY = 0;
             targetYawOffset = Math.PI / 2;
             targetGear = 0;
-            setFlightLabel('JUPITER 1–6 • TAXI KELUAR DARI HANGGAR MENUJU HOLDING POINT');
+            setFlightLabel('JUPITER 1–6 • TAXI KELUAR DARI HANGGAR MENUJU RUNWAY 09');
           } else if (pt < 6.2) {
             const p = easeInOut((pt - 4.5) / 1.7);
             targetX = THREE.MathUtils.lerp(-6.5, 0, p);
@@ -353,19 +354,22 @@ export function AircraftModel() {
             targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
             targetGear = 0;
             setFlightLabel('JUPITER 1 • LINE UP RUNWAY 09 • JUPITER 2–6 MENYUSUL');
+          } else if (pt < 18.5) {
+            targetX = 0;
+            targetZ = -8.5;
+            targetY = 0;
+            targetYawOffset = 0;
+            targetGear = 0;
+            setFlightLabel('🎙️ ADISUTJIPTO TOWER • PERMOHONAN & IZIN TAKE-OFF RUNWAY 09');
           } else if (pt < to.rollStart) {
             targetX = 0;
             targetZ = -8.5;
             targetY = 0;
             targetYawOffset = 0;
-            const nearRoll = pt > to.rollStart - 1.4;
+            const nearRoll = pt > to.rollStart - 1.2;
             targetPitch = nearRoll ? Math.sin(t * 36) * 0.004 : 0;
             targetGear = 0;
-            setFlightLabel(
-              nearRoll
-                ? '📡 ADISUTJIPTO TOWER: CLEARED FOR TAKE-OFF RUNWAY 09!'
-                : '🎙️ PERSIAPAN & PERMOHONAN TAKE-OFF • HOLDING SHORT RUNWAY 09',
-            );
+            setFlightLabel('🎙️ JUPITERS, CHECK IN! TWO, THREE, FOUR, FIVE, SIX • FORMASI SIAP TAKE OFF');
           } else if (pt < to.rotStart) {
             const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
             targetZ = THREE.MathUtils.lerp(-8.5, 3.8, p * p);
@@ -380,9 +384,9 @@ export function AircraftModel() {
             targetY = THREE.MathUtils.lerp(0, 1.85, p * p);
             targetPitch = -0.25 * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
             targetGear = 0;
-            setFlightLabel('JUPITER 1 AIRBORNE! • JUPITER 2 BERSIAP TAKE OFF');
-          } else if (pt < 24.5) {
-            const p = easeInOut((pt - to.climbStart) / 2.5);
+            setFlightLabel('JUPITER 1 AIRBORNE! • JUPITER 2–6 TAKE OFF BERGANTIAN');
+          } else if (pt < 32.2) {
+            const p = easeInOut((pt - to.climbStart) / 2.2);
             targetZ = THREE.MathUtils.lerp(5.4, 0, p);
             targetY = THREE.MathUtils.lerp(1.85, 3.05, p);
             targetPitch = THREE.MathUtils.lerp(-0.24, -0.03, p);
@@ -396,9 +400,9 @@ export function AircraftModel() {
             targetPitch = -0.025;
             targetRoll = Math.cos(t * 0.9) * 0.03;
             targetGear = 1;
-            const seqIdx = Math.min(6, Math.max(2, Math.floor((pt - 20.5) / 3.0) + 2));
+            const seqIdx = Math.min(6, Math.max(2, Math.floor((pt - 29.0) / 2.5) + 2));
             setFlightLabel(
-              pt < 37.5
+              pt < 43.0
                 ? `JUPITER ${seqIdx} TAKE OFF RUNWAY 09 • MEMBENTUK FORMASI`
                 : 'JUPITER AEROBATIC TEAM (6-SHIP) • MENGUDARA DALAM FORMASI!',
             );
