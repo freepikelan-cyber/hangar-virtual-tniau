@@ -85,11 +85,11 @@ export function VvipEscortLayer() {
       aircraftAudio.playVvipEscortRadio(soundEnabled);
     }
 
-    if (st >= 1.2 && st < 15.5) {
+    if (st >= 1.2 && st < 18.0) {
       setFlightLabel(
-        '📡 LETKOL PNB MUHAMMAD JAKI DIRGANTARA: "SELAMAT PAGI, YANG KAMI HORMATI BAPAK PRESIDEN, SAAT INI PERJALANAN ANDA KAMI KAWAL... SALAM SWA BHUWANA PAKSA!"',
+        '📡 LETKOL PNB MUHAMMAD JAKI DIRGANTARA: "SELAMAT PAGI, YANG KAMI HORMATI BAPAK PRESIDEN REPUBLIK INDONESIA... SALAM SWA BHUWANA PAKSA!"',
       );
-    } else if (st >= 15.5 && flightMode === 'airborne') {
+    } else if (st >= 18.0 && flightMode === 'airborne') {
       setFlightLabel('PENGAWALAN VVIP AKTIF • 2 F-16 TNI AU MENGAWAL PESAWAT KEPRESIDENAN');
     }
   });

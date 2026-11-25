@@ -423,33 +423,33 @@ class AircraftAudioEngine {
 
       const now = ctx.currentTime;
       const isVvipVoice = key === 'vvip-escort';
-      const rate = isVvipVoice ? 0.98 : 1.07; // Tempo wibawa & natural untuk salam pilot pengawal VVIP!
+      const rate = isVvipVoice ? 1.0 : 1.07; // Kecepatan asli 1.0 untuk rekaman suara manusia asli pilot VVIP!
       const dur = buffer.duration / rate;
 
-      // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio
+      // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio kokpit
       this.playRadioSquelch(0);
       this.playRadioSquelch(dur + 0.08);
 
-      // 2. Sumber suara manusia + desis kresek VHF digabung masuk ke filter radio yang sama!
+      // 2. Sumber suara manusia + desis kresek VHF digabung masuk ke filter radio kokpit!
       const src = ctx.createBufferSource();
       src.buffer = buffer;
       src.playbackRate.value = rate;
 
       const hp = ctx.createBiquadFilter();
       hp.type = 'highpass';
-      hp.frequency.value = isVvipVoice ? 340 : 520;
-      hp.Q.value = isVvipVoice ? 0.8 : 1.1;
+      hp.frequency.value = isVvipVoice ? 420 : 520;
+      hp.Q.value = isVvipVoice ? 0.95 : 1.1;
 
       const lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = isVvipVoice ? 3200 : 2300;
-      lp.Q.value = isVvipVoice ? 0.9 : 1.25;
+      lp.frequency.value = isVvipVoice ? 2750 : 2300;
+      lp.Q.value = isVvipVoice ? 1.1 : 1.25;
 
       const peak = ctx.createBiquadFilter();
       peak.type = 'peaking';
-      peak.frequency.value = 1550;
-      peak.Q.value = 1.4;
-      peak.gain.value = isVvipVoice ? 3.2 : 7.0;
+      peak.frequency.value = 1600;
+      peak.Q.value = 1.5;
+      peak.gain.value = isVvipVoice ? 5.2 : 7.0;
 
       const shaper = ctx.createWaveShaper();
       shaper.curve = this.getRadioDistortionCurve();
@@ -457,20 +457,20 @@ class AircraftAudioEngine {
 
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -24;
-      comp.ratio.value = isVvipVoice ? 4 : 8;
+      comp.ratio.value = isVvipVoice ? 6 : 8;
       comp.attack.value = 0.004;
-      comp.release.value = 0.12;
+      comp.release.value = 0.11;
 
       const outGain = ctx.createGain();
-      outGain.gain.value = isVvipVoice ? 1.05 : 0.88;
+      outGain.gain.value = isVvipVoice ? 1.0 : 0.88;
 
       src.connect(hp);
 
-      // 3. Latar "ngeresek" statis & crackle VHF (lebih halus untuk VVIP agar ucapan Bahasa Indonesia sangat jernih!)
+      // 3. Latar "ngeresek" statis radio VHF & sedikit dengung kokpit khas transmisi dari masker oksigen pilot
       const carrier = this.createRadioCrackleSource(dur + 0.16);
       if (carrier) {
         const cGain = ctx.createGain();
-        const noiseLvl = isVvipVoice ? 0.045 : 0.14;
+        const noiseLvl = isVvipVoice ? 0.085 : 0.14;
         cGain.gain.setValueAtTime(noiseLvl, now + 0.04);
         cGain.gain.setValueAtTime(noiseLvl, now + dur + 0.06);
         cGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.16);
@@ -484,8 +484,16 @@ class AircraftAudioEngine {
       hp.connect(lp);
       lp.connect(peak);
       if (isVvipVoice) {
-        // Tanpa saturasi keras agar suara manusia terdengar natural, hangat & berwibawa!
-        peak.connect(comp);
+        // Campuran paralel: suara kokpit jernih + sentuhan saturasi radio AM kokpit agar terasa nyata di dalam pesawat!
+        const dryG = ctx.createGain();
+        dryG.gain.value = 0.72;
+        const wetG = ctx.createGain();
+        wetG.gain.value = 0.34;
+        peak.connect(dryG);
+        dryG.connect(comp);
+        peak.connect(shaper);
+        shaper.connect(wetG);
+        wetG.connect(comp);
       } else {
         peak.connect(shaper);
         shaper.connect(comp);
