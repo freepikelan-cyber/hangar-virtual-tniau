@@ -19,26 +19,27 @@ interface Pose {
 }
 
 /**
- * Menghitung posisi & sikap 3D relatif untuk 5 pesawat pendamping Jupiter Aerobatic Team:
+ * Menghitung posisi & sikap 3D relatif yang LEGA & BEBAS BERTUMPUK untuk 5 pesawat pendamping JAT:
+ * (Rentang sayap KT-1B ≈ 10 unit, panjang ≈ 11 unit -> jarak antar-pesawat ≥ 9–10 unit agar rapi & enak dilihat!)
  * - Index 0, 1, 2 -> Jupiter 2, 3, 4 (Main Body bersama Jupiter 1 Leader di [0,0,0])
  * - Index 3, 4    -> Jupiter 5, 6 (Elemen Synchro Pair)
  */
 function computeWingmanPose(
   maneuver: Exclude<JupiterManeuverId, 'auto'>,
   idx: number, // 0=J2, 1=J3, 2=J4, 3=J5(Synchro1), 4=J6(Synchro2)
-  p: number, // 0..1 progress dalam siklus 7 detik
+  p: number, // 0..1 progress dalam siklus 7.5 detik
   t: number,
 ): Pose {
   const sWave = Math.sin(p * Math.PI);
   const fullWave = Math.sin(p * Math.PI * 2);
 
-  // Default Arrow Head (Anak Panah): J2 kanan, J3 kiri, J4 slot belakang, J5 kanan luar, J6 kiri luar
+  // Default Arrow Head (Anak Panah) dengan jarak sayap lega & rapi:
   const arrow: [number, number, number][] = [
-    [3.8, -0.25, -3.2],
-    [-3.8, -0.25, -3.2],
-    [0, -0.55, -6.2],
-    [7.2, -0.45, -6.4],
-    [-7.2, -0.45, -6.4],
+    [9.2, -0.4, -9.0],    // J2 Kanan
+    [-9.2, -0.4, -9.0],   // J3 Kiri
+    [0.0, -1.0, -18.0],   // J4 Slot Belakang
+    [18.0, -0.8, -18.0],  // J5 Kanan Luar (Synchro)
+    [-18.0, -0.8, -18.0], // J6 Kiri Luar (Synchro)
   ];
 
   let [x, y, z] = arrow[idx];
@@ -48,290 +49,281 @@ function computeWingmanPose(
 
   switch (maneuver) {
     case 'jupiterRoll': {
-      // Semua 6 pesawat berguling 360° serentak dalam formasi anak panah rapat
       rz = -p * Math.PI * 2;
       break;
     }
     case 'jupiterRollBack': {
-      // Setengah pertama guling kanan 360°, setengah kedua counter-roll kiri 360°
       rz = p < 0.5 ? -(p * 2) * Math.PI * 2 : ((p - 0.5) * 2) * Math.PI * 2;
       break;
     }
     case 'arrowHead': {
-      // Formasi anak panah rapat menanjak vertikal loop
-      y += sWave * 1.4;
-      rx = -fullWave * 0.42;
+      y += sWave * 2.2;
+      rx = -fullWave * 0.4;
       break;
     }
     case 'eagleToArrow': {
-      // Awal lebar (Eagle) lalu merapat mulus menjadi Arrow Head!
+      // Eagle lebar membentang -> merapat mulus menjadi Arrow Head!
       const eagle: [number, number, number][] = [
-        [5.2, 0.3, -1.6],
-        [-5.2, 0.3, -1.6],
-        [0, -0.8, -4.4],
-        [9.8, 0.7, -3.2],
-        [-9.8, 0.7, -3.2],
+        [12.5, 0.8, -4.5],
+        [-12.5, 0.8, -4.5],
+        [0.0, -1.5, -13.5],
+        [24.0, 2.0, -9.5],
+        [-24.0, 2.0, -9.5],
       ];
       const blend = 0.5 - 0.5 * Math.cos(p * Math.PI * 2);
       x = THREE.MathUtils.lerp(eagle[idx][0], arrow[idx][0], blend);
-      y = THREE.MathUtils.lerp(eagle[idx][1], arrow[idx][1], blend) + sWave * 1.1;
+      y = THREE.MathUtils.lerp(eagle[idx][1], arrow[idx][1], blend) + sWave * 1.8;
       z = THREE.MathUtils.lerp(eagle[idx][2], arrow[idx][2], blend);
-      rx = -sWave * 0.35;
+      rx = -sWave * 0.34;
       break;
     }
     case 'heart': {
-      // Synchro J5 (idx=3) & J6 (idx=4) melukis bentuk Hati (♥) raksasa di langit!
+      // Synchro J5 (idx=3) & J6 (idx=4) melukis bentuk Hati (♥) RAKSASA di langit!
       if (idx === 3 || idx === 4) {
         const side = idx === 3 ? 1 : -1;
-        const a = p * Math.PI; // 0 (puncak tengah) -> PI (ujung bawah hati)
-        const hx = side * (16 * Math.pow(Math.sin(a), 3)) * 0.42;
-        const hy = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * 0.28 + 2.2;
+        const a = p * Math.PI;
+        const hx = side * (16 * Math.pow(Math.sin(a), 3)) * 1.05;
+        const hy = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * 0.65 + 5.0;
         x = hx;
         y = hy;
-        z = -1.5;
-        rz = -side * Math.cos(a) * 0.75;
-        rx = -Math.sin(a) * 0.32;
+        z = -4.0;
+        rz = -side * Math.cos(a) * 0.72;
+        rx = -Math.sin(a) * 0.3;
       } else {
-        // Main Body J2-J4 terbang tinggi mengawal di atas
+        // Main Body J2-J4 mengawal rapi di belakang-bawah
         const escort: [number, number, number][] = [
-          [3.6, -0.2, -3.4],
-          [-3.6, -0.2, -3.4],
-          [0, -0.45, -6.4],
+          [9.5, -1.2, -12.0],
+          [-9.5, -1.2, -12.0],
+          [0.0, -2.0, -22.0],
         ];
         [x, y, z] = escort[idx];
       }
       break;
     }
     case 'diamond': {
-      // Main Body membentuk Wajik (Diamond) rapat, Synchro masuk dari Tango (kanan-kiri sejajar)
+      // Main Body (J1–J4) membentuk Wajik (Diamond) lega, Synchro bergabung dari posisi Tango
       const diam: [number, number, number][] = [
-        [3.4, -0.2, -3.1],
-        [-3.4, -0.2, -3.1],
-        [0, -0.4, -6.2],
-        [THREE.MathUtils.lerp(8.2, 6.2, sWave), -0.3, THREE.MathUtils.lerp(-2.5, -9.0, sWave)],
-        [THREE.MathUtils.lerp(-8.2, -6.2, sWave), -0.3, THREE.MathUtils.lerp(-2.5, -9.0, sWave)],
+        [9.0, -0.4, -9.5],
+        [-9.0, -0.4, -9.5],
+        [0.0, -0.8, -19.0],
+        [THREE.MathUtils.lerp(21.0, 15.5, sWave), -0.6, THREE.MathUtils.lerp(-6.0, -24.0, sWave)],
+        [THREE.MathUtils.lerp(-21.0, -15.5, sWave), -0.6, THREE.MathUtils.lerp(-6.0, -24.0, sWave)],
       ];
       [x, y, z] = diam[idx];
-      y += sWave * 1.3;
-      rx = -fullWave * 0.38;
+      y += sWave * 2.0;
+      rx = -fullWave * 0.36;
       break;
     }
     case 'delta': {
-      // Segitiga Delta klasik (baris 1: J1, baris 2: J2-J3, baris 3: J5-J4-J6)
+      // Segitiga Delta klasik (1 - 2 - 3) dengan jarak sayap lega
       const del: [number, number, number][] = [
-        [3.5, -0.2, -3.2],
-        [-3.5, -0.2, -3.2],
-        [0, -0.4, -6.4],
-        [7.0, -0.4, -6.4],
-        [-7.0, -0.4, -6.4],
+        [9.2, -0.4, -9.5],
+        [-9.2, -0.4, -9.5],
+        [0.0, -0.8, -19.0],
+        [18.4, -0.8, -19.0],
+        [-18.4, -0.8, -19.0],
       ];
       [x, y, z] = del[idx];
-      y += sWave * 1.5;
-      rx = -fullWave * 0.45;
+      y += sWave * 2.4;
+      rx = -fullWave * 0.42;
       break;
     }
     case 'cloverLeaf': {
-      // 4 kelopak berputar 90° bergantian dengan cascade vertikal
       const phase = (p + idx * 0.08) % 1;
       const a = phase * Math.PI * 2;
-      x += Math.sin(a) * 1.8;
-      y += Math.cos(a) * 1.6;
-      rz = -Math.sin(a) * 0.85;
-      rx = -Math.cos(a) * 0.35;
+      x += Math.sin(a) * 3.2;
+      y += Math.cos(a) * 2.6;
+      rz = -Math.sin(a) * 0.82;
+      rx = -Math.cos(a) * 0.34;
       break;
     }
     case 'bombBurst': {
-      // Puncak pertunjukan! 0..0.32 rapat menanjak, 0.32..1.0 MEMENCAR RADIAL ke 6 penjuru!
-      const burst = Math.max(0, (p - 0.25) / 0.75);
+      // Puncak pertunjukan! 6 pesawat memencar radial LEBAR ke 6 penjuru!
+      const burst = Math.max(0, (p - 0.22) / 0.78);
       const bEase = burst * burst * (3 - 2 * burst);
       const dirs: [number, number, number][] = [
-        [11.5, 2.5, -2.0],
-        [-11.5, 2.5, -2.0],
-        [0, -5.2, -9.5],
-        [13.5, -3.5, -6.5],
-        [-13.5, -3.5, -6.5],
+        [26.0, 6.5, -5.0],
+        [-26.0, 6.5, -5.0],
+        [0.0, -10.5, -26.0],
+        [32.0, -7.5, -16.0],
+        [-32.0, -7.5, -16.0],
       ];
       x = THREE.MathUtils.lerp(arrow[idx][0], dirs[idx][0], bEase);
-      y = THREE.MathUtils.lerp(arrow[idx][1] + 1.2, dirs[idx][1], bEase);
+      y = THREE.MathUtils.lerp(arrow[idx][1] + 2.0, dirs[idx][1], bEase);
       z = THREE.MathUtils.lerp(arrow[idx][2], dirs[idx][2], bEase);
-      rz = (idx % 2 === 0 ? -1 : 1) * bEase * 1.35;
-      rx = bEase * (dirs[idx][1] < 0 ? 0.45 : -0.35);
-      ry = Math.atan2(dirs[idx][0], 10) * bEase;
+      rz = (idx % 2 === 0 ? -1 : 1) * bEase * 1.3;
+      rx = bEase * (dirs[idx][1] < 0 ? 0.42 : -0.34);
+      ry = Math.atan2(dirs[idx][0], 18) * bEase;
       break;
     }
     case 'screwRoll': {
-      // Main Body lurus stabil, Synchro J5 & J6 berputar spiral (Super Screw Roll) mengelilingi sumbu!
+      // Main Body terbang rapat lurus, Synchro J5 & J6 berputar spiral lebar (radius 13 unit!) mengelilingi sumbu!
       if (idx === 3 || idx === 4) {
         const ang = p * Math.PI * 4 + (idx === 3 ? 0 : Math.PI);
-        x = Math.cos(ang) * 5.8;
-        y = Math.sin(ang) * 3.4;
-        z = -3.8;
-        rz = -ang * 1.5;
+        x = Math.cos(ang) * 14.5;
+        y = Math.sin(ang) * 7.5;
+        z = -10.0;
+        rz = -ang * 1.4;
       } else {
         const mb: [number, number, number][] = [
-          [3.2, -0.2, -3.0],
-          [-3.2, -0.2, -3.0],
-          [0, -0.35, -6.0],
+          [8.6, -0.4, -9.2],
+          [-8.6, -0.4, -9.2],
+          [0.0, -0.8, -18.4],
         ];
         [x, y, z] = mb[idx];
       }
       break;
     }
     case 'garuda': {
-      // Formasi Sayap Sang Garuda (sayap melengkung megah membentang ke atas-luar!)
+      // Formasi Sayap Sang Garuda membentang lebar & melengkung megah!
       const garudaPos: [number, number, number][] = [
-        [4.2, 0.55, -2.4],
-        [-4.2, 0.55, -2.4],
-        [0, -0.65, -5.8],
-        [8.6, 1.45, -4.6],
-        [-8.6, 1.45, -4.6],
+        [10.2, 1.4, -7.0],
+        [-10.2, 1.4, -7.0],
+        [0.0, -1.6, -16.5],
+        [21.0, 3.6, -13.0],
+        [-21.0, 3.6, -13.0],
       ];
       [x, y, z] = garudaPos[idx];
-      y += sWave * 1.4;
+      y += sWave * 2.2;
       rx = -fullWave * 0.36;
       rz = (idx === 0 || idx === 3 ? -0.14 : idx === 1 || idx === 4 ? 0.14 : 0) * sWave;
       break;
     }
     case 'snakeLoop': {
-      // Formasi memanjang beriringan meliuk gelombang S (Snake Loop)
-      const trailZ = -(idx + 1) * 3.1;
-      const wavePhase = t * 2.6 - idx * 0.72;
-      x = Math.sin(wavePhase) * 3.8;
-      y = Math.cos(wavePhase * 0.8) * 1.35;
+      // Formasi ekor-beriringan memanjang (jarak 12 unit per pesawat) meliuk gelombang S!
+      const trailZ = -(idx + 1) * 11.5;
+      const wavePhase = t * 2.4 - idx * 0.78;
+      x = Math.sin(wavePhase) * 8.5;
+      y = Math.cos(wavePhase * 0.8) * 2.6;
       z = trailZ;
-      rz = -Math.cos(wavePhase) * 0.65;
-      rx = -Math.sin(wavePhase * 0.8) * 0.25;
+      rz = -Math.cos(wavePhase) * 0.62;
+      rx = -Math.sin(wavePhase * 0.8) * 0.24;
       break;
     }
     case 'mirror': {
-      // IKONIK! Jupiter 5 terbang normal, Jupiter 6 TERBALIK 180° (canopy-to-canopy / side-by-side)!
+      // IKONIK! Jupiter 5 terbang normal, Jupiter 6 TERBALIK 180° berdampingan jelas di depan!
       if (idx === 3) {
-        // Jupiter 5: Normal Upright di sisi kanan depan
-        x = 3.6;
-        y = 0.2;
-        z = 0.4;
+        x = 9.5;
+        y = 1.4;
+        z = 4.5;
         rz = 0;
       } else if (idx === 4) {
-        // Jupiter 6: TERBALIK 180° (Inverted Mirror!) tepat berdampingan di sisi kiri depan!
-        x = -3.6;
-        y = 0.45;
-        z = 0.4;
-        rz = Math.PI; // 180 derajat terbalik!
+        x = -9.5;
+        y = 1.8;
+        z = 4.5;
+        rz = Math.PI; // 180° terbalik!
       } else {
-        // Main Body J2-J4 mengawal di belakang
+        // Main Body J2-J4 mengawal lega di belakang
         const back: [number, number, number][] = [
-          [4.2, -0.5, -5.2],
-          [-4.2, -0.5, -5.2],
-          [0, -0.8, -8.2],
+          [10.5, -1.2, -11.5],
+          [-10.5, -1.2, -11.5],
+          [0.0, -2.0, -21.5],
         ];
         [x, y, z] = back[idx];
       }
       break;
     }
     case 'twinHalfCuban': {
-      // Synchro J5 & J6 melakukan Twin Half Cuban & Stall Turn berlawanan arah
       if (idx === 3 || idx === 4) {
         const side = idx === 3 ? 1 : -1;
-        x = side * (2.5 + Math.cos(p * Math.PI * 2) * 5.2);
-        y = Math.sin(p * Math.PI * 2) * 3.2;
-        z = -2.2;
-        rx = -Math.cos(p * Math.PI * 2) * 0.75;
+        x = side * (9.5 + Math.cos(p * Math.PI * 2) * 11.0);
+        y = Math.sin(p * Math.PI * 2) * 6.5;
+        z = -7.5;
+        rx = -Math.cos(p * Math.PI * 2) * 0.7;
         rz = side * p * Math.PI * 2;
       }
       break;
     }
     case 'barrelRoll': {
-      // 6 pesawat melakukan Barrel Roll spiral bersama
       const a = p * Math.PI * 2;
-      x += Math.sin(a) * 1.2;
-      y += (1 - Math.cos(a)) * 0.85;
+      x += Math.sin(a) * 2.4;
+      y += (1 - Math.cos(a)) * 1.6;
       rz = -a;
       break;
     }
     case 'rollSlide': {
-      // Gulingan diikuti pergeseran lateral menyilang posisi kiri <-> kanan
       const shift = Math.sin(p * Math.PI * 2);
-      x = arrow[idx][0] * (1 - 0.55 * Math.abs(shift)) + shift * (idx % 2 === 0 ? -3.2 : 3.2);
-      rz = -shift * 1.2;
+      x = arrow[idx][0] + shift * (idx % 2 === 0 ? -6.5 : 6.5);
+      y += Math.abs(shift) * (idx % 2 === 0 ? 1.8 : -1.8);
+      rz = -shift * 1.15;
       break;
     }
     case 'soloSpin': {
-      // Jupiter 5 melakukan Solo Spin menukik berputar spiral tajam sementara lainnya mengorbit!
+      // Jupiter 5 melakukan Solo Spin menukik berputar di depan-tengah, yang lain mengorbit lebar!
       if (idx === 3) {
-        x = 0.2;
-        y = 2.6 - p * 4.4;
-        z = 2.2;
-        rx = 0.92; // hidung menukik tajam
-        ry = p * Math.PI * 8; // berputar spin cepat!
-        rz = 0.55;
+        x = 0.0;
+        y = 5.5 - p * 9.5;
+        z = 8.5;
+        rx = 0.92;
+        ry = p * Math.PI * 8;
+        rz = 0.5;
       } else {
         const orbit: [number, number, number][] = [
-          [4.8, 0.4, -3.5],
-          [-4.8, 0.4, -3.5],
-          [0, 0.2, -6.8],
-          [0, 0, 0],
-          [-8.2, 0.8, -5.8],
+          [12.0, 1.0, -9.5],
+          [-12.0, 1.0, -9.5],
+          [0.0, 0.6, -19.5],
+          [0.0, 0.0, 0.0],
+          [-21.0, 1.8, -16.5],
         ];
         [x, y, z] = orbit[idx];
-        rz = -0.35;
+        rz = -0.32;
       }
       break;
     }
     case 'fiveCards': {
-      // 5 Pesawat membentuk kipas kartu lebar (Five Cards) + 1 solo di bawah
+      // 5 Pesawat kipas kartu lebar + 1 solo di bawah belakang
       const cards: [number, number, number][] = [
-        [3.4, 0.2, -1.6],
-        [-3.4, 0.2, -1.6],
-        [6.8, 0.55, -3.4],
-        [-6.8, 0.55, -3.4],
-        [0, -1.35, -5.5],
+        [9.5, 0.6, -5.0],
+        [-9.5, 0.6, -5.0],
+        [19.0, 1.6, -10.5],
+        [-19.0, 1.6, -10.5],
+        [0.0, -3.2, -16.5],
       ];
       [x, y, z] = cards[idx];
-      y += sWave * 1.3;
-      rx = -fullWave * 0.38;
+      y += sWave * 2.2;
+      rx = -fullWave * 0.36;
       break;
     }
     case 'leaderBenefit': {
-      // Jupiter 1 Leader maju menonjol di depan, J2–J6 membingkai simetris di belakang-samping
       const frame: [number, number, number][] = [
-        [4.5, 0.5, -4.5],
-        [-4.5, 0.5, -4.5],
-        [0, -1.0, -7.2],
-        [8.4, 1.2, -7.5],
-        [-8.4, 1.2, -7.5],
+        [11.0, 1.2, -12.0],
+        [-11.0, 1.2, -12.0],
+        [0.0, -2.2, -21.0],
+        [21.5, 2.8, -21.0],
+        [-21.5, 2.8, -21.0],
       ];
       [x, y, z] = frame[idx];
-      rz = (idx === 0 || idx === 3 ? -0.25 : idx === 1 || idx === 4 ? 0.25 : 0) * sWave;
+      rz = (idx === 0 || idx === 3 ? -0.24 : idx === 1 || idx === 4 ? 0.24 : 0) * sWave;
       break;
     }
     case 'crossOverBreak': {
-      // Pecah silang dramatis kiri <-> kanan dengan banking tajam!
+      // Pecah silang dramatis kiri <-> kanan dengan separasi vertikal agar tidak bertabrakan!
       const cross = Math.sin(p * Math.PI);
       const isRight = idx === 0 || idx === 3;
       const isLeft = idx === 1 || idx === 4;
       if (isRight) {
-        x = THREE.MathUtils.lerp(arrow[idx][0], -arrow[idx][0] * 1.25, cross);
-        y += cross * 0.9;
-        rz = 1.15 * cross;
-        ry = -0.35 * cross;
+        x = THREE.MathUtils.lerp(arrow[idx][0], -arrow[idx][0] * 1.15, cross);
+        y += cross * 3.2;
+        rz = 1.1 * cross;
+        ry = -0.32 * cross;
       } else if (isLeft) {
-        x = THREE.MathUtils.lerp(arrow[idx][0], -arrow[idx][0] * 1.25, cross);
-        y -= cross * 0.4;
-        rz = -1.15 * cross;
-        ry = 0.35 * cross;
+        x = THREE.MathUtils.lerp(arrow[idx][0], -arrow[idx][0] * 1.15, cross);
+        y -= cross * 2.4;
+        rz = -1.1 * cross;
+        ry = 0.32 * cross;
       } else {
-        y += cross * 1.4;
+        y += cross * 4.5;
       }
       break;
     }
     case 'bombers': {
-      // Formasi Bombers melebar berjajar gagah dengan 6 garis asap sejajar
+      // Formasi Bombers berjajar lebar gagah (jarak sayap bersih 11 unit!)
       const bombPos: [number, number, number][] = [
-        [4.6, 0.0, -1.4],
-        [-4.6, 0.0, -1.4],
-        [9.2, 0.1, -2.8],
-        [-9.2, 0.1, -2.8],
-        [0, -0.35, -4.2],
+        [11.0, 0.0, -4.5],
+        [-11.0, 0.0, -4.5],
+        [22.0, 0.4, -9.0],
+        [-22.0, 0.4, -9.0],
+        [0.0, -1.0, -14.5],
       ];
       [x, y, z] = bombPos[idx];
       break;
@@ -346,7 +338,6 @@ function computeWingmanPose(
  * - Jupiter 1 (Leader) = pesawat utama di AircraftModel
  * - Jupiter 2, 3, 4    = Main Body (3 wingman)
  * - Jupiter 5, 6       = Synchro Pair (2 pesawat atraksi spesial)
- * Dilengkapi asap aerobatik putih di tiap pesawat + Hati Asap 3D saat Heart Loop!
  */
 export function JupiterFormationLayer({ sourceGroup }: Props) {
   const selectedId = useHangarStore((s) => s.selectedId);
@@ -360,26 +351,24 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
 
   const isActive = selectedId === 'kt1b' && flightMode === 'maneuver';
 
-  // Clone 5 pesawat wingman (berbagi geometri & material GPU -> super ringan 60 FPS!)
   const wingmen = useMemo(() => {
     if (selectedId !== 'kt1b') return [];
     return [2, 3, 4, 5, 6].map((num) => {
       const clone = sourceGroup.clone(true);
-      // Sembunyikan roda pendarat di udara
       const gear = clone.getObjectByName('landing-gear');
       if (gear) gear.visible = false;
       return { num, obj: clone, role: num <= 4 ? 'MAIN BODY' : 'SYNCHRO' };
     });
   }, [sourceGroup, selectedId]);
 
-  // Geometri titik-titik Hati Asap Putih 3D untuk manuver Heart Loop / Hearts
+  // Hati Asap Putih Raksasa 3D (skala lega agar selaras dengan lintasan Synchro J5 & J6!)
   const heartPoints = useMemo(() => {
     const pts: [number, number, number][] = [];
-    for (let i = 0; i < 36; i++) {
-      const a = (i / 36) * Math.PI * 2;
-      const hx = (16 * Math.pow(Math.sin(a), 3)) * 0.42;
-      const hy = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * 0.28 + 2.2;
-      pts.push([hx, hy, -2.0]);
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      const hx = (16 * Math.pow(Math.sin(a), 3)) * 1.05;
+      const hy = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) * 0.65 + 5.0;
+      pts.push([hx, hy, -5.0]);
     }
     return pts;
   }, []);
@@ -393,7 +382,7 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     const t = state.clock.elapsedTime;
     timer.current += dt;
 
-    const cycleLen = 7.0;
+    const cycleLen = 7.5;
     const activeId: Exclude<JupiterManeuverId, 'auto'> =
       jupiterManeuver === 'auto'
         ? JUPITER_AUTO_ORDER[Math.floor(timer.current / cycleLen) % JUPITER_AUTO_ORDER.length]
@@ -406,18 +395,18 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
     wingRefs.current.forEach((grp, idx) => {
       if (!grp) return;
       const pose = computeWingmanPose(activeId, idx, p, t);
-      grp.position.x = THREE.MathUtils.lerp(grp.position.x, pose.x, Math.min(1, dt * 6));
-      grp.position.y = THREE.MathUtils.lerp(grp.position.y, pose.y, Math.min(1, dt * 6));
-      grp.position.z = THREE.MathUtils.lerp(grp.position.z, pose.z, Math.min(1, dt * 6));
-      grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, pose.rx, Math.min(1, dt * 6));
-      grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, pose.ry, Math.min(1, dt * 6));
-      grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, pose.rz, Math.min(1, dt * 6));
+      grp.position.x = THREE.MathUtils.lerp(grp.position.x, pose.x, Math.min(1, dt * 5.2));
+      grp.position.y = THREE.MathUtils.lerp(grp.position.y, pose.y, Math.min(1, dt * 5.2));
+      grp.position.z = THREE.MathUtils.lerp(grp.position.z, pose.z, Math.min(1, dt * 5.2));
+      grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, pose.rx, Math.min(1, dt * 5.2));
+      grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, pose.ry, Math.min(1, dt * 5.2));
+      grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, pose.rz, Math.min(1, dt * 5.2));
     });
 
     if (heartSmokeRef.current) {
       heartSmokeRef.current.visible = activeId === 'heart';
       if (activeId === 'heart') {
-        const s = 0.85 + Math.sin(t * 2) * 0.04;
+        const s = 0.92 + Math.sin(t * 1.8) * 0.03;
         heartSmokeRef.current.scale.setScalar(s);
       }
     }
@@ -427,11 +416,16 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
 
   return (
     <group name="jupiter-6ship-formation">
-      {/* Jejak Asap Putih Aerobatik untuk Jupiter 1 (Leader) */}
-      <mesh position={[0, 1.35, -7.8]} rotation={[Math.PI / 2, 0, 0]}>
-        <coneGeometry args={[0.72, 11.5, 12, 1, true]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.38} depthWrite={false} side={THREE.DoubleSide} />
+      {/* Jejak Asap Putih Aerobatik ramping untuk Jupiter 1 (Leader) */}
+      <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.52, 16.5, 12, 1, true]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
+      <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+        <span className="whitespace-nowrap rounded border border-[#ffb703]/80 bg-[#0a1e3c]/85 px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider text-[#ffb703] uppercase shadow">
+          J1 • LEADER
+        </span>
+      </Html>
 
       {/* 5 Pesawat Wingman: Jupiter 2–4 (Main Body) & Jupiter 5–6 (Synchro) */}
       {wingmen.map((w, idx) => (
@@ -442,16 +436,15 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
           }}
         >
           <primitive object={w.obj} />
-          {/* Jejak asap putih panjang khas Jupiter Aerobatic Team */}
-          <mesh position={[0, 1.35, -7.8]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.68, 11.2, 12, 1, true]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.36} depthWrite={false} side={THREE.DoubleSide} />
+          <mesh position={[0, 1.35, -13.5]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.48, 16.0, 12, 1, true]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.32} depthWrite={false} side={THREE.DoubleSide} />
           </mesh>
-          <Html position={[0, 2.7, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
+          <Html position={[0, 3.6, 0]} center zIndexRange={[10, 0]} style={{ pointerEvents: 'none' }}>
             <span
-              className={`whitespace-nowrap rounded px-1.5 py-0.5 font-display text-[9px] font-bold tracking-wider uppercase shadow ${
+              className={`whitespace-nowrap rounded px-1.5 py-0.5 font-display text-[8px] font-bold tracking-wider uppercase shadow ${
                 w.num <= 4
-                  ? 'border border-[#ffb703]/70 bg-[#0a1e3c]/85 text-[#ffb703]'
+                  ? 'border border-[#ffb703]/70 bg-[#0a1e3c]/80 text-[#ffb703]'
                   : 'border border-rose-400/80 bg-rose-950/85 text-rose-200'
               }`}
             >
@@ -461,12 +454,12 @@ export function JupiterFormationLayer({ sourceGroup }: Props) {
         </group>
       ))}
 
-      {/* Formasi Hati Asap Putih 3D (Heart Loop / Hearts) */}
+      {/* Formasi Hati Asap Putih 3D Raksasa (Heart Loop / Hearts) */}
       <group ref={heartSmokeRef} visible={false}>
         {heartPoints.map((pt, i) => (
           <mesh key={i} position={pt}>
-            <icosahedronGeometry args={[0.58, 1]} />
-            <meshBasicMaterial color="#ffffff" transparent opacity={0.55} depthWrite={false} />
+            <icosahedronGeometry args={[0.92, 1]} />
+            <meshBasicMaterial color="#ffffff" transparent opacity={0.52} depthWrite={false} />
           </mesh>
         ))}
       </group>

@@ -320,7 +320,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       autoRotate: false,
       activeHotspot: null,
       ...(activating && s.selectedId === 'kt1b'
-        ? { camRequest: { pos: [16.5, 9.2, 22.5] as Vec3, target: [0, 3.2, -2.0] as Vec3, nonce: nonce++ } }
+        ? { camRequest: { pos: [26.0, 18.0, 44.0] as Vec3, target: [0, 3.5, -8.5] as Vec3, nonce: nonce++ } }
         : {}),
     });
   },
