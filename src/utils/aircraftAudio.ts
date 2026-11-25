@@ -1153,6 +1153,10 @@ class AircraftAudioEngine {
       throttle = flightMode === 'mission' ? 0.84 : 0.74 + Math.sin(phaseTime * 1.3) * 0.04;
       speedMod = flightMode === 'mission' ? 0.08 : 0.02;
     } else if (flightMode === 'maneuver' || flightMode === 'engineSim') {
+      // Pada mode Manuver untuk pesawat angkut, latih, & helikopter: pastikan tidak ada suara pilot/ATC tersisa!
+      if (!isFighter && !isVvip && (this.activeAtcSrc || this.activeAtcCarrier)) {
+        this.stopAtcPlayback();
+      }
       const cycle = phaseTime % 20;
       if (cycle < 5) {
         // Barrel / Aileron Roll -> high energy!

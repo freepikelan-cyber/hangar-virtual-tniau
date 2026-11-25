@@ -468,6 +468,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       return;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
+    aircraftAudio.stopVoiceRadio();
     const activating = s.flightMode !== 'maneuver';
     if (activating) {
       const u = getUnit(s.selectedId);
