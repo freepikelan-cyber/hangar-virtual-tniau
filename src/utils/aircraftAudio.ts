@@ -422,7 +422,8 @@ class AircraftAudioEngine {
       this.stopAtcPlayback();
 
       const now = ctx.currentTime;
-      const rate = key === 'vvip-escort' ? 1.02 : 1.07; // Bahasa Indonesia gagah & jelas untuk pengawalan VVIP!
+      const isVvipVoice = key === 'vvip-escort';
+      const rate = isVvipVoice ? 0.98 : 1.07; // Tempo wibawa & natural untuk salam pilot pengawal VVIP!
       const dur = buffer.duration / rate;
 
       // 1. PTT Squelch "KRRSSHH" pembuka & penutup saluran radio
@@ -436,19 +437,19 @@ class AircraftAudioEngine {
 
       const hp = ctx.createBiquadFilter();
       hp.type = 'highpass';
-      hp.frequency.value = 520;
-      hp.Q.value = 1.1;
+      hp.frequency.value = isVvipVoice ? 340 : 520;
+      hp.Q.value = isVvipVoice ? 0.8 : 1.1;
 
       const lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.value = 2300;
-      lp.Q.value = 1.25;
+      lp.frequency.value = isVvipVoice ? 3200 : 2300;
+      lp.Q.value = isVvipVoice ? 0.9 : 1.25;
 
       const peak = ctx.createBiquadFilter();
       peak.type = 'peaking';
       peak.frequency.value = 1550;
-      peak.Q.value = 1.6;
-      peak.gain.value = 7.0;
+      peak.Q.value = 1.4;
+      peak.gain.value = isVvipVoice ? 3.2 : 7.0;
 
       const shaper = ctx.createWaveShaper();
       shaper.curve = this.getRadioDistortionCurve();
@@ -456,21 +457,22 @@ class AircraftAudioEngine {
 
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -24;
-      comp.ratio.value = 8;
-      comp.attack.value = 0.003;
-      comp.release.value = 0.1;
+      comp.ratio.value = isVvipVoice ? 4 : 8;
+      comp.attack.value = 0.004;
+      comp.release.value = 0.12;
 
       const outGain = ctx.createGain();
-      outGain.gain.value = 0.88;
+      outGain.gain.value = isVvipVoice ? 1.05 : 0.88;
 
       src.connect(hp);
 
-      // 3. Latar "ngeresek" statis & crackle VHF masuk langsung ke rantai radio agar menyatu organik dengan suara ATC!
+      // 3. Latar "ngeresek" statis & crackle VHF (lebih halus untuk VVIP agar ucapan Bahasa Indonesia sangat jernih!)
       const carrier = this.createRadioCrackleSource(dur + 0.16);
       if (carrier) {
         const cGain = ctx.createGain();
-        cGain.gain.setValueAtTime(0.14, now + 0.04);
-        cGain.gain.setValueAtTime(0.14, now + dur + 0.06);
+        const noiseLvl = isVvipVoice ? 0.045 : 0.14;
+        cGain.gain.setValueAtTime(noiseLvl, now + 0.04);
+        cGain.gain.setValueAtTime(noiseLvl, now + dur + 0.06);
         cGain.gain.exponentialRampToValueAtTime(0.001, now + dur + 0.16);
         carrier.connect(cGain);
         cGain.connect(hp);
@@ -481,8 +483,13 @@ class AircraftAudioEngine {
 
       hp.connect(lp);
       lp.connect(peak);
-      peak.connect(shaper);
-      shaper.connect(comp);
+      if (isVvipVoice) {
+        // Tanpa saturasi keras agar suara manusia terdengar natural, hangat & berwibawa!
+        peak.connect(comp);
+      } else {
+        peak.connect(shaper);
+        shaper.connect(comp);
+      }
       comp.connect(outGain);
       outGain.connect(ctx.destination);
 
@@ -517,7 +524,7 @@ class AircraftAudioEngine {
         try {
           window.speechSynthesis.cancel();
           const u = new SpeechSynthesisUtterance(
-            'Selamat pagi Bapak Presiden, perjalanan Anda kami kawal. Salam Swa Bhuwana Paksa.',
+            'Selamat pagi, Yang kami hormati Bapak Presiden, saat ini perjalanan Anda kami kawal. Dari kokpit pesawat Letkol Penerbang Muhammad Jaki Dirgantara mengucapkan, Salam Suwa Buwana Paksa.',
           );
           u.lang = 'id-ID';
           u.rate = 0.98;
