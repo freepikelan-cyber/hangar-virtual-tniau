@@ -161,7 +161,7 @@ class AircraftAudioEngine {
   private transportCruisePlayed = false;
   private vvipWelcomePlayed = false;
   private atcBuffers = new Map<string, AudioBuffer>();
-  private atcLoading = new Set<string>();
+  private atcPromises = new Map<string, Promise<AudioBuffer | null>>();
   private activeAtcSrc: AudioBufferSourceNode | null = null;
   private activeAtcCarrier: AudioBufferSourceNode | null = null;
   private radioCurve: Float32Array | null = null;
@@ -355,46 +355,52 @@ class AircraftAudioEngine {
     if (!this.ctx) return null;
     const cached = this.atcBuffers.get(key);
     if (cached) return cached;
-    if (this.atcLoading.has(key)) return null;
-    this.atcLoading.add(key);
-    try {
-      const url =
-        key === 'vvip-escort'
-          ? '/audio/vvip-escort.mp3'
-          : key === 'fighter-takeoff'
-            ? '/audio/fighter-voice-takeoff.wav'
-            : key === 'fighter-maneuver'
-              ? '/audio/fighter-voice-maneuver.wav'
-              : key === 'fighter-landing'
-                ? '/audio/fighter-voice-landing.wav'
-                : key === 'transport-takeoff'
-                  ? '/audio/transport-voice-takeoff.wav'
-                  : key === 'transport-cruise'
-                    ? '/audio/transport-voice-cruise.wav'
-                    : key === 'transport-landing'
-                      ? '/audio/transport-voice-landing.wav'
-                      : key === 'transport-airdrop'
-                        ? '/audio/transport-voice-airdrop.wav'
-                        : key === 'vvip-takeoff'
-                          ? '/audio/vvip-voice-takeoff.wav'
-                          : key === 'vvip-welcome'
-                            ? '/audio/vvip-voice-welcome.wav'
-                            : key === 'vvip-reply'
-                              ? '/audio/vvip-voice-reply.wav'
-                              : key === 'vvip-landing'
-                                ? '/audio/vvip-voice-landing.wav'
-                                : `/audio/atc-${key}.mp3`;
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      const arr = await res.arrayBuffer();
-      const decoded = await this.ctx.decodeAudioData(arr);
-      this.atcBuffers.set(key, decoded);
-      return decoded;
-    } catch {
-      return null;
-    } finally {
-      this.atcLoading.delete(key);
-    }
+    const inflight = this.atcPromises.get(key);
+    if (inflight) return inflight;
+
+    const promise = (async (): Promise<AudioBuffer | null> => {
+      try {
+        const url =
+          key === 'vvip-escort'
+            ? '/audio/vvip-escort.mp3'
+            : key === 'fighter-takeoff'
+              ? '/audio/fighter-voice-takeoff.wav'
+              : key === 'fighter-maneuver'
+                ? '/audio/fighter-voice-maneuver.wav'
+                : key === 'fighter-landing'
+                  ? '/audio/fighter-voice-landing.wav'
+                  : key === 'transport-takeoff'
+                    ? '/audio/transport-voice-takeoff.wav'
+                    : key === 'transport-cruise'
+                      ? '/audio/transport-voice-cruise.wav'
+                      : key === 'transport-landing'
+                        ? '/audio/transport-voice-landing.wav'
+                        : key === 'transport-airdrop'
+                          ? '/audio/transport-voice-airdrop.wav'
+                          : key === 'vvip-takeoff'
+                            ? '/audio/vvip-voice-takeoff.wav'
+                            : key === 'vvip-welcome'
+                              ? '/audio/vvip-voice-welcome.wav'
+                              : key === 'vvip-reply'
+                                ? '/audio/vvip-voice-reply.wav'
+                                : key === 'vvip-landing'
+                                  ? '/audio/vvip-voice-landing.wav'
+                                  : `/audio/atc-${key}.mp3`;
+        const res = await fetch(url);
+        if (!res.ok || !this.ctx) return null;
+        const arr = await res.arrayBuffer();
+        const decoded = await this.ctx.decodeAudioData(arr);
+        this.atcBuffers.set(key, decoded);
+        return decoded;
+      } catch {
+        return null;
+      } finally {
+        this.atcPromises.delete(key);
+      }
+    })();
+
+    this.atcPromises.set(key, promise);
+    return promise;
   }
 
   private getRadioDistortionCurve(): Float32Array {
