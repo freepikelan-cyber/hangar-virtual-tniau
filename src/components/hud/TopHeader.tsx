@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Moon, Music, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
+import { Home, Moon, Music, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit, type TimeOfDay } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -48,7 +48,22 @@ export function TopHeader() {
     <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
       {/* Header Kiri Atas: Tombol Pengaturan + Logo 3D TNI AU + Judul Ringkas */}
       <div ref={menuRef} className="relative pointer-events-auto w-full md:w-auto md:max-w-[54vw]">
-        <div className="hud-panel flex items-center gap-2 sm:gap-2.5 rounded-xl px-2.5 sm:px-3 py-1.5">
+        <div className="hud-panel flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-1.5">
+          {/* Tombol Kembali ke Halaman Utama (Beranda) */}
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsOpen(false);
+              openWelcome();
+            }}
+            aria-label="Kembali ke Halaman Utama"
+            title="Kembali ke Halaman Utama (Beranda)"
+            className="flex h-9 sm:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#ffb703]/45 bg-[#ffb703]/15 px-2.5 font-display text-xs font-bold tracking-wider text-[#ffb703] uppercase hover:bg-[#ffb703]/25 hover:border-[#ffb703] transition-all cursor-pointer active:scale-95"
+          >
+            <Home className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Beranda</span>
+          </button>
+
           {/* Tombol Pengaturan (Kiri Atas) */}
           <button
             type="button"

@@ -213,7 +213,19 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   selectedLivery: {},
 
   enterHangar: () => set({ showWelcome: false }),
-  openWelcome: () => set({ showWelcome: true, showInfographic: false }),
+  openWelcome: () => {
+    aircraftAudio.stop();
+    set({
+      showWelcome: true,
+      showInfographic: false,
+      flightMode: 'parked',
+      flightLabel: null,
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      showcaseMode: false,
+    });
+  },
   toggleInfographic: () => set((s) => ({ showInfographic: !s.showInfographic })),
   closeInfographic: () => set({ showInfographic: false }),
   bumpGlbVersion: (unitId) =>

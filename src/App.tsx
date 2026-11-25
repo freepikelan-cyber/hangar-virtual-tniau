@@ -142,35 +142,33 @@ export function App() {
     return () => window.clearInterval(timer);
   }, [showcaseMode]);
 
-  if (showWelcome) {
-    return (
-      <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#061226]">
-        <WelcomeScreen />
-      </main>
-    );
-  }
-
   return (
-    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#07152c]">
-      {/* Kanvas 3D Interaktif */}
+    <main className="relative h-[100dvh] w-screen overflow-hidden bg-[#061226]">
+      {/* Kanvas 3D dipanaskan diam-diam di belakang WelcomeScreen solid agar saat klik "Buka Hanggar 3D" pesawat langsung muncul INSTAN (0ms)! */}
       <HangarScene />
 
-      {/* Lapisan HUD Militer */}
-      <TopHeader />
-      <FleetSidebar />
-      <InfoPanel />
-      <Suspense fallback={null}>
-        <AeroControlPanel />
-        <AarStatusPanel />
-        <FighterManeuverPanel />
-        <GSuitControlPanel />
-        <JupiterManeuverPanel />
-        <SafetyStoryPanel />
-        <InfographicModal />
-      </Suspense>
-      <FloatingQuizBanner />
-      <HotspotCard />
-      <BottomDock />
+      {showWelcome ? (
+        <WelcomeScreen />
+      ) : (
+        <>
+          {/* Lapisan HUD Militer */}
+          <TopHeader />
+          <FleetSidebar />
+          <InfoPanel />
+          <Suspense fallback={null}>
+            <AeroControlPanel />
+            <AarStatusPanel />
+            <FighterManeuverPanel />
+            <GSuitControlPanel />
+            <JupiterManeuverPanel />
+            <SafetyStoryPanel />
+            <InfographicModal />
+          </Suspense>
+          <FloatingQuizBanner />
+          <HotspotCard />
+          <BottomDock />
+        </>
+      )}
     </main>
   );
 }
