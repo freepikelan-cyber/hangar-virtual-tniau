@@ -87,6 +87,7 @@ interface HangarState {
   showPins: boolean;
   autoRotate: boolean;
   soundEnabled: boolean;
+  bgmEnabled: boolean;
   timeOfDay: TimeOfDay;
   showcaseMode: boolean;
   aeroMode: boolean;
@@ -124,7 +125,9 @@ interface HangarState {
   toggleLeft: () => void;
   toggleRight: () => void;
   setInfoTab: (t: InfoTab) => void;
-  toggle: (key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'aeroMode' | 'safetyMode' | 'oxygenMode') => void;
+  toggle: (
+    key: 'wireframe' | 'showPins' | 'autoRotate' | 'soundEnabled' | 'bgmEnabled' | 'aeroMode' | 'safetyMode' | 'oxygenMode',
+  ) => void;
   setFlapAngle: (deg: 0 | 15 | 35) => void;
   setTrimAngle: (deg: -5 | 0 | 8) => void;
   setAeroManeuver: (m: AeroManeuver) => void;
@@ -179,6 +182,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   showPins: false,
   autoRotate: false,
   soundEnabled: true,
+  bgmEnabled: true,
   timeOfDay: 'day',
   showcaseMode: false,
   aeroMode: false,

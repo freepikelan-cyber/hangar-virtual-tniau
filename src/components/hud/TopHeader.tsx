@@ -1,13 +1,17 @@
-import { Moon, Radio, Sun, Sunset, Tv, Volume2, VolumeX } from 'lucide-react';
+import { Moon, Music, Radio, Sun, Sunset, Tv, Volume2, VolumeX } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
+import { bgmPlayer } from '../../utils/bgmPlayer';
 import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function TopHeader() {
   const unit = useSelectedUnit();
   const openWelcome = useHangarStore((s) => s.openWelcome);
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
+  const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
   const timeOfDay = useHangarStore((s) => s.timeOfDay);
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
   const toggle = useHangarStore((s) => s.toggle);
@@ -78,7 +82,30 @@ export function TopHeader() {
           <Tv className="h-4 w-4" />
         </button>
 
-        {/* Ikon Sound ringkas (mobile & desktop) */}
+        {/* Tombol Nyalakan / Matikan Musik Latar Belakang */}
+        <button
+          type="button"
+          onClick={() => {
+            const next = !bgmEnabled;
+            toggle('bgmEnabled');
+            bgmPlayer.unlockAndSync(next && flightMode === 'parked' && !safetyMode);
+          }}
+          aria-label={bgmEnabled ? 'Matikan Musik Latar' : 'Nyalakan Musik Latar'}
+          title={
+            bgmEnabled
+              ? 'Musik Latar ON (Otomatis mati saat Simulasi Terbang — Klik untuk matikan)'
+              : 'Musik Latar OFF (Klik untuk nyalakan)'
+          }
+          className={`flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border transition-all cursor-pointer active:scale-95 ${
+            bgmEnabled
+              ? 'border-[#ffb703]/70 bg-[#ffb703]/20 text-[#ffb703] hover:bg-[#ffb703]/30'
+              : 'border-slate-600/70 bg-[#0c2448]/80 text-slate-400 hover:border-slate-400 hover:text-white'
+          }`}
+        >
+          <Music className={`h-4 w-4 ${bgmEnabled ? '' : 'opacity-50'}`} />
+        </button>
+
+        {/* Ikon Sound Efek Mesin & Radio (mobile & desktop) */}
         <button
           type="button"
           onClick={() => {

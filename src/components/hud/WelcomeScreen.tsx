@@ -1,11 +1,14 @@
-import { ArrowRight, Mail, Phone, Shield } from 'lucide-react';
+import { ArrowRight, Mail, Music, Phone, Shield } from 'lucide-react';
 import { FLEET } from '../../data/fleetData';
 import { useHangarStore } from '../../store/useHangarStore';
+import { bgmPlayer } from '../../utils/bgmPlayer';
 import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function WelcomeScreen() {
   const showWelcome = useHangarStore((s) => s.showWelcome);
+  const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
   const enterHangar = useHangarStore((s) => s.enterHangar);
+  const toggle = useHangarStore((s) => s.toggle);
 
   if (!showWelcome) return null;
 
@@ -67,15 +70,37 @@ export function WelcomeScreen() {
           </div>
         </div>
 
-        {/* Tombol Masuk Hanggar */}
-        <button
-          type="button"
-          onClick={enterHangar}
-          className="mt-6 flex min-h-[50px] w-full max-w-xs items-center justify-center gap-2.5 rounded-lg border border-[#ffb703] bg-[#ffb703] px-6 py-2.5 font-display text-base font-bold tracking-[0.16em] text-[#07152c] uppercase transition-colors duration-150 hover:bg-[#fcd34d] active:scale-[0.98] cursor-pointer"
-        >
-          <span>BUKA HANGGAR 3D</span>
-          <ArrowRight className="h-4 w-4" />
-        </button>
+        {/* Tombol Masuk Hanggar + Tombol Musik Latar */}
+        <div className="mt-6 flex w-full max-w-xs flex-col items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => {
+              if (bgmEnabled) bgmPlayer.unlockAndSync(true);
+              enterHangar();
+            }}
+            className="flex min-h-[50px] w-full items-center justify-center gap-2.5 rounded-lg border border-[#ffb703] bg-[#ffb703] px-6 py-2.5 font-display text-base font-bold tracking-[0.16em] text-[#07152c] uppercase transition-colors duration-150 hover:bg-[#fcd34d] active:scale-[0.98] cursor-pointer"
+          >
+            <span>BUKA HANGGAR 3D</span>
+            <ArrowRight className="h-4 w-4" />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              const next = !bgmEnabled;
+              toggle('bgmEnabled');
+              bgmPlayer.unlockAndSync(next);
+            }}
+            className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+              bgmEnabled
+                ? 'border-[#ffb703]/60 bg-[#ffb703]/15 text-[#ffb703] hover:bg-[#ffb703]/25'
+                : 'border-slate-600/70 bg-[#0b1f3f]/80 text-slate-400 hover:border-slate-400 hover:text-white'
+            }`}
+          >
+            <Music className="h-3.5 w-3.5" />
+            <span>{bgmEnabled ? 'Musik Latar: Nyala' : 'Musik Latar: Mati'}</span>
+          </button>
+        </div>
 
         {/* Kredit Pembuat & Kontak */}
         <div className="mt-6 w-full border-t border-[#4da6ff]/20 pt-3.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-slate-300">

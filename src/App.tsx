@@ -8,6 +8,7 @@ import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
 import { useHangarStore } from './store/useHangarStore';
+import { bgmPlayer } from './utils/bgmPlayer';
 
 // Lazy-load panel sekunder agar muat awal aplikasi instan & ringan
 const InfographicModal = lazy(() =>
@@ -115,6 +116,15 @@ const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16id', 'kt1b', 'c130j', 'b737vip'
 export function App() {
   const showWelcome = useHangarStore((s) => s.showWelcome);
   const showcaseMode = useHangarStore((s) => s.showcaseMode);
+  const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
+
+  // Musik latar belakang: aktif di halaman awal & eksplorasi hanggar, otomatis MATI total saat simulasi terbang/safety!
+  useEffect(() => {
+    const shouldPlayBgm = bgmEnabled && (showWelcome || (flightMode === 'parked' && !safetyMode));
+    bgmPlayer.sync(shouldPlayBgm);
+  }, [bgmEnabled, showWelcome, flightMode, safetyMode]);
 
   useEffect(() => {
     if (!showcaseMode) return;
