@@ -337,11 +337,11 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         const hangarX = -82.0;
         const taxiZ = -10.5;
 
-        // Semua 6 pesawat Take Off SAMA-SAMA secara mulus & rapi!
+        // Semua 6 pesawat Take Off SAMA-SAMA melaju kencang sampai ujung runway lalu Rotate & Climb!
         const rollStart = 37.0;
-        const rotStart = 40.7;
-        const climbStart = 42.3;
-        const airborneEnd = 47.0;
+        const rotStart = 43.8;
+        const climbStart = 46.0;
+        const airborneEnd = 50.0;
 
         const airSlot = ARROWHEAD_SLOTS[i];
 

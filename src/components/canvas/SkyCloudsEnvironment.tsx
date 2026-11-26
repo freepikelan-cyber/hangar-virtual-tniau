@@ -590,6 +590,7 @@ export function SkyCloudsEnvironment() {
 
     let targetWorldY = -0.02;
     let groundSpeed = 0;
+    let kinematicRollDist: number | null = null;
 
     if (safetyMode) {
       if (isEjectionSafety) {
@@ -622,38 +623,27 @@ export function SkyCloudsEnvironment() {
           targetWorldY = -26.5;
           groundSpeed = 46;
         }
-      } else if (selectedId === 'kt1b') {
-        // Khusus KT-1B (Jupiter Aerobatic Show): runway diam selama persiapan & check-in, lalu bergulir mulus saat semua 6 pesawat Take Off sama-sama!
-        if (pt < rollStart) {
-          targetWorldY = -0.02;
-          groundSpeed = 0;
-          scrollZ.current = 0;
-        } else if (pt < rotStart) {
-          const p = (pt - rollStart) / Math.max(0.5, rotStart - rollStart);
-          targetWorldY = -0.02;
-          groundSpeed = 52 * p * p;
-        } else if (pt < airborneStart) {
-          const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-          targetWorldY = THREE.MathUtils.lerp(-0.02, -18.0, p * p);
-          groundSpeed = 52;
-        } else {
-          targetWorldY = -28.0;
-          groundSpeed = 48;
-        }
       } else if (pt < rollStart) {
-        // Taxi keluar dari Hanggar -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai!
+        // Taxi keluar dari Hanggar jauh -> Line-up di Runway -> Tunggu komunikasi radio Tower selesai (runway diam di tempat!)
         targetWorldY = -0.02;
         groundSpeed = 0;
         scrollZ.current = 0;
+        kinematicRollDist = 0;
       } else if (pt < rotStart) {
-        const p = (pt - rollStart) / Math.max(0.5, rotStart - rollStart);
+        // AKSELERASI KINEMATIK PENUH DI RUNWAY (0% tersendat, berlaku untuk SEMUA pesawat: Tempur, Angkut, VVIP, Latih, & JAT!):
+        // Pesawat melaju semakin kencang sepanjang 285m (265m untuk KT-1B) hingga tepat mencapai ujung runway saat rotStart!
+        const rollDur = Math.max(0.5, rotStart - rollStart);
+        const p = Math.min(1, (pt - rollStart) / rollDur);
+        const totalRollDist = selectedId === 'kt1b' ? 265 : 285;
+        kinematicRollDist = totalRollDist * p * p;
         targetWorldY = -0.02;
-        groundSpeed = 52 * p * p;
+        groundSpeed = (2 * totalRollDist / rollDur) * p;
+        currentSpeed.current = groundSpeed;
       } else if (pt < airborneStart) {
         const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-        // Menanjak bertahap mulus hingga -18m di akhir Take Off, lalu lanjut halus ke -28m saat Airborne (tanpa hentakan/berhenti!)
+        // Setelah mencapai ujung runway (rotStart), baru menanjak mulus ke langit sambil melaju penuh!
         targetWorldY = THREE.MathUtils.lerp(-0.02, -18.0, p * p);
-        groundSpeed = 52;
+        groundSpeed = 54;
       } else {
         targetWorldY = -28.0;
         groundSpeed = 48;
@@ -782,11 +772,19 @@ export function SkyCloudsEnvironment() {
         // Bandara HANYA tampil saat Take Off & Landing! Setelah Take Off selesai, hanya 3 zona yang terus berputar:
         // Pegunungan (Gunung Sumbing) -> Laut (ocean-loop.glb & Karang) -> Perkotaan 3D -> Pegunungan!
         const cz = chunkZ.current;
-        const step = smoothSpeed * dt;
-        cz.runway -= step;
-        cz.mountain -= step;
-        cz.ocean -= step;
-        cz.city -= step;
+        if (kinematicRollDist !== null) {
+          // Posisi kinematik presisi saat diam & akselerasi di runway (0% tersendat, pas sampai ujung runway saat Rotate!)
+          cz.runway = RUNWAY_OFFSET - kinematicRollDist;
+          cz.mountain = RUNWAY_OFFSET + CHUNK_LEN - kinematicRollDist;
+          cz.ocean = RUNWAY_OFFSET + CHUNK_LEN * 2 - kinematicRollDist;
+          cz.city = RUNWAY_OFFSET + CHUNK_LEN * 3 - kinematicRollDist;
+        } else {
+          const step = smoothSpeed * dt;
+          cz.runway -= step;
+          cz.mountain -= step;
+          cz.ocean -= step;
+          cz.city -= step;
+        }
 
         const maxScenicZ = () => Math.max(cz.mountain, cz.ocean, cz.city);
         if (cz.mountain < -CHUNK_LEN * 0.95) cz.mountain = maxScenicZ() + CHUNK_LEN;

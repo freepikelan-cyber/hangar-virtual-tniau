@@ -54,37 +54,34 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
   }
   if (unitId === 'kt1b') {
     // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
-    // 1. Keluar hanggar satu per satu berjeda 5 detik (J1=0s, J2=5s, J3=10s, J4=15s, J5=20s, J6=25s -> selesai 28.4s).
-    //    jupiter-takeoff-prep.wav (10.5..28.64s) diputar selama taxi & holding point.
+    // 1. Keluar hanggar jauh satu per satu berjeda 5 detik (J1=0s..J6=25s -> selesai 33s).
     // 2. jupiter-checkin.wav (29.2..36.61s): Semua 6 pesawat sudah rapi di posisi start ("Jupiters, check in! 2..6").
-    // 3. Take Off SAMA-SAMA (37.0..47.0s): jupiter-airborne.wav (Brakes release 37.0 -> Rotate 40.7 -> Gears up 42.3 -> Airborne 47.0)!
-    return { voiceStart: 10.5, rollStart: 37.0, rotStart: 40.7, climbStart: 42.3, airborneStart: 47.0 };
+    // 3. Take Off SAMA-SAMA melaju kencang sepanjang runway penuh (37.0..43.8s) -> Rotate di ujung runway (43.8..46.0s) -> Climb & Airborne (50.0s)!
+    return { voiceStart: 10.5, rollStart: 37.0, rotStart: 43.8, climbStart: 46.0, airborneStart: 50.0 };
   }
   if (isBasicTrainer) {
     // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
     // Part 1: trainer-voice-takeoff.wav (6.0..18.35s) -> Part 2: trainer-voice-roll.wav (19.0..42.99s)
-    // "Full power" di ~25.8s (rollStart) -> "40..50..55.. Rotate!" di 38.8s (rotStart) -> "Oke selamat terbang" 40.8..43.4s (airborne)!
+    // "Full power" di ~25.8s (rollStart) -> melaju penuh di runway -> "Rotate!" di 38.8s (rotStart) -> "Oke selamat terbang" 40.8..43.4s (airborne)!
     return { voiceStart: 6.0, rollStart: 25.8, rotStart: 38.8, climbStart: 40.8, airborneStart: 43.4 };
   }
   if (unitId === 'rafale') {
-    // Khusus Dassault Rafale: fighter-voice-takeoff.wav (6.0..24.08s) + audio khusus rafale-takeoff.mp3 (~17s)
-    // Mulai spool-up di 20.4s (4s sebelum roll) -> 24.4..30.2s akselerasi afterburner -> 30.2..33.2s rotate & liftoff -> 33.2..37.2s climb!
-    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 30.2, climbStart: 33.2, airborneStart: 37.2 };
+    // Khusus Dassault Rafale: melaju kencang full afterburner sepanjang runway penuh (24.4..31.4s = 7.0s) -> Rotate di ujung runway -> Climb!
+    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 31.4, climbStart: 34.0, airborneStart: 37.8 };
   }
   if (isFighter) {
-    // fighter-voice-takeoff.wav (18.08s): 6.0s..24.08s suara selesai penuh -> 24.4s baru mulai Take Off roll!
-    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 28.0, climbStart: 29.8, airborneStart: 32.2 };
+    // Pesawat Tempur: fighter-voice-takeoff.wav selesai di 24.08s -> melaju kencang 7.0s penuh sepanjang runway (24.4..31.4s) -> baru Rotate di ujung runway!
+    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 31.4, climbStart: 33.8, airborneStart: 37.0 };
   }
   if (isCargoTransport) {
-    // transport-voice-takeoff.wav (20.56s): 6.0s..26.56s suara selesai penuh + jeda 1.4s -> 28.0s baru mulai Take Off roll!
-    return { voiceStart: 6.0, rollStart: 28.0, rotStart: 31.8, climbStart: 33.6, airborneStart: 36.0 };
+    // Pesawat Angkut (C-130J, A400M, CN295, dll): suara selesai di 26.56s -> akselerasi penuh 8.5s sepanjang seluruh runway (28.0..36.5s) -> baru Rotate di ujung runway!
+    return { voiceStart: 6.0, rollStart: 28.0, rotStart: 36.5, climbStart: 39.2, airborneStart: 42.6 };
   }
   if (isVvip) {
-    // 0.2..39.8s: Pengumuman keberangkatan Kapten Pnb Herlani di apron sebelum Take Off!
-    // 40.6..51.44s: vvip-voice-takeoff.wav (10.84s) selesai penuh -> 51.8s baru mulai Take Off roll!
-    return { voiceStart: 40.6, rollStart: 51.8, rotStart: 55.8, climbStart: 57.6, airborneStart: 60.0 };
+    // Pesawat VVIP (B737-400, Falcon 8X): akselerasi penuh 8.5s sepanjang seluruh runway (51.8..60.3s) -> baru Rotate di ujung runway!
+    return { voiceStart: 40.6, rollStart: 51.8, rotStart: 60.3, climbStart: 63.0, airborneStart: 66.4 };
   }
-  return { voiceStart: 6.0, rollStart: 12.6, rotStart: 15.8, climbStart: 17.5, airborneStart: 19.8 };
+  return { voiceStart: 6.0, rollStart: 12.6, rotStart: 19.8, climbStart: 22.0, airborneStart: 25.2 };
 }
 
 /**
