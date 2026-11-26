@@ -245,3 +245,49 @@ export function OceanRocksGlbModels() {
     </group>
   );
 }
+
+/**
+ * Kubah Langit 360° Siang Hari (.GLB: skybox_skydays_3.glb)
+ * Dikonversi ke material unlit cerah & bebas fog agar langit biru + awan tampil super tajam 360°!
+ */
+export function SkyboxDayGlb() {
+  const skyGltf = useGLTF('/models/env/skybox-day.glb');
+
+  const dome = useMemo(() => {
+    const clone = skyGltf.scene.clone(true);
+    clone.position.set(0, 0, 0);
+    clone.updateMatrixWorld(true);
+
+    const box = new THREE.Box3().setFromObject(clone);
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const maxDim = Math.max(size.x, size.y, size.z, 0.001);
+    const scale = 470 / maxDim; // Diameter ~470 (radius ~235, melingkupi seluruh dunia 3D!)
+    clone.scale.multiplyScalar(scale);
+    clone.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
+    clone.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        const orig = mesh.material as THREE.MeshStandardMaterial | undefined;
+        const map = orig?.map ?? orig?.emissiveMap ?? null;
+        if (map) {
+          map.colorSpace = THREE.SRGBColorSpace;
+        }
+        mesh.material = new THREE.MeshBasicMaterial({
+          map,
+          color: '#ffffff',
+          side: THREE.DoubleSide,
+          fog: false,
+          depthWrite: false,
+        });
+        mesh.frustumCulled = false;
+      }
+    });
+    return clone;
+  }, [skyGltf.scene]);
+
+  return <primitive object={dome} name="skybox-skydays-3-glb" />;
+}

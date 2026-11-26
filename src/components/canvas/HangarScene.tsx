@@ -113,12 +113,12 @@ function StudioLighting() {
       <directionalLight position={[-14, 10, -10]} intensity={timeOfDay === 'night' ? 0.55 : 0.85} color={rimColor} />
       <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={timeOfDay === 'night' ? 0.8 : 1.2} color="#e6f5ff" />
 
-      {/* Langit 360° HDRI Fotorealistis (Poly Haven CC0) saat Simulasi Udara & Bandara, atau Studio IBL saat di Hanggar */}
+      {/* Pencahayaan IBL 360° HDRI (Siang memakai skybox_skydays_3.glb sebagai latar + HDRI untuk pantulan logam; Senja memakai HDRI penuh!) */}
       {useOutdoorHdri ? (
         <Suspense fallback={null}>
           <Environment
             files={timeOfDay === 'sunset' ? '/textures/hdri/sky-sunset.hdr' : '/textures/hdri/sky-day.hdr'}
-            background
+            background={timeOfDay === 'sunset'}
             environmentIntensity={timeOfDay === 'sunset' ? 0.92 : 1.05}
           />
         </Suspense>

@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AirbaseGlbModels, CityGlbModels, MountSumbingGlbModels, OceanRocksGlbModels } from './AirbaseGlbModels';
+import { AirbaseGlbModels, CityGlbModels, MountSumbingGlbModels, OceanRocksGlbModels, SkyboxDayGlb } from './AirbaseGlbModels';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
@@ -815,7 +815,12 @@ export function SkyCloudsEnvironment() {
 
   return (
     <group name="sky-clouds-env">
-      {/* 1. Kubah Langit 3D (khusus Mode Malam; Siang & Senja memakai HDRI 360° Fotorealistis Poly Haven!) */}
+      {/* 1. Kubah Langit 360° (Siang: skybox_skydays_3.glb | Senja: Poly Haven HDRI | Malam: Kubah Bintang) */}
+      {timeOfDay === 'day' && isOutdoorSim && (
+        <Suspense fallback={null}>
+          <SkyboxDayGlb />
+        </Suspense>
+      )}
       <mesh visible={timeOfDay === 'night'}>
         <sphereGeometry args={[260, 32, 24]} />
         <meshBasicMaterial
