@@ -699,14 +699,6 @@ export function AircraftModel() {
         setFlightLabel(`MANUVER TEMPUR // ${fSpec.name.toUpperCase()}`);
 
         switch (activeF) {
-          case 'loop': {
-            // 360° Vertical Loop sejati: menanjak vertikal -> terbalik di puncak -> menukik -> rata kembali
-            const a = p * Math.PI * 2;
-            directPitch = -a;
-            targetY = baseH + (1 - Math.cos(a)) * 2.8;
-            targetZ = Math.sin(a) * 2.8;
-            break;
-          }
           case 'barrelRoll': {
             // Helical Barrel Roll: gulingan 360° kiri sambil menyusuri lintasan melingkar spiral di udara
             const a = e * Math.PI * 2;
@@ -721,28 +713,6 @@ export function AircraftModel() {
             directRoll = -e * Math.PI * 2;
             targetY = baseH + 0.2;
             targetPitch = -0.05;
-            break;
-          }
-          case 'splitS': {
-            // Split-S sejati: Guling 180° terbalik di ketinggian -> Tarik setengah loop menukik tajam -> Recovery rata di bawah!
-            if (p < 0.26) {
-              const q = easeInOut(p / 0.26);
-              directRoll = q * Math.PI;
-              targetY = baseH + 2.8;
-              targetPitch = 0;
-            } else if (p < 0.78) {
-              const q = easeInOut((p - 0.26) / 0.52);
-              const a = q * Math.PI;
-              directRoll = Math.PI;
-              directPitch = a; // Dari terbalik (0) -> menukik vertikal (+PI/2) -> kembali tegak (+PI)
-              targetY = baseH + 2.8 - (1 - Math.cos(a)) * 1.9;
-              targetZ = Math.sin(a) * 2.1;
-            } else {
-              const q = easeInOut((p - 0.78) / 0.22);
-              directRoll = Math.PI * (1 - q);
-              directPitch = Math.PI * (1 - q);
-              targetY = THREE.MathUtils.lerp(baseH - 1.0, baseH + 2.8, q);
-            }
             break;
           }
           case 'immelmann': {
@@ -775,19 +745,6 @@ export function AircraftModel() {
             targetRoll = -0.82 * s; // Bank kiri
             targetPitch = -0.36 * s; // Hidung menanjak
             targetYawOffset = 0.62 * s; // Hidung mengarah masuk ke belokan kiri (+X)
-            break;
-          }
-          case 'cubanEight': {
-            // Cuban Eight: Lintasan angka 8 vertikal di bidang Y-Z dengan setengah guling saat melintas turun!
-            const a = p * Math.PI * 2;
-            const zPos = Math.sin(a) * 3.2;
-            const yPos = Math.sin(a * 2) * 1.6;
-            const dz = Math.cos(a) * 3.2;
-            const dy = Math.cos(a * 2) * 3.2;
-            targetZ = zPos;
-            targetY = baseH + 1.2 + yPos;
-            targetPitch = -Math.atan2(dy, Math.abs(dz) + 0.6) * 0.85;
-            directRoll = Math.sin(a) * Math.PI;
             break;
           }
         }
