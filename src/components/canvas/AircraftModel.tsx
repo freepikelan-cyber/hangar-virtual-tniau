@@ -720,56 +720,88 @@ export function AircraftModel() {
           targetY = 3.0;
           targetPitch = -0.025;
           setFlightLabel('Solo Spin — Pesawat lain menjauh, 1 pesawat bersiap atraksi tunggal');
-        } else if (pt < 118.0) {
-          // Atraksi 6: Solo Spin — J1 menanjak -> stall spin vertikal -> recovery!
-          const sp = (pt - 108.0) / 10.0;
-          targetX = 0;
+        } else if (pt < 124.0) {
+          // Atraksi 6: Solo Spin / Stall Realistis (16.0 detik santai):
+          // 1. Menanjak SANGAT TINGGI ke Y=30 (108..113s)
+          // 2. Melayang seolah mati mesin di puncak & hidung mulai jatuh perlahan (113..115.5s)
+          // 3. Stall melayang jatuh perlahan & santai (BUKAN muter-muter cepat!) sambil berasap (115.5..121s)
+          // 4. Recovery perlahan kembali mendatar ke Y=3.0 (121..124s)
+          const st = pt - 108.0; // 0..16.0s
           targetZ = 0;
-          if (sp < 0.32) {
-            const p = easeInOut(sp / 0.32);
-            targetY = THREE.MathUtils.lerp(3.0, 17.0, p);
-            targetPitch = -0.92 * p;
+          if (st < 5.0) {
+            // Fase 1: Menanjak tinggi menembus langit (Y: 3 -> 30)
+            const p = easeInOut(st / 5.0);
+            targetX = 0;
+            targetY = THREE.MathUtils.lerp(3.0, 30.0, p);
+            targetPitch = THREE.MathUtils.lerp(-0.025, -1.16, Math.sin(p * Math.PI * 0.5));
             targetRoll = 0;
-          } else if (sp < 0.78) {
-            const p = (sp - 0.32) / 0.46;
-            targetY = THREE.MathUtils.lerp(17.0, 4.0, easeInOut(p));
-            targetPitch = 1.1;
-            targetYawOffset = p * Math.PI * 6;
-            directRoll = p * Math.PI * 4;
+            targetYawOffset = 0;
+            setFlightLabel('Solo Spin — Jupiter 1 menanjak sangat tinggi menembus langit dengan asap aktif');
+          } else if (st < 7.5) {
+            // Fase 2: Puncak Stall — seolah mesin mati, melayang pelan & sayap oleng lembut lalu hidung mulai jatuh
+            const p = easeInOut((st - 5.0) / 2.5);
+            targetX = Math.sin(p * Math.PI) * 1.4;
+            targetY = 30.0 + Math.sin(p * Math.PI) * 1.1 - p * 0.8;
+            targetPitch = THREE.MathUtils.lerp(-1.16, 0.28, p);
+            targetRoll = Math.sin(p * Math.PI * 1.5) * 0.36;
+            targetYawOffset = Math.sin(p * Math.PI) * 0.28;
+            setFlightLabel('Solo Spin — Puncak ketinggian, daya mesin dilepas & pesawat mulai melayang stall');
+          } else if (st < 13.0) {
+            // Fase 3: Melayang jatuh perlahan & santai (goyangan berat seperti kehilangan daya angkat, 0% muter cepat!)
+            const p = (st - 7.5) / 5.5;
+            const e = easeInOut(p);
+            targetX = Math.sin(p * Math.PI * 2.0) * 2.8;
+            targetY = THREE.MathUtils.lerp(29.2, 7.2, e);
+            targetPitch = THREE.MathUtils.lerp(0.28, 0.72, Math.sin(p * Math.PI * 0.75));
+            // Ayunan sayap & 1 gelindingan lambat santai agar terasa seperti melayang mau jatuh
+            targetRoll = Math.sin(p * Math.PI * 2.0) * 0.75 + p * 0.35;
+            targetYawOffset = Math.sin(p * Math.PI * 2.0) * 0.42;
+            setFlightLabel('Solo Spin — Stall melayang turun perlahan & santai dengan kepulan asap');
           } else {
-            const p = easeInOut((sp - 0.78) / 0.22);
-            targetY = THREE.MathUtils.lerp(4.0, 3.0, p);
-            targetPitch = THREE.MathUtils.lerp(0.45, -0.025, p);
+            // Fase 4: Recovery halus — mesin kembali penuh, hidung terangkat perlahan kembali datar
+            const p = easeInOut((st - 13.0) / 3.0);
+            targetX = THREE.MathUtils.lerp(0, 0, p);
+            targetY = THREE.MathUtils.lerp(7.2, 3.0, p);
+            targetPitch = THREE.MathUtils.lerp(0.52, -0.025, p);
             targetRoll = 0;
+            targetYawOffset = 0;
+            setFlightLabel('Solo Spin — Recovery mulus, tenaga mesin kembali penuh ke terbang datar');
           }
-          setFlightLabel('Solo Spin — 1 pesawat menanjak, stall berputar vertikal lalu recovery');
-        } else if (pt < 122.0) {
+        } else if (pt < 127.5) {
+          // Jeda stabilisasi 3.5 detik setelah Solo Spin agar transisi tidak kaku!
+          targetX = 0;
+          targetY = 3.0 + Math.sin(t * 1.2) * 0.08;
+          targetPitch = -0.025;
+          targetRoll = 0;
+          targetYawOffset = 0;
+          setFlightLabel('JAT — Stabilisasi terbang datar setelah Solo Spin');
+        } else if (pt < 132.5) {
           targetX = 0;
           targetY = 3.0;
           targetPitch = -0.025;
           setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
-        } else if (pt < 125.0) {
+        } else if (pt < 135.5) {
           // Jeda 3 detik
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan penutup Loop & Bomb Burst');
-        } else if (pt < 129.5) {
+        } else if (pt < 140.0) {
           // Atraksi 7A: Menanjak bersama ke titik puncak
-          const p = easeInOut((pt - 125.0) / 4.5);
+          const p = easeInOut((pt - 135.5) / 4.5);
           targetY = 3.0 + 8.5 * p;
           targetPitch = -0.82 * p;
           targetRoll = 0;
           setFlightLabel('Loop & Bomb Burst — 6 pesawat menanjak bersama menuju titik puncak');
-        } else if (pt < 137.0) {
+        } else if (pt < 147.5) {
           // Atraksi 7B: Bomb Burst!
-          const p = easeInOut((pt - 129.5) / 7.5);
+          const p = easeInOut((pt - 140.0) / 7.5);
           const arch = Math.sin(p * Math.PI);
           targetY = 11.5 + 4.0 * arch - 8.5 * p;
           targetZ = 8.0 * arch;
           targetPitch = THREE.MathUtils.lerp(-0.82, 0.12, p);
           targetRoll = 0.22 * arch;
           setFlightLabel('Loop & Bomb Burst — 6 pesawat berpencar ke segala arah bak kembang api');
-        } else if (pt < 142.0) {
-          const p = easeInOut((pt - 137.0) / 5.0);
+        } else if (pt < 152.5) {
+          const p = easeInOut((pt - 147.5) / 5.0);
           targetY = THREE.MathUtils.lerp(6.0, 3.0, p);
           targetPitch = -0.025;
           setFlightLabel('JAT — Kembali ke formasi Echelon perlahan');

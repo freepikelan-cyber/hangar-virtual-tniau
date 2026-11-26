@@ -249,17 +249,19 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     if (leaderSmokeRef.current) {
       const inHeartHide = flightMode === 'airborne' && pt >= 75.0 && pt < 89.5;
       const leaderSmokeOn =
-        (flightMode === 'airborne' && !inHeartHide && pt < 141.0) || (flightMode === 'takeoff' && pt >= 42.3);
+        (flightMode === 'airborne' && !inHeartHide && pt < 151.5) || (flightMode === 'takeoff' && pt >= 46.0);
       leaderSmokeRef.current.visible = leaderSmokeOn;
       if (leaderSmokeOn) {
         let lx = Math.sin(t * 0.45) * 0.22;
         let ly = 3.0 + Math.sin(t * 1.4) * 0.1;
         let lz = 0;
+        let lPitch = 0;
         if (flightMode === 'airborne' && pt >= 20.5 && pt < 30.0) {
           const lp = easeInOut((pt - 20.5) / 9.5);
           const a = lp * Math.PI * 2;
           ly = 3.0 + (1 - Math.cos(a)) * 9.5;
           lz = Math.sin(a) * 9.5;
+          lPitch = -a;
         } else if (flightMode === 'airborne' && pt >= 42.0 && pt < 50.0) {
           ly = 12.0;
         } else if (flightMode === 'airborne' && pt >= 60.0 && pt < 68.0) {
@@ -270,15 +272,36 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           lx = THREE.MathUtils.lerp(-28.0, 28.0, p);
           ly = THREE.MathUtils.lerp(4.0, 28.0, p);
           lz = -4.0;
-        } else if (flightMode === 'airborne' && pt >= 108.0 && pt < 118.0) {
-          const sp = (pt - 108.0) / 10.0;
-          lx = 0;
-          ly = sp < 0.32 ? 3.0 + (sp / 0.32) * 14.0 : sp < 0.78 ? 17.0 - ((sp - 0.32) / 0.46) * 13.0 : 4.0;
-        } else if (flightMode === 'airborne' && pt >= 125.0 && pt < 137.0) {
-          const bp = Math.min(1, (pt - 125.0) / 12.0);
+        } else if (flightMode === 'airborne' && pt >= 108.0 && pt < 124.0) {
+          // Asap merah tebal mengikuti J1 saat menanjak sangat tinggi ke Y=30, puncak stall melayang, hingga recovery!
+          const st = pt - 108.0;
+          if (st < 5.0) {
+            const p = easeInOut(st / 5.0);
+            lx = 0;
+            ly = THREE.MathUtils.lerp(3.0, 30.0, p);
+            lPitch = THREE.MathUtils.lerp(-0.025, -1.16, Math.sin(p * Math.PI * 0.5));
+          } else if (st < 7.5) {
+            const p = easeInOut((st - 5.0) / 2.5);
+            lx = Math.sin(p * Math.PI) * 1.4;
+            ly = 30.0 + Math.sin(p * Math.PI) * 1.1 - p * 0.8;
+            lPitch = THREE.MathUtils.lerp(-1.16, 0.28, p);
+          } else if (st < 13.0) {
+            const p = (st - 7.5) / 5.5;
+            lx = Math.sin(p * Math.PI * 2.0) * 2.8;
+            ly = THREE.MathUtils.lerp(29.2, 7.2, easeInOut(p));
+            lPitch = THREE.MathUtils.lerp(0.28, 0.72, Math.sin(p * Math.PI * 0.75));
+          } else {
+            const p = easeInOut((st - 13.0) / 3.0);
+            lx = 0;
+            ly = THREE.MathUtils.lerp(7.2, 3.0, p);
+            lPitch = THREE.MathUtils.lerp(0.52, -0.025, p);
+          }
+        } else if (flightMode === 'airborne' && pt >= 135.5 && pt < 147.5) {
+          const bp = Math.min(1, (pt - 135.5) / 12.0);
           ly = 3.0 + Math.sin(bp * Math.PI) * 10.0;
         }
         leaderSmokeRef.current.position.set(lx, ly, lz);
+        leaderSmokeRef.current.rotation.set(lPitch, 0, 0);
         const pulse = 1 + Math.sin(t * 14) * 0.06;
         leaderSmokeRef.current.scale.set(pulse, pulse, 1);
       }
@@ -759,36 +782,36 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           ty = THREE.MathUtils.lerp(tightSlot[1], farSlot[1], p);
           tz = THREE.MathUtils.lerp(tightSlot[2], farSlot[2], p);
           smokeOn = p < 0.5;
-        } else if (pt < 118.0) {
-          // 108.0..118.0s — ATRAKSI 6: SOLO SPIN (Hanya J1 tampil; J2–J6 jauh keluar arena!)
+        } else if (pt < 127.5) {
+          // 108.0..127.5s — ATRAKSI 6: SOLO SPIN (16s) + JEDA STABILISASI 3.5s (Hanya J1 tampil; J2–J6 jauh keluar arena!)
           visible = false;
           tx = farSlot[0];
           ty = farSlot[1];
           tz = farSlot[2];
           smokeOn = false;
-        } else if (pt < 122.0) {
-          // 118.0..122.0s: Kembali berkumpul ke formasi perlahan (4.0 detik)
-          const p = easeInOut((pt - 118.0) / 4.0);
+        } else if (pt < 132.5) {
+          // 127.5..132.5s: Kembali berkumpul ke formasi perlahan (5.0 detik)
+          const p = easeInOut((pt - 127.5) / 5.0);
           tx = THREE.MathUtils.lerp(farSlot[0], tightSlot[0], p);
           ty = THREE.MathUtils.lerp(farSlot[1], tightSlot[1], p);
           tz = THREE.MathUtils.lerp(farSlot[2], tightSlot[2], p);
           smokeOn = p > 0.4;
-        } else if (pt < 125.0) {
-          // 122.0..125.0s: JEDA 3 DETIK sebelum Loop & Bomb Burst
+        } else if (pt < 135.5) {
+          // 132.5..135.5s: JEDA 3 DETIK sebelum Loop & Bomb Burst
           tx = tightSlot[0];
           ty = tightSlot[1];
           tz = tightSlot[2];
           tp = -0.025;
-        } else if (pt < 129.5) {
-          // 125.0..129.5s — ATRAKSI 7A: LOOP & BOMB BURST (6 pesawat menanjak bersama menjaga jarak aman!)
-          const p = easeInOut((pt - 125.0) / 4.5);
+        } else if (pt < 140.0) {
+          // 135.5..140.0s — ATRAKSI 7A: LOOP & BOMB BURST (6 pesawat menanjak bersama menjaga jarak aman!)
+          const p = easeInOut((pt - 135.5) / 4.5);
           tx = tightSlot[0];
           ty = tightSlot[1] + 8.5 * p;
           tz = tightSlot[2];
           tp = -0.82 * p;
-        } else if (pt < 137.0) {
-          // 129.5..137.0s — ATRAKSI 7B: BOMB BURST! Berpencar ke segala arah bak kembang api tanpa bersilangan!
-          const p = easeInOut((pt - 129.5) / 7.5);
+        } else if (pt < 147.5) {
+          // 140.0..147.5s — ATRAKSI 7B: BOMB BURST! Berpencar ke segala arah bak kembang api tanpa bersilangan!
+          const p = easeInOut((pt - 140.0) / 7.5);
           const dirs: [number, number, number, number][] = [
             [32, 5.0, -4, -0.85],   // J2 kanan (sesuai sisi aslinya +14 -> +46, 0% silang!)
             [-32, 5.0, -4, 0.85],   // J3 kiri (sesuai sisi aslinya -14 -> -46, 0% silang!)
@@ -805,9 +828,9 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tr = d[3] * burst;
           tyaw = (d[0] < 0 ? 0.52 : d[0] > 0 ? -0.52 : 0) * burst;
           smokeOn = true;
-        } else if (pt < 142.0) {
-          // 137.0..142.0s: Rejoin Left Echelon perlahan (5.0 detik!)
-          const p = easeInOut((pt - 137.0) / 5.0);
+        } else if (pt < 152.5) {
+          // 147.5..152.5s: Rejoin Left Echelon perlahan (5.0 detik!)
+          const p = easeInOut((pt - 147.5) / 5.0);
           const echSlot = LEFT_ECHELON_SLOTS[i];
           tx = THREE.MathUtils.lerp(tightSlot[0], echSlot[0], p);
           ty = THREE.MathUtils.lerp(8.0, echSlot[1], p);
