@@ -568,23 +568,23 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tp = -0.14 * arch;
           tr = -p * Math.PI * 2;
         } else if (pt < 42.0) {
-          // 39.0..42.0s: JEDA 3 DETIK & naik halus ke Y=12 agar ruang Screw Roll di bawah formasi sangat lega!
+          // 39.0..42.0s: JEDA 3 DETIK & naik halus ke Y=12; J6 tetap di sisi kirinya (-28, tidak menyeberangi formasi!)
           const p = easeInOut((pt - 39.0) / 3.0);
-          tx = THREE.MathUtils.lerp(tightSlot[0], i === 3 ? 0.0 : i === 4 ? 26.0 : tightSlot[0] * 0.85, p);
+          tx = THREE.MathUtils.lerp(tightSlot[0], i === 3 ? 0.0 : i === 4 ? -28.0 : tightSlot[0] * 0.85, p);
           ty = THREE.MathUtils.lerp(tightSlot[1], 12.0, p);
           tz = THREE.MathUtils.lerp(tightSlot[2], i === 3 ? -36.0 : i === 4 ? -14.0 : tightSlot[2], p);
           tp = -0.025;
         } else if (pt < 50.0) {
-          // 42.0..50.0s — ATRAKSI 3B: SCREW ROLL
-          // 5 pesawat inti (J1–J5) terbang lurus di Y=12 (|X|<=12); J6 melingkari elips LEBAR (Rx=26, Ry=9.5 -> jarak aman >=9.5m di semua sudut!)
-          const p = (pt - 42.0) / 8.0;
+          // 42.0..50.0s — ATRAKSI 3B: SCREW ROLL PERLAHAN & AMAN (1 putaran penuh 360° santai selama 8 detik!)
+          // Dimulai & berakhir tepat di sayap kiri J6 (X = -28) dengan radius lebar (Rx=28, Ry=10 -> 0% melintasi/menabrak inti!)
+          const p = easeInOut((pt - 42.0) / 8.0);
           if (i === 4) {
-            const a = p * Math.PI * 4;
-            tx = Math.cos(a) * 26.0;
-            ty = 12.0 + Math.sin(a) * 9.5; // Min Y = 2.5m (9.5m di bawah inti), Max Y = 21.5m (9.5m di atas inti), Samping ±26m (14m di luar sayap!)
+            const a = Math.PI + p * Math.PI * 2;
+            tx = Math.cos(a) * 28.0;
+            ty = 12.0 + Math.sin(a) * 10.0; // Min Y = 2.0m (10m di bawah inti), Max Y = 22.0m (10m di atas inti), Samping ±28m!
             tz = -14.0;
-            tr = -a;
-            tp = -0.06 * Math.cos(a);
+            tr = -p * Math.PI * 2;
+            tp = -0.05 * Math.cos(a);
           } else {
             tx = i === 3 ? 0.0 : tightSlot[0] * 0.85;
             ty = 12.0;
@@ -592,12 +592,13 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             tp = -0.025;
           }
         } else if (pt < 53.5) {
-          // 50.0..53.5s: Kembali turun perlahan ke formasi Arrowhead (3.5s)
+          // 50.0..53.5s: Kembali turun perlahan & pas ke formasi Arrowhead (J6 sudah di X=-28 -> tinggal meluncur turun halus tanpa buru-buru!)
           const p = easeInOut((pt - 50.0) / 3.5);
-          tx = THREE.MathUtils.lerp(i === 4 ? 26.0 : i === 3 ? 0.0 : tightSlot[0] * 0.85, tightSlot[0], p);
+          tx = THREE.MathUtils.lerp(i === 4 ? -28.0 : i === 3 ? 0.0 : tightSlot[0] * 0.85, tightSlot[0], p);
           ty = THREE.MathUtils.lerp(12.0, tightSlot[1], p);
           tz = THREE.MathUtils.lerp(i === 4 ? -14.0 : i === 3 ? -36.0 : tightSlot[2], tightSlot[2], p);
           tp = -0.025;
+          tr = 0;
         } else if (pt < 56.5) {
           // 53.5..56.5s: JEDA 3 DETIK sebelum Mirror
           tx = tightSlot[0];
