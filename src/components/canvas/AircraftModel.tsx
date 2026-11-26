@@ -271,7 +271,92 @@ export function AircraftModel() {
     let targetGear = 0; // 0 = keluar, 1 = masuk
     let gearSpeed = 2.8;
 
-    if (flightMode === 'takeoff') {
+    if (safetyMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
+      // Animasi 3D badan pesawat sesuai cerita Safety (aktif baik saat mengudara maupun dari menu Simulasi!)
+      safetyTime.current += dt;
+      const st = safetyTime.current;
+      const isEjection = unit.category === 'Tempur' || unit.category === 'Latih';
+
+      if (isEjection) {
+        targetGear = 1;
+        if (st < 3.5) {
+          // Babak 1: Patroli & manuver tempur di langit
+          const s = Math.sin((st / 3.5) * Math.PI * 2);
+          targetX = s * 1.4;
+          targetY = 2.65 + Math.sin(t * 2.0) * 0.16;
+          targetZ = 0;
+          targetRoll = -s * 0.52;
+          targetPitch = -0.06;
+          if (airframeRef.current) {
+            airframeRef.current.position.set(0, 0, 0);
+            airframeRef.current.rotation.set(0, 0, 0);
+            airframeRef.current.visible = true;
+          }
+        } else if (st < 5.8) {
+          // Babak 2: Rudal menghantam -> pesawat berguncang & miring tak terkendali!
+          const hit = st >= 4.45;
+          targetX = hit ? Math.sin(t * 22) * 0.18 : 0;
+          targetY = hit ? 2.5 - (st - 4.45) * 0.35 : 2.65;
+          targetZ = 0;
+          targetRoll = hit ? 0.58 + Math.sin(t * 16) * 0.24 : -0.15;
+          targetPitch = hit ? 0.18 + Math.cos(t * 18) * 0.1 : -0.04;
+          if (airframeRef.current) {
+            airframeRef.current.position.set(0, 0, 0);
+            airframeRef.current.rotation.set(0, 0, 0);
+            airframeRef.current.visible = true;
+          }
+        } else {
+          // Babak 3 & 4: Setelah pilot melontar, root tetap stabil di fokus kamera untuk parasut,
+          // sementara badan pesawat yang terbakar menukik berputar menjauh ke bawah!
+          targetX = 0;
+          targetY = 1.6;
+          targetZ = 0;
+          targetRoll = 0;
+          targetPitch = 0;
+          if (airframeRef.current) {
+            const p = Math.min(1, (st - 5.8) / 3.2);
+            airframeRef.current.visible = p < 0.96;
+            airframeRef.current.position.set(p * 3.8, -p * 11.5, p * 6.5);
+            airframeRef.current.rotation.set(0.45 + p * 0.65, p * 0.4, 0.7 + p * 2.8);
+          }
+        }
+      } else if (isHeli) {
+        // Helikopter di laut: Autorotasi turun -> Pelampung mengembang -> Mengapung stabil di ombak
+        targetGear = 0;
+        if (st < 3.5) {
+          const p = easeInOut(st / 3.5);
+          targetY = THREE.MathUtils.lerp(4.4, 1.5, p);
+          targetPitch = 0.08 * (1 - p);
+          targetRoll = Math.sin(t * 3.2) * 0.05;
+        } else if (st < 6.2) {
+          const p = easeInOut((st - 3.5) / 2.7);
+          targetY = THREE.MathUtils.lerp(1.5, 0.14, p);
+          targetPitch = -0.05 * Math.sin(p * Math.PI);
+          targetRoll = Math.sin(t * 2.2) * 0.03;
+        } else {
+          targetY = 0.14 + Math.sin(t * 1.9) * 0.06;
+          targetPitch = Math.sin(t * 1.4) * 0.025;
+          targetRoll = Math.cos(t * 1.6) * 0.035;
+        }
+      } else {
+        // Pesawat Angkut & VIP: Gangguan mesin di atas laut -> Water Ditching -> Mengapung di ombak
+        targetGear = 1; // Roda tetap masuk saat Water Ditching agar badan pesawat tidak terbalik!
+        if (st < 3.5) {
+          targetY = 3.2 + Math.sin(t * 1.6) * 0.12;
+          targetPitch = 0.04;
+          targetRoll = -0.08 + Math.sin(t * 2.4) * 0.03;
+        } else if (st < 6.8) {
+          const p = easeInOut((st - 3.5) / 3.3);
+          targetY = THREE.MathUtils.lerp(3.2, 0.1, p);
+          targetPitch = THREE.MathUtils.lerp(0.05, -0.1, Math.sin(p * Math.PI));
+          targetRoll = THREE.MathUtils.lerp(-0.08, 0, p);
+        } else {
+          targetY = 0.1 + Math.sin(t * 1.6) * 0.05;
+          targetPitch = Math.sin(t * 1.2) * 0.018;
+          targetRoll = Math.cos(t * 1.4) * 0.024;
+        }
+      }
+    } else if (flightMode === 'takeoff') {
       if (isHeli) {
         // TAKE OFF HELIKOPTER:
         // 1. Keluar hanggar ke Helipad H -> 2. Tunggu suara Semplak Tower selesai penuh ->
@@ -1039,91 +1124,6 @@ export function AircraftModel() {
           targetPitch = pitchAmp * 0.72 * s;
           targetRoll = Math.cos(t * 2) * 0.04;
           setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
-        }
-      }
-    } else if (safetyMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
-      // Animasi 3D badan pesawat sesuai cerita Safety (Tempur: Manuver -> Tertembak -> Menukik; Laut: Turun -> Mengapung)
-      safetyTime.current += dt;
-      const st = safetyTime.current;
-      const isEjection = unit.category === 'Tempur' || unit.category === 'Latih';
-
-      if (isEjection) {
-        targetGear = 1;
-        if (st < 3.5) {
-          // Babak 1: Patroli & manuver tempur di langit
-          const s = Math.sin((st / 3.5) * Math.PI * 2);
-          targetX = s * 1.4;
-          targetY = 2.65 + Math.sin(t * 2.0) * 0.16;
-          targetZ = 0;
-          targetRoll = -s * 0.52;
-          targetPitch = -0.06;
-          if (airframeRef.current) {
-            airframeRef.current.position.set(0, 0, 0);
-            airframeRef.current.rotation.set(0, 0, 0);
-            airframeRef.current.visible = true;
-          }
-        } else if (st < 5.8) {
-          // Babak 2: Rudal menghantam -> pesawat berguncang & miring tak terkendali!
-          const hit = st >= 4.45;
-          targetX = hit ? Math.sin(t * 22) * 0.18 : 0;
-          targetY = hit ? 2.5 - (st - 4.45) * 0.35 : 2.65;
-          targetZ = 0;
-          targetRoll = hit ? 0.58 + Math.sin(t * 16) * 0.24 : -0.15;
-          targetPitch = hit ? 0.18 + Math.cos(t * 18) * 0.1 : -0.04;
-          if (airframeRef.current) {
-            airframeRef.current.position.set(0, 0, 0);
-            airframeRef.current.rotation.set(0, 0, 0);
-            airframeRef.current.visible = true;
-          }
-        } else {
-          // Babak 3 & 4: Setelah pilot melontar, root tetap stabil di fokus kamera untuk parasut,
-          // sementara badan pesawat yang terbakar menukik berputar menjauh ke bawah!
-          targetX = 0;
-          targetY = 1.6;
-          targetZ = 0;
-          targetRoll = 0;
-          targetPitch = 0;
-          if (airframeRef.current) {
-            const p = Math.min(1, (st - 5.8) / 3.2);
-            airframeRef.current.visible = p < 0.96;
-            airframeRef.current.position.set(p * 3.8, -p * 11.5, p * 6.5);
-            airframeRef.current.rotation.set(0.45 + p * 0.65, p * 0.4, 0.7 + p * 2.8);
-          }
-        }
-      } else if (isHeli) {
-        // Helikopter di laut: Autorotasi turun -> Pelampung mengembang -> Mengapung stabil di ombak
-        targetGear = 0;
-        if (st < 3.5) {
-          const p = easeInOut(st / 3.5);
-          targetY = THREE.MathUtils.lerp(4.4, 1.5, p);
-          targetPitch = 0.08 * (1 - p);
-          targetRoll = Math.sin(t * 3.2) * 0.05;
-        } else if (st < 6.2) {
-          const p = easeInOut((st - 3.5) / 2.7);
-          targetY = THREE.MathUtils.lerp(1.5, 0.14, p);
-          targetPitch = -0.05 * Math.sin(p * Math.PI);
-          targetRoll = Math.sin(t * 2.2) * 0.03;
-        } else {
-          targetY = 0.14 + Math.sin(t * 1.9) * 0.06;
-          targetPitch = Math.sin(t * 1.4) * 0.025;
-          targetRoll = Math.cos(t * 1.6) * 0.035;
-        }
-      } else {
-        // Pesawat Angkut & VIP: Gangguan mesin di atas laut -> Water Ditching -> Mengapung di ombak
-        targetGear = 1; // Roda tetap masuk saat Water Ditching agar badan pesawat tidak terbalik!
-        if (st < 3.5) {
-          targetY = 3.2 + Math.sin(t * 1.6) * 0.12;
-          targetPitch = 0.04;
-          targetRoll = -0.08 + Math.sin(t * 2.4) * 0.03;
-        } else if (st < 6.8) {
-          const p = easeInOut((st - 3.5) / 3.3);
-          targetY = THREE.MathUtils.lerp(3.2, 0.1, p);
-          targetPitch = THREE.MathUtils.lerp(0.05, -0.1, Math.sin(p * Math.PI));
-          targetRoll = THREE.MathUtils.lerp(-0.08, 0, p);
-        } else {
-          targetY = 0.1 + Math.sin(t * 1.6) * 0.05;
-          targetPitch = Math.sin(t * 1.2) * 0.018;
-          targetRoll = Math.cos(t * 1.4) * 0.024;
         }
       }
     } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {

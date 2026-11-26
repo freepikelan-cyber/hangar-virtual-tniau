@@ -286,14 +286,26 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       return;
     }
     if (key === 'safetyMode') {
+      const curFlight = get().flightMode;
+      const wasAirborneActivity =
+        curFlight === 'airborne' || curFlight === 'maneuver' || curFlight === 'mission' || curFlight === 'aar';
+      if (next) {
+        aircraftAudio.unlock();
+        aircraftAudio.stopVoiceRadio();
+      }
+      const nextFlightMode = next ? (wasAirborneActivity ? 'airborne' : curFlight) : curFlight;
       set({
         safetyMode: next,
         safetyNonce: next ? get().safetyNonce + 1 : get().safetyNonce,
         safetyStep: 0,
         aeroMode: next ? false : get().aeroMode,
         oxygenMode: next ? false : get().oxygenMode,
-        flightMode: next ? 'parked' : get().flightMode,
-        flightLabel: null,
+        flightMode: nextFlightMode,
+        flightLabel: next
+          ? 'SAFETY SYSTEM • DEMONSTRASI KESELAMATAN DARURAT AKTIF'
+          : nextFlightMode === 'airborne'
+            ? 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING'
+            : null,
         autoRotate: next ? false : get().autoRotate,
         activeHotspot: next ? null : get().activeHotspot,
         rightOpen: next && isCompactViewport() ? false : get().rightOpen,

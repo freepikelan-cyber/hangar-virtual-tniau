@@ -67,7 +67,7 @@ export function BottomDock() {
           ? 'Dogfight'
           : 'Flare Latih';
   const isFlightActive = !isEquipment && flightMode !== 'parked';
-  const isSimPanelActive = !isEquipment && (simMenuOpen || isFlightActive);
+  const isSimPanelActive = !isEquipment && (simMenuOpen || isFlightActive || safetyMode);
   const isAeroPanelActive = !isEquipment && aeroMode;
 
   const canTakeOff = flightMode === 'parked';
@@ -124,7 +124,7 @@ export function BottomDock() {
                 label: 'Simulasi',
                 short: 'Simulasi',
                 icon: Flame,
-                active: simMenuOpen || flightMode !== 'parked' || oxygenMode,
+                active: simMenuOpen || flightMode !== 'parked' || oxygenMode || safetyMode,
                 onClick: () => setSimMenuOpen((v) => !v),
                 accent: 'amber' as const,
                 hasMenu: true,
@@ -150,18 +150,6 @@ export function BottomDock() {
                 onClick: () => {
                   setSimMenuOpen(false);
                   toggle('aeroMode');
-                },
-              },
-              {
-                id: 'safety',
-                label: 'Safety',
-                short: 'Safety',
-                icon: ShieldAlert,
-                active: safetyMode,
-                accent: 'rose' as const,
-                onClick: () => {
-                  setSimMenuOpen(false);
-                  toggle('safetyMode');
                 },
               },
             ]),
@@ -236,13 +224,14 @@ export function BottomDock() {
       {isSimPanelActive && (
         <div className="hud-panel pointer-events-auto flex flex-col items-center gap-1.5 rounded-2xl border-[#ffb703]/50 bg-[#091c3a]/95 px-3 py-2 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
           <div className="text-[10px] sm:text-[11px] font-medium tracking-wider text-slate-300">
-            {flightMode === 'parked' && 'Tahapan Terbang: 1. Take Off → 2. Manuver → 3. Landing'}
-            {flightMode === 'takeoff' && 'Pesawat sedang lepas landas di Runway... tunggu mengudara'}
-            {flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver atau 3. Landing'}
-            {flightMode === 'maneuver' && 'Manuver udara aktif! Klik 3. Landing untuk mendarat di Runway'}
-            {flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
-            {flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Langsung klik 3. Landing untuk mendarat di Runway`}
-            {flightMode === 'aar' && 'AAR Refueling aktif! Langsung klik 3. Landing untuk mendarat di Runway'}
+            {safetyMode && 'Simulasi Safety aktif! Klik Hentikan Safety untuk menghentikan demonstrasi keselamatan'}
+            {!safetyMode && flightMode === 'parked' && 'Tahapan Terbang: 1. Take Off → 2. Manuver → 3. Landing'}
+            {!safetyMode && flightMode === 'takeoff' && 'Pesawat sedang lepas landas di Runway... tunggu mengudara'}
+            {!safetyMode && flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver, Safety, atau 3. Landing'}
+            {!safetyMode && flightMode === 'maneuver' && 'Manuver udara aktif! Klik Hentikan Manuver atau 3. Landing'}
+            {!safetyMode && flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
+            {!safetyMode && flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Klik Hentikan atau 3. Landing`}
+            {!safetyMode && flightMode === 'aar' && 'AAR Refueling aktif! Klik Hentikan AAR atau 3. Landing'}
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -381,6 +370,30 @@ export function BottomDock() {
             >
               {flightMode === 'aar' ? <Square className="h-3.5 w-3.5 fill-current" /> : <Fuel className="h-4 w-4" />}
               {flightMode === 'aar' ? 'Hentikan AAR' : 'AAR Refueling'}
+            </button>
+
+            <button
+              type="button"
+              disabled={flightMode === 'takeoff' || flightMode === 'landing'}
+              title={
+                safetyMode
+                  ? 'Klik untuk menghentikan demonstrasi Safety'
+                  : 'Demonstrasi Sistem Keselamatan (Kursi Lontar Zero-Zero / Water Ditching / Pelampung Helikopter)'
+              }
+              onClick={() => {
+                if (flightMode === 'takeoff' || flightMode === 'landing') return;
+                toggle('safetyMode');
+              }}
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all ${
+                flightMode === 'takeoff' || flightMode === 'landing'
+                  ? 'border-slate-700/70 bg-slate-900/60 text-slate-500 opacity-60 cursor-not-allowed'
+                  : safetyMode
+                    ? 'border-rose-400 bg-rose-500 text-white shadow-[0_0_16px_rgba(244,63,94,0.5)] cursor-pointer active:scale-95'
+                    : 'border-rose-400/60 bg-[#0e2a54] text-rose-300 hover:bg-rose-500/20 cursor-pointer active:scale-95'
+              }`}
+            >
+              {safetyMode ? <Square className="h-3.5 w-3.5 fill-current" /> : <ShieldAlert className="h-4 w-4" />}
+              {safetyMode ? 'Hentikan Safety' : 'Safety'}
             </button>
 
             <button
