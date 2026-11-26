@@ -1,7 +1,14 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AirbaseGlbModels, CityGlbModels, MountSumbingGlbModels, OceanRocksGlbModels, SkyboxDayGlb } from './AirbaseGlbModels';
+import {
+  AirbaseGlbModels,
+  CityGlbModels,
+  MountSumbingGlbModels,
+  OceanLoopGlb,
+  OceanRocksGlbModels,
+  SkyboxDayGlb,
+} from './AirbaseGlbModels';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
@@ -1129,7 +1136,6 @@ export function SkyCloudsEnvironment() {
           </mesh>
           <Suspense fallback={null}>
             <AirbaseGlbModels />
-            <MountSumbingGlbModels mode="airbase" />
           </Suspense>
 
           {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
@@ -1262,17 +1268,20 @@ export function SkyCloudsEnvironment() {
           </mesh>
         </group>
 
-        {/* === ZONA 3: LAUT LEPAS BEROMBAK REALISTIS, PULAU TROPIS ORGANIK & KAPAL PATROLI KRI === */}
+        {/* === ZONA 3: LAUT LEPAS BEROMBAK 3D ANIMASI (ocean-loop.glb), PULAU TROPIS, BATU KARANG & KRI === */}
         <group ref={oceanChunkRef} name="biome-ocean">
-          {/* Samudra luas dengan tekstur riak ombak animasi & pantulan matahari */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+          {/* Permukaan Samudra Berombak 3D Animasi (ocean__water_perfect_loop.glb) + alas laut cadangan */}
+          <Suspense fallback={null}>
+            <OceanLoopGlb />
+          </Suspense>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
             <planeGeometry args={[280, CHUNK_LEN]} />
             <meshStandardMaterial
               map={oceanTextures.map}
               bumpMap={oceanTextures.bumpMap}
-              bumpScale={0.6}
+              bumpScale={0.55}
               roughness={0.14}
-              metalness={0.52}
+              metalness={0.55}
             />
           </mesh>
 
@@ -1406,47 +1415,6 @@ export function SkyCloudsEnvironment() {
                 <planeGeometry args={[1.2, 3.6]} />
                 <meshBasicMaterial color="#e0f6ff" transparent opacity={0.35} />
               </mesh>
-            </group>
-          ))}
-
-          {/* Kawanan Ikan & Lumba-Lumba Melompat di Permukaan Laut (3 Gugusan x 3 Ekor) */}
-          {[
-            { x: -6, z: -12, col: '#38bdf8' },
-            { x: -4.2, z: -10.5, col: '#7dd3fc' },
-            { x: -7.5, z: -13.5, col: '#0ea5e9' },
-            { x: 14, z: 14, col: '#60a5fa' },
-            { x: 16, z: 12.2, col: '#93c5fd' },
-            { x: 12.5, z: 15.8, col: '#38bdf8' },
-            { x: -24, z: 26, col: '#7dd3fc' },
-            { x: -22, z: 24.5, col: '#38bdf8' },
-            { x: -25.8, z: 27.5, col: '#0ea5e9' },
-          ].map((fish, fIdx) => (
-            <group key={`fish-pod-${fIdx}`} position={[fish.x, 0.05, fish.z]}>
-              {/* Cincin cipratan air di permukaan laut */}
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, 0]}>
-                <ringGeometry args={[0.6, 1.05, 16]} />
-                <meshBasicMaterial color="#e0f7ff" transparent opacity={0.42} />
-              </mesh>
-              <group
-                ref={(el) => {
-                  fishRefs.current[fIdx] = el;
-                }}
-              >
-                {/* Tubuh ikan / lumba-lumba aerodinamis berkilau */}
-                <mesh scale={[0.42, 0.52, 1.45]}>
-                  <sphereGeometry args={[0.55, 10, 8]} />
-                  <meshStandardMaterial color={fish.col} roughness={0.22} metalness={0.45} />
-                </mesh>
-                {/* Sirip punggung & ekor */}
-                <mesh position={[0, 0.32, -0.05]} rotation={[-0.4, 0, 0]}>
-                  <coneGeometry args={[0.14, 0.42, 4]} />
-                  <meshStandardMaterial color="#0284c7" roughness={0.3} />
-                </mesh>
-                <mesh position={[0, 0, -0.95]} rotation={[Math.PI / 2, 0, 0]}>
-                  <coneGeometry args={[0.28, 0.45, 3]} />
-                  <meshStandardMaterial color="#0284c7" roughness={0.3} />
-                </mesh>
-              </group>
             </group>
           ))}
         </group>

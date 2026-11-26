@@ -1,6 +1,51 @@
-import { useEffect, useMemo } from 'react';
-import { useGLTF } from '@react-three/drei';
+import { useEffect, useMemo, useRef } from 'react';
+import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+
+/**
+ * Menyesuaikan skala model kota/area luas berdasarkan lebar bidang (targetSpan) sekaligus membatasi tinggi maks,
+ * agar 1 file GLB mengisi 1 area pandang utuh secara rapi tanpa tumpang tindih!
+ */
+function normalizeGlbToFootprint(source: THREE.Object3D, targetSpan: number, maxHeight: number): THREE.Group {
+  const clone = source.clone(true);
+  const wrapper = new THREE.Group();
+  wrapper.add(clone);
+
+  clone.traverse((obj) => {
+    const n = obj.name.toLowerCase();
+    if (n.includes('collider')) {
+      obj.visible = false;
+      return;
+    }
+    if ((obj as THREE.Mesh).isMesh) {
+      const mesh = obj as THREE.Mesh;
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+    }
+  });
+
+  clone.position.set(0, 0, 0);
+  clone.updateMatrixWorld(true);
+  const box = new THREE.Box3();
+  clone.traverse((obj) => {
+    if ((obj as THREE.Mesh).isMesh && obj.visible) box.expandByObject(obj);
+  });
+
+  if (!box.isEmpty()) {
+    const size = new THREE.Vector3();
+    const center = new THREE.Vector3();
+    box.getSize(size);
+    box.getCenter(center);
+    const horiz = Math.max(size.x, size.z, 0.001);
+    let scale = targetSpan / horiz;
+    if (size.y * scale > maxHeight) {
+      scale = maxHeight / Math.max(size.y, 0.001);
+    }
+    clone.scale.multiplyScalar(scale);
+    clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
+  }
+  return wrapper;
+}
 
 /**
  * Membersihkan mesh collider tersembunyi, menghitung bounding box asli,
@@ -67,41 +112,49 @@ export function AirbaseGlbModels() {
   const packGltf = useGLTF('/models/airbase/airport-pack.glb');
 
   const assets = useMemo(() => {
-    const atcTower = normalizeGlbPart(atcGltf.scene, 27.5);
-    const hangarNorth = normalizeGlbPart(hangarGltf.scene, 10.5);
-    const hangarSouth = normalizeGlbPart(hangarGltf.scene, 10.5);
+    const atcTower = normalizeGlbPart(atcGltf.scene, 29.0);
+    const hangar1 = normalizeGlbPart(hangarGltf.scene, 11.5);
+    const hangar2 = normalizeGlbPart(hangarGltf.scene, 11.5);
+    const hangar3 = normalizeGlbPart(hangarGltf.scene, 11.5);
+    const hangar4 = normalizeGlbPart(hangarGltf.scene, 11.5);
 
     const pick = (name: string, height: number) => {
       const found = packGltf.scene.getObjectByName(name);
       return found ? normalizeGlbPart(found, height) : null;
     };
 
-    const term1 = pick('07.Modulo1', 12.0);
-    const term2 = pick('07.Modulo2', 11.5);
-    const jetbridge1 = pick('06.Tunnel', 5.2);
+    const term1 = pick('07.Modulo1', 15.0);
+    const term2 = pick('07.Modulo2', 14.5);
+    const term3 = term1 ? term1.clone(true) : null;
+    const jetbridge1 = pick('06.Tunnel', 5.8);
     const jetbridge2 = jetbridge1 ? jetbridge1.clone(true) : null;
     const jetbridge3 = jetbridge1 ? jetbridge1.clone(true) : null;
+    const jetbridge4 = jetbridge1 ? jetbridge1.clone(true) : null;
 
-    const plane1 = pick('18.1.Airplane', 7.2);
-    const plane2 = pick('18.2.Airplane', 7.2);
-    const plane3 = pick('18.3.Airplane', 7.0);
-    const plane4 = pick('18.4.Airplane', 7.0);
+    const plane1 = pick('18.1.Airplane', 7.5);
+    const plane2 = pick('18.2.Airplane', 7.5);
+    const plane3 = pick('18.3.Airplane', 7.2);
+    const plane4 = pick('18.4.Airplane', 7.2);
 
-    const firetruck = pick('19.Firetruck', 3.4);
-    const bus = pick('20.PassengerBus', 3.2);
-    const bagTruck1 = pick('21.1.BaggageTruck', 2.4);
-    const bagTruck2 = pick('21.2.BaggageTruck', 2.4);
-    const stairs = pick('03.AirplaneStairs', 3.8);
+    const firetruck = pick('19.Firetruck', 3.6);
+    const bus = pick('20.PassengerBus', 3.4);
+    const bagTruck1 = pick('21.1.BaggageTruck', 2.5);
+    const bagTruck2 = pick('21.2.BaggageTruck', 2.5);
+    const stairs = pick('03.AirplaneStairs', 4.0);
 
     return {
       atcTower,
-      hangarNorth,
-      hangarSouth,
+      hangar1,
+      hangar2,
+      hangar3,
+      hangar4,
       term1,
       term2,
+      term3,
       jetbridge1,
       jetbridge2,
       jetbridge3,
+      jetbridge4,
       plane1,
       plane2,
       plane3,
@@ -121,72 +174,58 @@ export function AirbaseGlbModels() {
   return (
     <group name="airbase-glb-models">
       {/* 1. Menara ATC 3D Realistis (atc-tower.glb) */}
-      <primitive object={assets.atcTower} position={[-35.0, 0, 26.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.atcTower} position={[-35.0, 0, 28.0]} rotation={[0, Math.PI * 0.5, 0]} />
 
-      {/* 2. Hanggar 3D Tambahan di Apron Utara & Selatan (hangar.glb) */}
-      <primitive object={assets.hangarNorth} position={[-44.0, 0, -104.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={assets.hangarSouth} position={[-44.0, 0, 88.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      {/* 2. Deretan 4 Hanggar 3D Lengkap di Apron Utara & Selatan (hangar.glb) */}
+      <primitive object={assets.hangar1} position={[-44.0, 0, -116.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar2} position={[-44.0, 0, -88.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar3} position={[-44.0, 0, 62.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar4} position={[-44.0, 0, 92.0]} rotation={[0, Math.PI * 0.5, 0]} />
 
-      {/* 3. Terminal Bandara Modern 3D + Garbarata (airport-pack.glb) */}
-      {assets.term1 && <primitive object={assets.term1} position={[-52.0, 0, -44.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.term2 && <primitive object={assets.term2} position={[-52.0, 0, -8.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge1 && <primitive object={assets.jetbridge1} position={[-40.5, 0, -48.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge2 && <primitive object={assets.jetbridge2} position={[-40.5, 0, -26.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge3 && <primitive object={assets.jetbridge3} position={[-40.5, 0, -4.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {/* 3. Kompleks Terminal Bandara Modern 3D Panjang (3 Modul + 4 Garbarata) */}
+      {assets.term1 && <primitive object={assets.term1} position={[-50.0, 0, -56.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.term2 && <primitive object={assets.term2} position={[-50.0, 0, -24.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.term3 && <primitive object={assets.term3} position={[-50.0, 0, 8.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge1 && <primitive object={assets.jetbridge1} position={[-39.5, 0, -60.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge2 && <primitive object={assets.jetbridge2} position={[-39.5, 0, -38.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge3 && <primitive object={assets.jetbridge3} position={[-39.5, 0, -16.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge4 && <primitive object={assets.jetbridge4} position={[-39.5, 0, 6.0]} rotation={[0, Math.PI * 0.5, 0]} />}
 
-      {/* 4. Pesawat Komersial Parkir di Apron Terminal (seperti di foto bandara!) */}
-      {assets.plane1 && <primitive object={assets.plane1} position={[-33.0, 0, -52.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
-      {assets.plane2 && <primitive object={assets.plane2} position={[-33.0, 0, -28.0]} rotation={[0, -Math.PI * 0.45, 0]} />}
-      {assets.plane3 && <primitive object={assets.plane3} position={[-33.0, 0, -4.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
-      {assets.plane4 && <primitive object={assets.plane4} position={[-34.0, 0, 52.0]} rotation={[0, Math.PI * 0.35, 0]} />}
+      {/* 4. 4 Pesawat Komersial Parkir Rapi di Apron Terminal */}
+      {assets.plane1 && <primitive object={assets.plane1} position={[-31.5, 0, -58.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
+      {assets.plane2 && <primitive object={assets.plane2} position={[-31.5, 0, -34.0]} rotation={[0, -Math.PI * 0.45, 0]} />}
+      {assets.plane3 && <primitive object={assets.plane3} position={[-31.5, 0, -10.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
+      {assets.plane4 && <primitive object={assets.plane4} position={[-32.0, 0, 44.0]} rotation={[0, Math.PI * 0.35, 0]} />}
 
       {/* 5. Armada Pendukung Darat Bandara (Truk Pemadam PKP-PK, Bus, Truk Bagasi, Tangga Pesawat) */}
-      {assets.firetruck && <primitive object={assets.firetruck} position={[-28.5, 0, 14.0]} rotation={[0, Math.PI * 0.15, 0]} />}
-      {assets.bus && <primitive object={assets.bus} position={[-31.0, 0, -16.0]} rotation={[0, Math.PI * 0.05, 0]} />}
-      {assets.bagTruck1 && <primitive object={assets.bagTruck1} position={[-30.0, 0, -40.0]} rotation={[0, -Math.PI * 0.25, 0]} />}
-      {assets.bagTruck2 && <primitive object={assets.bagTruck2} position={[-30.5, 0, -60.0]} rotation={[0, Math.PI * 0.4, 0]} />}
-      {assets.stairs && <primitive object={assets.stairs} position={[-28.5, 0, -24.0]} rotation={[0, -Math.PI * 0.5, 0]} />}
+      {assets.firetruck && <primitive object={assets.firetruck} position={[-28.5, 0, 18.0]} rotation={[0, Math.PI * 0.15, 0]} />}
+      {assets.bus && <primitive object={assets.bus} position={[-30.5, 0, -22.0]} rotation={[0, Math.PI * 0.05, 0]} />}
+      {assets.bagTruck1 && <primitive object={assets.bagTruck1} position={[-29.5, 0, -46.0]} rotation={[0, -Math.PI * 0.25, 0]} />}
+      {assets.bagTruck2 && <primitive object={assets.bagTruck2} position={[-30.0, 0, -68.0]} rotation={[0, Math.PI * 0.4, 0]} />}
+      {assets.stairs && <primitive object={assets.stairs} position={[-28.5, 0, -28.0]} rotation={[0, -Math.PI * 0.5, 0]} />}
     </group>
   );
 }
 
 /**
- * Zona 4: Kota Metropolitan 3D Realistis (.GLB: beautiful_city.glb, city_pack_3.glb, & 3d_scan_of_a_russian_city_quarter.glb)
- * Membentang langsung di bawah jalur terbang pesawat (X = -95..+95, Z = -130..+130) dengan tinggi aman <= 22m
- * agar seluruh pesawat melintas megah tepat di atas gedung-gedung pencakar langit tanpa pernah menabrak!
+ * Zona 4: Kota Metropolitan 3D (.GLB) — 1 GLB mengisi 1 area pandang utuh & rapi (TIDAK bertumpuk!):
+ * - Area Selatan (Z = -85): 1 hamparan penuh `beautiful_city.glb` (lebar 165m)
+ * - Area Utara (Z = +85): 1 hamparan penuh `city_pack_3.glb` (lebar 165m)
  */
 export function CityGlbModels() {
   const mainCityGltf = useGLTF('/models/env/city-main.glb');
   const districtGltf = useGLTF('/models/env/city-district.glb');
-  const scanCityGltf = useGLTF('/models/env/city-scan.glb');
 
   const cities = useMemo(() => {
-    const mainWest = normalizeGlbPart(mainCityGltf.scene, 21.0);
-    const mainEast = normalizeGlbPart(mainCityGltf.scene, 22.0);
-    const districtNW = normalizeGlbPart(districtGltf.scene, 16.0);
-    const districtNE = normalizeGlbPart(districtGltf.scene, 17.0);
-    const districtSW = normalizeGlbPart(districtGltf.scene, 16.0);
-    const districtSE = normalizeGlbPart(districtGltf.scene, 17.0);
-    const scanCenter1 = normalizeGlbPart(scanCityGltf.scene, 14.0);
-    const scanCenter2 = normalizeGlbPart(scanCityGltf.scene, 14.0);
-    return { mainWest, mainEast, districtNW, districtNE, districtSW, districtSE, scanCenter1, scanCenter2 };
-  }, [mainCityGltf.scene, districtGltf.scene, scanCityGltf.scene]);
+    const areaSouth = normalizeGlbToFootprint(mainCityGltf.scene, 165.0, 22.0);
+    const areaNorth = normalizeGlbToFootprint(districtGltf.scene, 165.0, 22.0);
+    return { areaSouth, areaNorth };
+  }, [mainCityGltf.scene, districtGltf.scene]);
 
   return (
     <group name="city-glb-models">
-      {/* Pusat Kota Pencakar Langit Kiri & Kanan tepat mengapit jalur terbang tengah */}
-      <primitive object={cities.mainWest} position={[-42.0, 0, -10.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={cities.mainEast} position={[44.0, 0, 12.0]} rotation={[0, -Math.PI * 0.5, 0]} />
-
-      {/* Distrik Kota Utara & Selatan (city_pack_3.glb) */}
-      <primitive object={cities.districtNW} position={[-48.0, 0, -105.0]} rotation={[0, 0, 0]} />
-      <primitive object={cities.districtNE} position={[48.0, 0, -102.0]} rotation={[0, Math.PI, 0]} />
-      <primitive object={cities.districtSW} position={[-46.0, 0, 108.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={cities.districtSE} position={[46.0, 0, 104.0]} rotation={[0, -Math.PI * 0.5, 0]} />
-
-      {/* Kawasan Kota 3D Scan Fotogrametri tepat di bawah jalur terbang tengah (ketinggian aman 14m di bawah pesawat 28m!) */}
-      <primitive object={cities.scanCenter1} position={[0.0, 0, -68.0]} rotation={[0, 0, 0]} />
-      <primitive object={cities.scanCenter2} position={[0.0, 0, 68.0]} rotation={[0, Math.PI, 0]} />
+      <primitive object={cities.areaSouth} position={[0, 0, -85.0]} rotation={[0, 0, 0]} />
+      <primitive object={cities.areaNorth} position={[0, 0, 85.0]} rotation={[0, Math.PI * 0.5, 0]} />
     </group>
   );
 }
@@ -290,4 +329,50 @@ export function SkyboxDayGlb() {
   }, [skyGltf.scene]);
 
   return <primitive object={dome} name="skybox-skydays-3-glb" />;
+}
+
+/**
+ * Lautan Berombak Animasi 3D Realistis (.GLB: ocean__water_perfect_loop.glb terkompresi 16MB!)
+ * Memutar animasi gelombang ombak 3D secara loop mulus di Zona 3 (Samudra).
+ */
+export function OceanLoopGlb() {
+  const groupRef = useRef<THREE.Group>(null);
+  const oceanGltf = useGLTF('/models/env/ocean-loop.glb');
+  const { actions } = useAnimations(oceanGltf.animations, groupRef);
+
+  const normalizedScale = useMemo(() => {
+    oceanGltf.scene.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(oceanGltf.scene);
+    const size = new THREE.Vector3();
+    box.getSize(size);
+    const sx = size.x > 0.001 ? 280 / size.x : 1;
+    const sz = size.z > 0.001 ? 340 / size.z : 1;
+    const sy = Math.min(sx, sz) * 0.85;
+    oceanGltf.scene.traverse((obj) => {
+      if ((obj as THREE.Mesh).isMesh) {
+        const mesh = obj as THREE.Mesh;
+        mesh.material = new THREE.MeshStandardMaterial({
+          color: '#0e5a8a',
+          roughness: 0.14,
+          metalness: 0.62,
+          envMapIntensity: 1.35,
+        });
+      }
+    });
+    return [sx, sy, sz] as [number, number, number];
+  }, [oceanGltf.scene]);
+
+  useEffect(() => {
+    Object.values(actions).forEach((action) => {
+      if (action) {
+        action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+      }
+    });
+  }, [actions]);
+
+  return (
+    <group ref={groupRef} position={[0, -0.45, 0]} scale={normalizedScale} name="ocean-perfect-loop-glb">
+      <primitive object={oceanGltf.scene} />
+    </group>
+  );
 }
