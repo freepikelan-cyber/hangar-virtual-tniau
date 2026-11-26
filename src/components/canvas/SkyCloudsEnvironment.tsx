@@ -918,9 +918,9 @@ export function SkyCloudsEnvironment() {
       <group ref={worldGroupRef} visible={false} position={[0, -0.02, 0]} name="outdoor-world-3d">
         {/* === ZONA 1: PANGKALAN UDARA RUNWAY 09 + PERUMAHAN REALISTIS + GEDUNG KACA BERTINGKAT + LAUT PESISIR === */}
         <group ref={runwayChunkRef} name="biome-runway-city">
-          {/* Rumput pangkalan udara bertekstur satelit nyata */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-14, -0.08, 0]} receiveShadow>
-            <planeGeometry args={[64, CHUNK_LEN]} />
+          {/* Rumput pangkalan udara luas bertekstur satelit nyata (mencakup Runway, Parallel Taxiway jauh, & Apron Hanggar) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-48, -0.08, 0]} receiveShadow>
+            <planeGeometry args={[132, CHUNK_LEN]} />
             <meshStandardMaterial map={airbaseGrassTex} roughness={0.94} metalness={0} />
           </mesh>
 
@@ -961,17 +961,17 @@ export function SkyCloudsEnvironment() {
                       <meshStandardMaterial color="#f97316" side={THREE.DoubleSide} roughness={0.7} />
                     </mesh>
                   </group>
-                  {/* Apron penghubung pendek dari Hanggar Helikopter ke Helipad */}
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.01, 0]} receiveShadow>
-                    <planeGeometry args={[11, 10]} />
+                  {/* Taxiway penghubung panjang dari Hanggar Helikopter (x = -48) ke Helipad H (x = 0) */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-26.5, 0.01, 0]} receiveShadow>
+                    <planeGeometry args={[37, 10]} />
                     <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
                   </mesh>
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-13.5, 0.025, 0]}>
-                    <planeGeometry args={[9.5, 0.28]} />
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-26.5, 0.025, 0]}>
+                    <planeGeometry args={[35, 0.32]} />
                     <meshBasicMaterial color="#fbbf24" />
                   </mesh>
-                  {/* Hanggar Khusus Skadron Helikopter TNI AU di sisi kiri Helipad (x = -21) */}
-                  <group position={[-21.0, 0, 0]}>
+                  {/* Hanggar Khusus Skadron Helikopter TNI AU di sisi kiri jauh dari Helipad (x = -48) */}
+                  <group position={[-48.0, 0, 0]}>
                     <mesh position={[-4.5, 3.2, 0]}>
                       <boxGeometry args={[0.5, 6.4, 13.4]} />
                       <meshStandardMaterial map={hangarMetalTex} color="#33517a" roughness={0.62} metalness={0.35} />
@@ -1027,7 +1027,7 @@ export function SkyCloudsEnvironment() {
                 </>
               )}
 
-              {/* Bahu aspal & parallel taxiway */}
+              {/* Bahu aspal & parallel taxiway berjarak jauh (X = -46, berjarak 46m dari sumbu Runway!) */}
               <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-6.4, -0.02, 0]}>
                 <planeGeometry args={[1.6, CHUNK_LEN]} />
                 <meshStandardMaterial color="#3a404a" roughness={0.92} />
@@ -1036,14 +1036,27 @@ export function SkyCloudsEnvironment() {
                 <planeGeometry args={[1.6, CHUNK_LEN]} />
                 <meshStandardMaterial color="#3a404a" roughness={0.92} />
               </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, -0.01, 0]}>
-                <planeGeometry args={[3.6, CHUNK_LEN]} />
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-46.0, -0.008, 0]}>
+                <planeGeometry args={[5.2, CHUNK_LEN]} />
                 <meshStandardMaterial color="#333942" roughness={0.9} />
               </mesh>
-              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-20.5, 0.01, 0]}>
-                <planeGeometry args={[0.24, CHUNK_LEN]} />
+              <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-46.0, 0.014, 0]}>
+                <planeGeometry args={[0.3, CHUNK_LEN]} />
                 <meshBasicMaterial color="#fbbf24" />
               </mesh>
+              {/* Jalur taxiway penghubung tambahan (Cross-Taxiway B & C) antara Parallel Taxiway (-46) & Runway (0) */}
+              {[-55, 55].map((cz, cIdx) => (
+                <group key={`cross-tx-${cIdx}`} position={[-24.0, 0, cz]}>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.006, 0]}>
+                    <planeGeometry args={[46, 5.8]} />
+                    <meshStandardMaterial color="#333942" roughness={0.9} />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.015, 0]}>
+                    <planeGeometry args={[44, 0.28]} />
+                    <meshBasicMaterial color="#fbbf24" />
+                  </mesh>
+                </group>
+              ))}
 
               {/* Lampu tepi runway */}
               {runwayLightZ.map((lz, i) => (
@@ -1075,16 +1088,32 @@ export function SkyCloudsEnvironment() {
                 ))}
               </group>
 
-              {/* Hanggar TNI AU Terbuka (baja abu-biru + papan logo sayap emas & tulisan "TNI AU" seperti foto referensi!) */}
+              {/* Hanggar TNI AU Terbuka di sisi barat jauh (X = -88: 42m ke Parallel Taxiway + 46m ke Runway = 88m total!) */}
               {[-152.0, 145.0].map((hz, hIdx) => (
-                <group key={hIdx} position={[-36.0, 0, hz]}>
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
-                    <planeGeometry args={[34, 18]} />
+                <group key={hIdx} position={[-88.0, 0, hz]}>
+                  {/* Apron beton luas di depan hanggar hingga Parallel Taxiway (local x = 0..42 -> world -88..-46) */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[21.0, 0.01, 0]} receiveShadow>
+                    <planeGeometry args={[42, 20]} />
                     <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
                   </mesh>
-                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
-                    <planeGeometry args={[32, 0.34]} />
+                  {/* Jalur Taxiway penghubung aspal panjang dari Parallel Taxiway (-46) ke Runway (0) */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[64.0, 0.008, 0]} receiveShadow>
+                    <planeGeometry args={[48, 8.4]} />
+                    <meshStandardMaterial color="#333942" roughness={0.9} />
+                  </mesh>
+                  {/* Garis kuning penuntun Taxiway menerus sepanjang 82m dari dalam Hanggar hingga Runway! */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[43.0, 0.03, 0]}>
+                    <planeGeometry args={[82, 0.38]} />
                     <meshBasicMaterial color="#fbbf24" />
+                  </mesh>
+                  {/* Garis Holding Point (Runway Hold-Short double bar) tepat sebelum masuk Runway */}
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[77.5, 0.032, 0]}>
+                    <planeGeometry args={[0.45, 7.6]} />
+                    <meshBasicMaterial color="#facc15" />
+                  </mesh>
+                  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[78.3, 0.032, 0]}>
+                    <planeGeometry args={[0.45, 7.6]} />
+                    <meshBasicMaterial color="#facc15" />
                   </mesh>
                   {/* Dinding belakang & samping baja bergelombang abu-biru TNI AU */}
                   <mesh position={[-5.5, 3.8, 0]}>
@@ -1112,9 +1141,9 @@ export function SkyCloudsEnvironment() {
                 </group>
               ))}
 
-              {/* Rambu kuning-hitam penunjuk Taxiway (A <- B ->) di pulau rumput antara runway & taxiway */}
+              {/* Rambu kuning-hitam penunjuk Taxiway (A <- B ->) di pulau rumput luas antara runway & taxiway */}
               {[-125, -45, 35, 115].map((sz, sIdx) => (
-                <group key={`tx-sign-${sIdx}`} position={[-11.5, 0.55, sz]} rotation={[0, 0.35, 0]}>
+                <group key={`tx-sign-${sIdx}`} position={[-28.5, 0.55, sz]} rotation={[0, 0.35, 0]}>
                   <mesh>
                     <boxGeometry args={[1.9, 0.72, 0.14]} />
                     <meshStandardMaterial map={taxiSignTex} roughness={0.45} />
@@ -1130,9 +1159,9 @@ export function SkyCloudsEnvironment() {
                 </group>
               ))}
 
-              {/* Tiang lampu sorot Apron merah-putih tinggi (seperti di foto bandara!) */}
+              {/* Tiang lampu sorot Apron merah-putih tinggi di tepi apron belakang Parallel Taxiway */}
               {[-105, -62, -18, 28, 74].map((pz, pIdx) => (
-                <group key={`flood-pole-${pIdx}`} position={[-25.5, 0, pz]}>
+                <group key={`flood-pole-${pIdx}`} position={[-52.5, 0, pz]}>
                   <mesh position={[0, 6.0, 0]}>
                     <cylinderGeometry args={[0.14, 0.24, 12.0, 8]} />
                     <meshStandardMaterial color="#f1f5f9" roughness={0.5} />
@@ -1152,26 +1181,26 @@ export function SkyCloudsEnvironment() {
             </>
           )}
 
-          {/* Apron beton luas + Model 3D Bandara Asli (.GLB: Menara ATC, Terminal, Hanggar, 4 Pesawat Parkir, & Kendaraan Darat!) */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-38.0, 0.008, -16]} receiveShadow>
-            <planeGeometry args={[36, 175]} />
+          {/* Apron beton luas di belakang Parallel Taxiway + Model 3D Bandara Asli (.GLB: Menara ATC, Terminal, Hanggar, 4 Pesawat Parkir, & Kendaraan Darat!) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-76.0, 0.008, -16]} receiveShadow>
+            <planeGeometry args={[54, 175]} />
             <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
           </mesh>
           <Suspense fallback={null}>
             <AirbaseGlbModels />
           </Suspense>
 
-          {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-104, -0.1, 0]}>
+          {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota di sisi barat pangkalan */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-174, -0.1, 0]}>
             <planeGeometry args={[124, CHUNK_LEN]} />
             <meshStandardMaterial map={airbaseGrassTex} color="#d8e6d5" roughness={0.95} />
           </mesh>
           {/* Jalan raya aspal bermarka */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-56, -0.05, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-116, -0.05, 0]}>
             <planeGeometry args={[3.2, CHUNK_LEN]} />
             <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-92, -0.05, 0]}>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-148, -0.05, 0]}>
             <planeGeometry args={[3.8, CHUNK_LEN]} />
             <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>

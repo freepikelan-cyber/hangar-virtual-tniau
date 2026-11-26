@@ -4,6 +4,7 @@ import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
+import { getUnit } from '../../data/fleetData';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
 import { AirRefuelingLayer } from './AirRefuelingLayer';
@@ -140,13 +141,17 @@ function StudioLighting() {
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const { camera, size } = useThree();
+  const { camera, scene, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const flightNonce = useHangarStore((s) => s.flightNonce);
+  const selectedId = useHangarStore((s) => s.selectedId);
 
   const initial = useMemo(() => getDefaultCamera(), []);
   const desiredPos = useRef(new THREE.Vector3(...initial.pos));
   const desiredTarget = useRef(new THREE.Vector3(...initial.target));
   const animating = useRef(false);
+  const lastTrackedX = useRef<number | null>(null);
 
   // Sesuaikan FOV otomatis saat layar portrait (smartphone) agar sayap pesawat tidak terpotong
   useEffect(() => {
@@ -159,6 +164,33 @@ function CameraRig() {
     }
   }, [camera, size.width, size.height]);
 
+  // Saat Take Off dimulai dari Hanggar jauh (-82 / -44), posisikan kamera mengikuti pesawat di depan Hanggar!
+  // Saat kembali ke Parked, kembalikan target kamera ke tengah (0, 1.5, 0).
+  useEffect(() => {
+    const isHeli = getUnit(selectedId).category === 'Helikopter';
+    if (flightMode === 'takeoff') {
+      const startX = isHeli ? -44.0 : -82.0;
+      const startZ = isHeli ? 0.0 : -10.5;
+      lastTrackedX.current = startX;
+      if (selectedId !== 'kt1b') {
+        const def = getDefaultCamera(selectedId);
+        desiredPos.current.set(startX + def.pos[0] + 6.0, def.pos[1] + 2.5, startZ + def.pos[2] + 4.0);
+        desiredTarget.current.set(startX, 1.6, startZ);
+        animating.current = true;
+      }
+    } else if (flightMode === 'landing') {
+      lastTrackedX.current = 0;
+    } else if (flightMode === 'parked') {
+      lastTrackedX.current = null;
+      const def = getDefaultCamera(selectedId);
+      desiredPos.current.set(...def.pos);
+      desiredTarget.current.set(...def.target);
+      animating.current = true;
+    } else {
+      lastTrackedX.current = null;
+    }
+  }, [flightMode, flightNonce, selectedId]);
+
   useEffect(() => {
     if (!camRequest) return;
     desiredPos.current.set(...camRequest.pos);
@@ -167,7 +199,28 @@ function CameraRig() {
   }, [camRequest]);
 
   useFrame((_, delta) => {
-    if (!animating.current || !controlsRef.current) return;
+    if (!controlsRef.current) return;
+
+    // Ikuti pergeseran X pesawat secara halus saat Taxi Out (Take Off) & Taxi In (Landing)
+    // tanpa mengganggu kebebasan pengguna memutar / zoom OrbitControls!
+    if ((flightMode === 'takeoff' || flightMode === 'landing') && selectedId !== 'kt1b') {
+      const aircraftRoot = scene.getObjectByName('aircraft-root');
+      if (aircraftRoot) {
+        const ax = aircraftRoot.position.x;
+        if (lastTrackedX.current !== null) {
+          const dx = ax - lastTrackedX.current;
+          if (Math.abs(dx) > 0.0001 && Math.abs(dx) < 25) {
+            camera.position.x += dx;
+            controlsRef.current.target.x += dx;
+            desiredPos.current.x += dx;
+            desiredTarget.current.x += dx;
+          }
+        }
+        lastTrackedX.current = ax;
+      }
+    }
+
+    if (!animating.current) return;
     const alpha = Math.min(1, delta * 5.2);
     camera.position.lerp(desiredPos.current, alpha);
     controlsRef.current.target.lerp(desiredTarget.current, alpha);
@@ -189,7 +242,7 @@ function CameraRig() {
       dampingFactor={0.07}
       enablePan
       minDistance={3.2}
-      maxDistance={85}
+      maxDistance={150}
       maxPolarAngle={Math.PI / 2 - 0.03}
       target={initial.target}
       onStart={() => {

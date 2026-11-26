@@ -184,36 +184,36 @@ export function AirbaseGlbModels() {
 
   return (
     <group name="airbase-glb-models">
-      {/* 1. Menara ATC 3D Realistis (atc-tower.glb) */}
-      <primitive object={assets.atcTower} position={[-35.0, 0, 28.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      {/* 1. Menara ATC 3D Realistis (atc-tower.glb) di belakang Parallel Taxiway */}
+      <primitive object={assets.atcTower} position={[-71.0, 0, 28.0]} rotation={[0, Math.PI * 0.5, 0]} />
 
       {/* 2. Deretan 4 Hanggar 3D Lengkap di Apron Utara & Selatan (hangar.glb) */}
-      <primitive object={assets.hangar1} position={[-44.0, 0, -116.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={assets.hangar2} position={[-44.0, 0, -88.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={assets.hangar3} position={[-44.0, 0, 62.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={assets.hangar4} position={[-44.0, 0, 92.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar1} position={[-82.0, 0, -116.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar2} position={[-82.0, 0, -88.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar3} position={[-82.0, 0, 62.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={assets.hangar4} position={[-82.0, 0, 92.0]} rotation={[0, Math.PI * 0.5, 0]} />
 
       {/* 3. Kompleks Terminal Bandara Modern 3D Panjang (3 Modul + 4 Garbarata) */}
-      {assets.term1 && <primitive object={assets.term1} position={[-50.0, 0, -56.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.term2 && <primitive object={assets.term2} position={[-50.0, 0, -24.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.term3 && <primitive object={assets.term3} position={[-50.0, 0, 8.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge1 && <primitive object={assets.jetbridge1} position={[-39.5, 0, -60.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge2 && <primitive object={assets.jetbridge2} position={[-39.5, 0, -38.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge3 && <primitive object={assets.jetbridge3} position={[-39.5, 0, -16.0]} rotation={[0, Math.PI * 0.5, 0]} />}
-      {assets.jetbridge4 && <primitive object={assets.jetbridge4} position={[-39.5, 0, 6.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.term1 && <primitive object={assets.term1} position={[-88.0, 0, -56.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.term2 && <primitive object={assets.term2} position={[-88.0, 0, -24.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.term3 && <primitive object={assets.term3} position={[-88.0, 0, 8.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge1 && <primitive object={assets.jetbridge1} position={[-77.5, 0, -60.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge2 && <primitive object={assets.jetbridge2} position={[-77.5, 0, -38.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge3 && <primitive object={assets.jetbridge3} position={[-77.5, 0, -16.0]} rotation={[0, Math.PI * 0.5, 0]} />}
+      {assets.jetbridge4 && <primitive object={assets.jetbridge4} position={[-77.5, 0, 6.0]} rotation={[0, Math.PI * 0.5, 0]} />}
 
       {/* 4. 4 Pesawat Komersial Parkir Rapi di Apron Terminal */}
-      {assets.plane1 && <primitive object={assets.plane1} position={[-31.5, 0, -58.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
-      {assets.plane2 && <primitive object={assets.plane2} position={[-31.5, 0, -34.0]} rotation={[0, -Math.PI * 0.45, 0]} />}
-      {assets.plane3 && <primitive object={assets.plane3} position={[-31.5, 0, -10.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
-      {assets.plane4 && <primitive object={assets.plane4} position={[-32.0, 0, 44.0]} rotation={[0, Math.PI * 0.35, 0]} />}
+      {assets.plane1 && <primitive object={assets.plane1} position={[-69.5, 0, -58.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
+      {assets.plane2 && <primitive object={assets.plane2} position={[-69.5, 0, -34.0]} rotation={[0, -Math.PI * 0.45, 0]} />}
+      {assets.plane3 && <primitive object={assets.plane3} position={[-69.5, 0, -10.0]} rotation={[0, -Math.PI * 0.42, 0]} />}
+      {assets.plane4 && <primitive object={assets.plane4} position={[-70.0, 0, 44.0]} rotation={[0, Math.PI * 0.35, 0]} />}
 
       {/* 5. Armada Pendukung Darat Bandara (Truk Pemadam PKP-PK, Bus, Truk Bagasi, Tangga Pesawat) */}
-      {assets.firetruck && <primitive object={assets.firetruck} position={[-28.5, 0, 18.0]} rotation={[0, Math.PI * 0.15, 0]} />}
-      {assets.bus && <primitive object={assets.bus} position={[-30.5, 0, -22.0]} rotation={[0, Math.PI * 0.05, 0]} />}
-      {assets.bagTruck1 && <primitive object={assets.bagTruck1} position={[-29.5, 0, -46.0]} rotation={[0, -Math.PI * 0.25, 0]} />}
-      {assets.bagTruck2 && <primitive object={assets.bagTruck2} position={[-30.0, 0, -68.0]} rotation={[0, Math.PI * 0.4, 0]} />}
-      {assets.stairs && <primitive object={assets.stairs} position={[-28.5, 0, -28.0]} rotation={[0, -Math.PI * 0.5, 0]} />}
+      {assets.firetruck && <primitive object={assets.firetruck} position={[-64.5, 0, 18.0]} rotation={[0, Math.PI * 0.15, 0]} />}
+      {assets.bus && <primitive object={assets.bus} position={[-66.5, 0, -22.0]} rotation={[0, Math.PI * 0.05, 0]} />}
+      {assets.bagTruck1 && <primitive object={assets.bagTruck1} position={[-65.5, 0, -46.0]} rotation={[0, -Math.PI * 0.25, 0]} />}
+      {assets.bagTruck2 && <primitive object={assets.bagTruck2} position={[-66.0, 0, -68.0]} rotation={[0, Math.PI * 0.4, 0]} />}
+      {assets.stairs && <primitive object={assets.stairs} position={[-64.5, 0, -28.0]} rotation={[0, -Math.PI * 0.5, 0]} />}
     </group>
   );
 }

@@ -84,7 +84,7 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
     // 40.6..51.44s: vvip-voice-takeoff.wav (10.84s) selesai penuh -> 51.8s baru mulai Take Off roll!
     return { voiceStart: 40.6, rollStart: 51.8, rotStart: 55.8, climbStart: 57.6, airborneStart: 60.0 };
   }
-  return { voiceStart: 6.0, rollStart: 7.6, rotStart: 10.8, climbStart: 12.5, airborneStart: 14.8 };
+  return { voiceStart: 6.0, rollStart: 12.6, rotStart: 15.8, climbStart: 17.5, airborneStart: 19.8 };
 }
 
 /**
@@ -118,8 +118,8 @@ export function getLandingTiming(unitId: string): LandingTiming {
   const brakeEnd = rolloutEnd + 5.8;
   const holdEnd = brakeEnd + 1.5;
   const turnEnd = holdEnd + 3.0;
-  const taxiEnd = turnEnd + 6.0;
-  const parkEnd = taxiEnd + 1.3;
+  const taxiEnd = turnEnd + 11.0;
+  const parkEnd = taxiEnd + 1.5;
   return { approachEnd, touchTime, rolloutEnd, brakeEnd, holdEnd, turnEnd, taxiEnd, parkEnd };
 }
 

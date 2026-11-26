@@ -195,8 +195,8 @@ export function AircraftModel() {
     const isHeli = unit.category === 'Helikopter';
 
     if (flightMode === 'takeoff') {
-      // Helikopter mulai dari Hanggar Helipad Skadron 8 (x = -19, z = 0); sayap tetap mulai dari Hanggar Runway (x = -31.5, z = -10.5)
-      const startX = isHeli ? -19.0 : -31.5;
+      // Helikopter mulai dari Hanggar Helipad Skadron 8 jauh (x = -44, z = 0); sayap tetap mulai dari Hanggar Runway jauh (x = -82, z = -10.5)
+      const startX = isHeli ? -44.0 : -82.0;
       const startZ = isHeli ? 0.0 : -10.5;
       currentX.current = startX;
       currentY.current = 0;
@@ -369,12 +369,12 @@ export function AircraftModel() {
         // 3. Naik vertikal perlahan & hover stabil DI TEMPAT di atas huruf H -> 4. Hidung menunduk halus & mulai maju perlahan!
         const to = getTakeOffTiming(unit.id);
         const hoverDone = to.rollStart + 3.4; // 20.8..24.2s: naik vertikal perlahan; 24.2..25.4s: hover mantap di atas H
-        if (pt < 4.2) {
-          const p = easeInOut(pt / 4.2);
-          targetX = THREE.MathUtils.lerp(-19.0, 0, p);
+        if (pt < 7.5) {
+          const p = easeInOut(pt / 7.5);
+          targetX = THREE.MathUtils.lerp(-44.0, 0, p);
           targetZ = 0;
           targetY = 0;
-          targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.65) / 0.35));
+          targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, Math.max(0, (p - 0.72) / 0.28));
           targetGear = 0;
           setFlightLabel('TAXI OUT // HELIKOPTER MENUJU HELIPAD SKADRON UDARA 8');
         } else if (pt < to.rollStart) {
@@ -422,35 +422,35 @@ export function AircraftModel() {
         const to = getTakeOffTiming(unit.id);
         const isVvipUnit = unit.id === 'b737vip' || unit.id === 'falcon8x';
         const taxiStart = isVvipUnit ? 34.0 : 0.0;
-        const taxiEnd = isVvipUnit ? 38.5 : 4.2;
-        const lineUpEnd = isVvipUnit ? 40.5 : 6.0;
+        const taxiEnd = isVvipUnit ? 42.5 : 8.5;
+        const lineUpEnd = isVvipUnit ? 45.0 : 11.0;
 
         if (unit.id === 'kt1b') {
           // KHUSUS KT-1B WONG BEE (JUPITER AEROBATIC SHOW):
-          // 1. J1 keluar hanggar PALING DEPAN (0..4.4s) ke jalur tengah depan (X=0, Z=+16), jauh dari laut & memberi jalan J2–J6!
-          // 2. Semua 6 pesawat membentuk formasi Take Off berjarak lega di Runway 09 saat "Jupiters, check in!" (18.5..26.5s)
-          // 3. Semua 6 pesawat Take Off SAMA-SAMA dengan mulus & rapi! (26.5..36.5s)
-          if (pt < 2.4) {
-            // Tahap 1A: J1 keluar lurus dari Hanggar menuju jalur tengah Runway (X: -34 -> 0, Z = -10.5)
-            const p = easeInOut(pt / 2.4);
-            targetX = THREE.MathUtils.lerp(-34.0, 0, p);
+          // 1. J1 keluar dari Hanggar jauh (X=-82) menyusuri Parallel Taxiway (-46) & Taxiway panjang ke jalur tengah Runway 09 (X=0, Z=+16)
+          // 2. Semua 6 pesawat membentuk formasi Take Off berjarak lega di Runway 09 saat "Jupiters, check in!"
+          // 3. Semua 6 pesawat Take Off SAMA-SAMA dengan mulus & rapi!
+          if (pt < 5.2) {
+            // Tahap 1A: J1 keluar lurus dari Hanggar jauh (X: -82 -> 0, Z = -10.5) melewati Parallel Taxiway
+            const p = easeInOut(pt / 5.2);
+            targetX = THREE.MathUtils.lerp(-82.0, 0, p);
             targetZ = -10.5;
             targetY = 0;
             targetYawOffset = Math.PI / 2;
             targetGear = 0;
-            setFlightLabel('JUPITER 1 • KELUAR DARI HANGGAR MENUJU RUNWAY 09');
-          } else if (pt < 3.4) {
+            setFlightLabel('JUPITER 1 • KELUAR DARI HANGGAR MENYUSURI TAXIWAY MENUJU RUNWAY 09');
+          } else if (pt < 6.6) {
             // Tahap 1B: Belok mulus ke Utara (+Z) masuk jalur tengah Runway 09
-            const p = easeInOut((pt - 2.4) / 1.0);
+            const p = easeInOut((pt - 5.2) / 1.4);
             targetX = 0;
             targetZ = THREE.MathUtils.lerp(-10.5, -4.0, p);
             targetY = 0;
             targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
             targetGear = 0;
             setFlightLabel('JUPITER 1 • LINE UP JALUR TENGAH • JUPITER 2–6 MENYUSUL TIAP 5 DETIK');
-          } else if (pt < 5.2) {
+          } else if (pt < 8.4) {
             // Tahap 1C: Maju ke posisi start paling depan (Z = +16) jauh dari tepi laut!
-            const p = easeInOut((pt - 3.4) / 1.8);
+            const p = easeInOut((pt - 6.6) / 1.8);
             targetX = 0;
             targetZ = THREE.MathUtils.lerp(-4.0, 16.0, p);
             targetY = 0;
@@ -510,26 +510,30 @@ export function AircraftModel() {
             setFlightState('airborne', 'JUPITER AEROBATIC SHOW • 6-SHIP FORMASI MENGUDARA');
           }
         } else if (isVvipUnit && pt < taxiStart) {
-          // Fase Persiapan & Pengumuman Keberangkatan VVIP di Apron sebelum mulai Taxi & Take Off!
-          targetX = -31.5;
+          // Fase Persiapan & Pengumuman Keberangkatan VVIP di Apron Hanggar jauh sebelum mulai Taxi & Take Off!
+          targetX = -82.0;
           targetZ = -10.5;
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
           setFlightLabel('🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KEBERANGKATAN MENUJU SENTANI JAYAPURA');
         } else if (pt < taxiEnd) {
-          // Fase 0A: Taxi keluar perlahan dari Hanggar TNI AU menyusuri jalur taxiway kuning panjang
+          // Fase 0A: Taxi keluar perlahan dari Hanggar jauh (-82) melewati Parallel Taxiway (-46) menyusuri taxiway kuning panjang ke Holding Point (-8.5)
           const p = easeInOut((pt - taxiStart) / Math.max(0.5, taxiEnd - taxiStart));
-          targetX = THREE.MathUtils.lerp(-31.5, -6.5, p);
+          targetX = THREE.MathUtils.lerp(-82.0, -8.5, p);
           targetZ = -10.5;
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('TAXI OUT • KELUAR DARI HANGGAR MENUJU RUNWAY');
+          setFlightLabel(
+            p < 0.48
+              ? 'TAXI OUT • KELUAR DARI HANGGAR MENUJU PARALLEL TAXIWAY'
+              : 'TAXI OUT • MENYUSURI TAXIWAY PANJANG MENUJU RUNWAY 09',
+          );
         } else if (pt < lineUpEnd) {
           // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway!
           const p = easeInOut((pt - taxiEnd) / Math.max(0.5, lineUpEnd - taxiEnd));
-          targetX = THREE.MathUtils.lerp(-6.5, 0, p);
+          targetX = THREE.MathUtils.lerp(-8.5, 0, p);
           targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
@@ -1185,22 +1189,26 @@ export function AircraftModel() {
           setFlightLabel('📡 ATC: BERHENTI DI RUNWAY • BERSIAP TAXI KE HANGGAR');
         } else if (pt < ld.turnEnd) {
           const p = easeInOut((pt - ld.holdEnd) / Math.max(0.5, ld.turnEnd - ld.holdEnd));
-          targetX = THREE.MathUtils.lerp(0, -8.0, p);
+          targetX = THREE.MathUtils.lerp(0, -10.0, p);
           targetZ = THREE.MathUtils.lerp(2.2, 3.5, p);
           targetY = 0;
           targetYawOffset = THREE.MathUtils.lerp(0, -Math.PI / 2, p);
           targetGear = 0;
-          setFlightLabel('TAXI IN • BELOK PERLAHAN KELUAR RUNWAY MENUJU HANGGAR');
+          setFlightLabel('TAXI IN • BELOK PERLAHAN KELUAR RUNWAY MENUJU TAXIWAY');
         } else if (pt < ld.taxiEnd) {
           const p = easeInOut((pt - ld.turnEnd) / Math.max(0.5, ld.taxiEnd - ld.turnEnd));
-          targetX = THREE.MathUtils.lerp(-8.0, -31.5, p);
+          targetX = THREE.MathUtils.lerp(-10.0, -82.0, p);
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;
           targetGear = 0;
-          setFlightLabel('TAXI IN • MELUNCUR PERLAHAN MASUK KE DALAM HANGGAR');
+          setFlightLabel(
+            p < 0.55
+              ? 'TAXI IN • MENYUSURI TAXIWAY PANJANG MENUJU APRON HANGGAR'
+              : 'TAXI IN • MELUNCUR PERLAHAN MASUK KE DALAM HANGGAR',
+          );
         } else if (pt < ld.parkEnd) {
-          targetX = -31.5;
+          targetX = -82.0;
           targetZ = 3.5;
           targetY = 0;
           targetYawOffset = -Math.PI / 2;

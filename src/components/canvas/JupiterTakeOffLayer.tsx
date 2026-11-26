@@ -318,18 +318,18 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       let useTangentQuat = false;
 
       if (flightMode === 'takeoff') {
-        // KELUAR HANGGAR SATU PER SATU DENGAN JEDA TEPAT 5 DETIK (0% NUMPUK / TABRAKAN!):
-        // J1: 0s -> J2: 5s -> J3: 10s -> J4: 15s -> J5: 20s -> J6: 25s (semua sudah parkir rapi sebelum 29s!)
+        // KELUAR HANGGAR JAUH (X = -82) SATU PER SATU DENGAN JEDA TEPAT 5 DETIK (0% NUMPUK / TABRAKAN!):
+        // J1: 0s -> J2: 5s -> J3: 10s -> J4: 15s -> J5: 20s -> J6: 25s (semua sudah parkir rapi sebelum 33s!)
         const taxiStart = 5.0 + i * 5.0;
-        const eastDur = 2.4;
-        const turnDur = 1.0;
-        const northDur = 1.4;
+        const eastDur = 5.2;
+        const turnDur = 1.2;
+        const northDur = 1.6;
         const eastEnd = taxiStart + eastDur;
         const turnEnd = eastEnd + turnDur;
         const parkEnd = turnEnd + northDur;
 
         const formSpot = RUNWAY_FORM_SPOTS[i];
-        const hangarX = -34.0;
+        const hangarX = -82.0;
         const taxiZ = -10.5;
 
         // Semua 6 pesawat Take Off SAMA-SAMA secara mulus & rapi!
