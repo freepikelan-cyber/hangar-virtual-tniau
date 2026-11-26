@@ -1274,15 +1274,14 @@ export function AircraftModel() {
     }
 
     if (airframeRef.current) {
+      // Sembunyikan J1 HANYA saat J5 & J6 melukis Hati berdua (78.5..89.5s); di Mirror, Roll, & atraksi lain J1 selalu tampil!
       const hideLeadForSolo =
-        unit.id === 'kt1b' &&
-        flightMode === 'airborne' &&
-        ((pt >= 30.8 && pt < 45.0) || (pt >= 54.5 && pt < 68.0));
+        unit.id === 'kt1b' && flightMode === 'airborne' && pt >= 78.5 && pt < 89.5;
       airframeRef.current.visible = !hideLeadForSolo;
     }
 
     // Interpolasi halus posisi & rotasi pesawat
-    const posSpeed = flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 3.4;
+    const posSpeed = flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
     currentX.current = THREE.MathUtils.lerp(currentX.current, targetX, Math.min(1, dt * posSpeed));
     currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, Math.min(1, dt * posSpeed));
     currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, Math.min(1, dt * posSpeed));
@@ -1293,23 +1292,25 @@ export function AircraftModel() {
     if (directPitch !== null) {
       rootRef.current.rotation.x = directPitch;
     } else {
-      if (rootRef.current.rotation.x < -Math.PI) rootRef.current.rotation.x += Math.PI * 2;
-      if (rootRef.current.rotation.x > Math.PI) rootRef.current.rotation.x -= Math.PI * 2;
-      rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 4.5));
+      while (rootRef.current.rotation.x < -Math.PI) rootRef.current.rotation.x += Math.PI * 2;
+      while (rootRef.current.rotation.x > Math.PI) rootRef.current.rotation.x -= Math.PI * 2;
+      rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 3.2));
     }
     if (directRoll !== null) {
       rootRef.current.rotation.z = directRoll;
     } else {
-      // Normalisasi sudut roll ke [-PI, PI] agar selesai Barrel Roll 360° tidak memutar balik
-      if (rootRef.current.rotation.z < -Math.PI) rootRef.current.rotation.z += Math.PI * 2;
-      if (rootRef.current.rotation.z > Math.PI) rootRef.current.rotation.z -= Math.PI * 2;
-      rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 4.5));
+      // Normalisasi penuh multi-putaran roll (-4*PI -> 0) agar selesai Roll tidak memutar balik seperti error!
+      while (rootRef.current.rotation.z < -Math.PI) rootRef.current.rotation.z += Math.PI * 2;
+      while (rootRef.current.rotation.z > Math.PI) rootRef.current.rotation.z -= Math.PI * 2;
+      rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 3.2));
     }
 
     if (autoRotate) {
       rootRef.current.rotation.y += dt * 0.42;
     } else {
-      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * 3.2));
+      while (rootRef.current.rotation.y < -Math.PI) rootRef.current.rotation.y += Math.PI * 2;
+      while (rootRef.current.rotation.y > Math.PI) rootRef.current.rotation.y -= Math.PI * 2;
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * 2.8));
     }
 
     // Animasi halus roda pendarat masuk/keluar ke dalam badan pesawat

@@ -13,13 +13,17 @@ function easeInOut(t: number): number {
   return c * c * (3 - 2 * c);
 }
 
-/** Kurva Hati Parametrik RAKSASA & Halus untuk Jupiter 5 (s=+1) & Jupiter 6 (s=-1) di bidang X-Y. */
+/**
+ * Kurva Hati Parametrik RAKSASA, Landai & Bebas Tabrakan untuk Jupiter 5 (s=+1) & Jupiter 6 (s=-1):
+ * - Tinggi aman di atas langit (Y = 10..27m, tidak menukik tajam ke bawah!)
+ * - Kedalaman Z dipisah 7 meter penuh (J5 di Z=-2, J6 di Z=-9) sehingga 100% bebas tabrakan baik di puncak maupun saat bersilangan di ujung bawah!
+ */
 function heartPoint(u: number, s: 1 | -1): THREE.Vector3 {
   const sinU = Math.sin(u);
-  // Diperbesar signifikan agar lukisan Hati raksasa & megah, dengan celah aman ±2.4m di titik atas & bawah agar J5 & J6 tak pernah bersentuhan!
-  const hx = s * (2.4 + 23.5 * sinU * sinU * sinU);
-  const hy = (13.0 * Math.cos(u) - 5.0 * Math.cos(2 * u) - 2.0 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.85;
-  return new THREE.Vector3(hx, 16.0 + hy, -4.0);
+  const hx = s * (4.2 + 23.0 * sinU * sinU * sinU);
+  const hy = (13.0 * Math.cos(u) - 5.0 * Math.cos(2 * u) - 2.0 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.62;
+  const hz = s === 1 ? -2.0 : -9.0;
+  return new THREE.Vector3(hx, 19.5 + hy, hz);
 }
 
 // Formasi Arrowhead 5 wingmen (J2–J6) berjarak LEGA (≥ 15 unit antar pesawat agar sayap 100% bebas bersentuhan!)
@@ -635,21 +639,35 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             smokeOn = p < 0.5;
           }
         } else if (pt < 89.5) {
-          // 78.5..89.5s — ATRAKSI 5A: HEART (LOVE) — J5 & J6 melukis Hati RAKSASA (lebar ±26m!) asap putih
+          // 78.5..89.5s — ATRAKSI 5A: HEART (LOVE) — J5 & J6 melukis Hati RAKSASA (tinggi & landai, Z terpisah 7m -> 0% tabrakan!)
+          // Di ujung bawah (85%..100%), masing-masing pesawat TIDAK menukik tajam, melainkan mendatar & bersilangan (J5 ke kiri, J6 ke kanan)!
           if (i === 3 || i === 4) {
             const s: 1 | -1 = i === 3 ? 1 : -1;
-            const p = easeInOut((pt - 78.5) / 11.0);
-            const u = p * Math.PI;
-            const uNext = Math.min(Math.PI, u + 0.03);
-            tmpPos.copy(heartPoint(u, s));
-            tmpNext.copy(heartPoint(uNext, s));
-            tx = tmpPos.x;
-            ty = tmpPos.y;
-            tz = tmpPos.z;
-            if (tmpNext.distanceToSquared(tmpPos) > 1e-6) {
-              tmpMat.lookAt(tmpNext, tmpPos, tmpUp);
-              tmpQuat.setFromRotationMatrix(tmpMat);
-              useTangentQuat = true;
+            const rawP = (pt - 78.5) / 11.0;
+            if (rawP < 0.84) {
+              const p = easeInOut(rawP / 0.84);
+              const u = p * Math.PI * 0.94;
+              const uNext = Math.min(Math.PI, u + 0.03);
+              tmpPos.copy(heartPoint(u, s));
+              tmpNext.copy(heartPoint(uNext, s));
+              tx = tmpPos.x;
+              ty = tmpPos.y;
+              tz = tmpPos.z;
+              if (tmpNext.distanceToSquared(tmpPos) > 1e-6) {
+                tmpMat.lookAt(tmpNext, tmpPos, tmpUp);
+                tmpQuat.setFromRotationMatrix(tmpMat);
+                useTangentQuat = true;
+              }
+            } else {
+              // Ujung bawah Hati: tarik mendatar halus & saling CROSS (J5 meluncur ke KIRI -28m, J6 meluncur ke KANAN +28m pada Z berbeda!)
+              const cp = easeInOut((rawP - 0.84) / 0.16);
+              const tip = heartPoint(Math.PI * 0.94, s);
+              tx = THREE.MathUtils.lerp(tip.x, -s * 28.0, cp);
+              ty = THREE.MathUtils.lerp(tip.y, 11.5, cp);
+              tz = tip.z;
+              tyaw = -s * Math.PI * 0.5;
+              tp = 0;
+              tr = s * 0.25 * Math.sin(cp * Math.PI);
             }
             smokeOn = true;
           } else {
@@ -662,12 +680,12 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         } else if (pt < 97.5) {
           // 89.5..97.5s — ATRAKSI 5B: 4 PESAWAT (J1–J4) BERJARAK LEGA MENUSUK TENGAH HATI SAMBIL ROLL!
           if (i === 3 || i === 4) {
-            // J5 & J6 menjauh keluar ke kiri/kanan bawah agar bersih dari jalur 4 pesawat!
-            const p = easeInOut((pt - 89.5) / 4.0);
-            const endPt = heartPoint(Math.PI, i === 3 ? 1 : -1);
-            tx = THREE.MathUtils.lerp(endPt.x, farSlot[0], p);
-            ty = THREE.MathUtils.lerp(endPt.y, farSlot[1], p);
-            tz = THREE.MathUtils.lerp(endPt.z, farSlot[2], p);
+            // J5 (sudah di kiri -28) & J6 (sudah di kanan +28) meluncur menjauh perlahan keluar arena
+            const s: 1 | -1 = i === 3 ? 1 : -1;
+            const p = easeInOut((pt - 89.5) / 5.0);
+            tx = THREE.MathUtils.lerp(-s * 28.0, farSlot[0], p);
+            ty = THREE.MathUtils.lerp(11.5, farSlot[1], p);
+            tz = THREE.MathUtils.lerp(s === 1 ? -2.0 : -9.0, farSlot[2], p);
             smokeOn = false;
           } else {
             const p = easeInOut((pt - 89.5) / 8.0);
@@ -679,20 +697,27 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             ];
             const off = offsets[i];
             tx = THREE.MathUtils.lerp(-28.0, 28.0, p) + off[0];
-            ty = THREE.MathUtils.lerp(4.0, 28.0, p) + off[1];
-            tz = -4.0 + off[2];
-            tp = -0.35;
+            ty = THREE.MathUtils.lerp(8.0, 28.0, p) + off[1];
+            tz = -5.5 + off[2];
+            tp = -0.32;
             tyaw = Math.PI * 0.32;
             tr = -p * Math.PI * 4;
             smokeOn = true;
           }
         } else if (pt < 101.5) {
-          // 97.5..101.5s: Kembali berkumpul ke formasi perlahan (4.0 detik)
+          // 97.5..101.5s: Kembali berkumpul ke formasi perlahan (4.0 detik) dari posisi AKHIR masing-masing (0% lompat/snapping!)
           const p = easeInOut((pt - 97.5) / 4.0);
-          tx = THREE.MathUtils.lerp(i <= 2 ? 28.0 : farSlot[0], tightSlot[0], p);
-          ty = THREE.MathUtils.lerp(i <= 2 ? 24.0 : farSlot[1], tightSlot[1], p);
-          tz = THREE.MathUtils.lerp(i <= 2 ? -18.0 : farSlot[2], tightSlot[2], p);
+          const heartEndOffsets: [number, number, number][] = [
+            [40.0, 24.0, -19.5],  // posisi akhir J2
+            [16.0, 24.0, -19.5],  // posisi akhir J3
+            [28.0, 20.0, -33.5],  // posisi akhir J4
+          ];
+          const fromPos = i <= 2 ? heartEndOffsets[i] : farSlot;
+          tx = THREE.MathUtils.lerp(fromPos[0], tightSlot[0], p);
+          ty = THREE.MathUtils.lerp(fromPos[1], tightSlot[1], p);
+          tz = THREE.MathUtils.lerp(fromPos[2], tightSlot[2], p);
           tp = -0.025;
+          tyaw = THREE.MathUtils.lerp(i <= 2 ? Math.PI * 0.32 : 0, 0, p);
         } else if (pt < 104.5) {
           // 101.5..104.5s: JEDA 3 DETIK sebelum Solo Spin
           tx = tightSlot[0];
@@ -798,14 +823,22 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         const directRollPhase =
           flightMode === 'airborne' &&
           ((pt >= 33.0 && pt < 39.0) || (pt >= 42.0 && pt < 50.0 && i === 4) || (pt >= 89.5 && pt < 97.5 && i <= 2));
-        grp.rotation.x = directLoopPitch ? tp : THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 3.8));
-        grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 3.8));
+        if (directLoopPitch) {
+          grp.rotation.x = tp;
+        } else {
+          while (grp.rotation.x < -Math.PI) grp.rotation.x += Math.PI * 2;
+          while (grp.rotation.x > Math.PI) grp.rotation.x -= Math.PI * 2;
+          grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 3.0));
+        }
+        while (grp.rotation.y < -Math.PI) grp.rotation.y += Math.PI * 2;
+        while (grp.rotation.y > Math.PI) grp.rotation.y -= Math.PI * 2;
+        grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 3.0));
         if (directRollPhase) {
           grp.rotation.z = tr;
         } else {
-          if (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;
-          if (grp.rotation.z > Math.PI) grp.rotation.z -= Math.PI * 2;
-          grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * 3.8));
+          while (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;
+          while (grp.rotation.z > Math.PI) grp.rotation.z -= Math.PI * 2;
+          grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * 3.0));
         }
       }
 
