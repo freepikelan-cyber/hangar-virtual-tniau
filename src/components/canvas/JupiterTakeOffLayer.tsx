@@ -605,67 +605,63 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           tz = tightSlot[2];
           tp = -0.025;
         } else if (pt < 60.0) {
-          // 56.5..60.0s: Persiapan perlahan MIRROR — 4 pesawat (J1–J4) tetap mengudara di bawah (Y=3.0),
-          // sedangkan 2 pesawat Synchro (J5 tegak & J6 terbalik) naik perlahan ke posisi cermin di ATAS 4 pesawat tersebut!
+          // 56.5..60.0s: Persiapan perlahan MIRROR — 4 pesawat (J1–J4) turun jauh di bawah & belakang (Y=1.2, Z=-22..),
+          // sedangkan 2 pesawat Mirror (J5 tegak & J6 terbalik) melaju JAUH KE DEPAN (Z=+26) & TINGGI DI ATAS (Y=15.5 & Y=21.5)!
           const p = easeInOut((pt - 56.5) / 3.5);
           if (i === 3) {
-            // J5 (Tegak / Normal) naik ke Y=11.5, X=-2.2 di atas formasi 4 pesawat
             tx = THREE.MathUtils.lerp(tightSlot[0], -2.2, p);
-            ty = THREE.MathUtils.lerp(tightSlot[1], 11.5, p);
-            tz = THREE.MathUtils.lerp(tightSlot[2], -9.0, p);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 15.5, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], 26.0, p);
             tr = 0;
           } else if (i === 4) {
-            // J6 (Terbalik / Inverted) naik ke Y=17.5, X=+2.2 tepat di atas J5 (jarak 6m + offset lateral -> terlihat 2 pesawat super jelas!)
             tx = THREE.MathUtils.lerp(tightSlot[0], 2.2, p);
-            ty = THREE.MathUtils.lerp(tightSlot[1], 17.5, p);
-            tz = THREE.MathUtils.lerp(tightSlot[2], -9.0, p);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 21.5, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], 26.0, p);
             tr = Math.PI * p;
           } else {
-            // J2, J3, J4 bersama J1 (4 pesawat) terbang stabil dalam formasi Diamond di bawah (Y=3.0)!
             tx = tightSlot[0];
-            ty = tightSlot[1];
-            tz = tightSlot[2];
+            ty = THREE.MathUtils.lerp(tightSlot[1], 1.2, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], tightSlot[2] - 22.0, p);
             tp = -0.02;
           }
         } else if (pt < 68.0) {
-          // 60.0..68.0s — ATRAKSI 4: MIRROR DI ATAS 4 PESAWAT!
-          // J1–J4 mengudara stabil di bawah (Y=3.0); J5 (normal, Y=11.5) & J6 (terbalik/inverted, Y=17.5) terbang cermin di atasnya!
+          // 60.0..68.0s — ATRAKSI 4: MIRROR JAUH DI DEPAN & ATAS (Z=+26, Y=15.5/21.5); 4 PESAWAT LAIN JAUH DI BAWAH & BELAKANG (Y=1.2, Z=-22..-48)!
           if (i === 3) {
             tx = -2.2;
-            ty = 11.5 + Math.sin(t * 1.1) * 0.08;
-            tz = -9.0;
+            ty = 15.5 + Math.sin(t * 1.0) * 0.06;
+            tz = 26.0;
             tp = -0.02;
             tr = 0;
           } else if (i === 4) {
             tx = 2.2;
-            ty = 17.5 + Math.sin(t * 1.1) * 0.08;
-            tz = -9.0;
+            ty = 21.5 + Math.sin(t * 1.0) * 0.06;
+            tz = 26.0;
             tp = 0.02;
             tr = Math.PI;
           } else {
             tx = tightSlot[0];
-            ty = tightSlot[1];
-            tz = tightSlot[2];
+            ty = 1.2;
+            tz = tightSlot[2] - 22.0;
             tp = -0.02;
             tr = 0;
           }
         } else if (pt < 72.0) {
-          // 68.0..72.0s: Kembali berkumpul ke formasi Arrowhead perlahan (4.0 detik)
+          // 68.0..72.0s: Kembali berkumpul ke formasi Arrowhead perlahan & stabil (4.0 detik)
           const p = easeInOut((pt - 68.0) / 4.0);
           if (i === 3) {
             tx = THREE.MathUtils.lerp(-2.2, tightSlot[0], p);
-            ty = THREE.MathUtils.lerp(11.5, tightSlot[1], p);
-            tz = THREE.MathUtils.lerp(-9.0, tightSlot[2], p);
+            ty = THREE.MathUtils.lerp(15.5, tightSlot[1], p);
+            tz = THREE.MathUtils.lerp(26.0, tightSlot[2], p);
             tr = 0;
           } else if (i === 4) {
             tx = THREE.MathUtils.lerp(2.2, tightSlot[0], p);
-            ty = THREE.MathUtils.lerp(17.5, tightSlot[1], p);
-            tz = THREE.MathUtils.lerp(-9.0, tightSlot[2], p);
+            ty = THREE.MathUtils.lerp(21.5, tightSlot[1], p);
+            tz = THREE.MathUtils.lerp(26.0, tightSlot[2], p);
             tr = Math.PI * (1 - p);
           } else {
             tx = tightSlot[0];
-            ty = tightSlot[1];
-            tz = tightSlot[2];
+            ty = THREE.MathUtils.lerp(1.2, tightSlot[1], p);
+            tz = THREE.MathUtils.lerp(tightSlot[2] - 22.0, tightSlot[2], p);
           }
         } else if (pt < 75.0) {
           // 72.0..75.0s: JEDA 3 DETIK sebelum Heart (Love) & Roll
@@ -860,9 +856,18 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         if (!visible) continue;
       }
 
-      // Gerakan halus & perlahan (khusus Screw Roll J6 mengikuti lintasan elips presisi agar tidak memotong tengah formasi!)
+      // Gerakan halus & perlahan — saat fase kembali ke formasi (rejoin), gunakan damping ekstra lembut (1.9) agar stabil & tidak buru-buru!
       const isScrewOrbit = flightMode === 'airborne' && pt >= 42.0 && pt < 50.0 && i === 4;
-      const lerpRate = useTangentQuat ? 7.5 : isScrewOrbit ? 9.5 : flightMode === 'airborne' ? 3.2 : 6.0;
+      const isRejoinPhase =
+        flightMode === 'airborne' &&
+        ((pt >= 14.0 && pt < 17.5) ||
+          (pt >= 50.0 && pt < 53.5) ||
+          (pt >= 68.0 && pt < 72.0) ||
+          (pt >= 97.5 && pt < 101.5) ||
+          (pt >= 127.5 && pt < 132.5) ||
+          (pt >= 147.5 && pt < 152.5));
+      const lerpRate = useTangentQuat ? 7.5 : isScrewOrbit ? 9.5 : isRejoinPhase ? 1.9 : flightMode === 'airborne' ? 2.6 : 6.0;
+      const rotRate = isRejoinPhase ? 1.9 : 2.6;
       grp.position.x = THREE.MathUtils.lerp(grp.position.x, tx, Math.min(1, dt * lerpRate));
       grp.position.y = THREE.MathUtils.lerp(grp.position.y, ty, Math.min(1, dt * lerpRate));
       grp.position.z = THREE.MathUtils.lerp(grp.position.z, tz, Math.min(1, dt * lerpRate));
@@ -879,17 +884,17 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         } else {
           while (grp.rotation.x < -Math.PI) grp.rotation.x += Math.PI * 2;
           while (grp.rotation.x > Math.PI) grp.rotation.x -= Math.PI * 2;
-          grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 3.0));
+          grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * rotRate));
         }
         while (grp.rotation.y < -Math.PI) grp.rotation.y += Math.PI * 2;
         while (grp.rotation.y > Math.PI) grp.rotation.y -= Math.PI * 2;
-        grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 3.0));
+        grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * rotRate));
         if (directRollPhase) {
           grp.rotation.z = tr;
         } else {
           while (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;
           while (grp.rotation.z > Math.PI) grp.rotation.z -= Math.PI * 2;
-          grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * 3.0));
+          grp.rotation.z = THREE.MathUtils.lerp(grp.rotation.z, tr, Math.min(1, dt * rotRate));
         }
       }
 

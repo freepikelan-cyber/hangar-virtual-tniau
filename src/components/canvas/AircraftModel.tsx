@@ -662,22 +662,28 @@ export function AircraftModel() {
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan formasi Mirror');
         } else if (pt < 60.0) {
+          // Persiapan Mirror: 4 pesawat (J1–J4) mundur & turun jauh di bawah (Y=1.2, Z=-22), sementara J5 & J6 maju jauh ke depan & atas!
+          const p = easeInOut((pt - 56.5) / 3.5);
           targetX = 0;
-          targetY = 3.0;
+          targetY = THREE.MathUtils.lerp(3.0, 1.2, p);
+          targetZ = THREE.MathUtils.lerp(0, -22.0, p);
           targetPitch = -0.02;
-          setFlightLabel('Mirror — 2 pesawat naik ke atas formasi 4 pesawat masuk posisi cermin');
+          setFlightLabel('Mirror — 2 pesawat melesat jauh ke depan & atas, 4 pesawat turun jauh di bawah');
         } else if (pt < 68.0) {
-          // Atraksi 4: Mirror — J1–J4 mengudara stabil di bawah (Y=3.0), sementara J5 (normal) & J6 (terbalik) di atasnya!
+          // Atraksi 4: Mirror — J1–J4 jauh di bawah & belakang (Y=1.2, Z=-22), J5 (normal) & J6 (terbalik) jauh di depan & atas (Z=+26, Y=15.5/21.5)!
           targetX = 0;
-          targetY = 3.0;
-          targetZ = 0;
+          targetY = 1.2;
+          targetZ = -22.0;
           targetPitch = -0.02;
           targetRoll = 0;
-          setFlightLabel('Mirror — 2 pesawat cermin (normal & terbalik) di atas 4 pesawat yang mengudara');
+          setFlightLabel('Mirror — 2 pesawat cermin jauh di depan & atas, 4 pesawat mengudara jauh di bawah');
         } else if (pt < 72.0) {
-          targetY = 3.0;
+          const p = easeInOut((pt - 68.0) / 4.0);
+          targetX = 0;
+          targetY = THREE.MathUtils.lerp(1.2, 3.0, p);
+          targetZ = THREE.MathUtils.lerp(-22.0, 0, p);
           targetPitch = -0.025;
-          setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
+          setFlightLabel('JAT — Kembali berkumpul ke posisi formasi secara perlahan & stabil');
         } else if (pt < 75.0) {
           // Jeda 3 detik
           targetPitch = -0.025;
