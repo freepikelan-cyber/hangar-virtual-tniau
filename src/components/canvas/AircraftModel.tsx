@@ -585,113 +585,179 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'airborne') {
       if (unit.id === 'kt1b') {
-        // 7 ATRAKSI IKONIK JUPITER AEROBATIC TEAM (JAT) + SUBTITLE RINGKAS DI BAWAH:
+        // 7 ATRAKSI JAT DENGAN JEDA 3 DETIK, REJOIN PERLAHAN, & SUBTITLE RINGKAS DI BAWAH:
         targetX = Math.sin(t * 0.45) * 0.22;
-        targetY = 2.95 + Math.sin(t * 1.4) * 0.1;
+        targetY = 3.0 + Math.sin(t * 1.4) * 0.1;
         targetZ = 0;
         targetGear = 1;
 
-        if (pt < 6.0) {
+        if (pt < 5.0) {
           targetPitch = -0.025;
           targetRoll = Math.cos(t * 0.9) * 0.03;
           setFlightLabel('Jupiter Aerobatic Team — Formasi Arrowhead, asap merah putih aktif');
-        } else if (pt < 16.0) {
+        } else if (pt < 14.0) {
           // Atraksi 1: Cross Over Break
           targetPitch = -0.02;
           targetRoll = 0;
           setFlightLabel('Cross Over Break — 4 pesawat lurus, 2 pesawat terluar membelok bersilangan');
-        } else if (pt < 28.0) {
-          // Atraksi 2: Arrow Head Formation & Loop
-          if (pt < 19.0) {
-            targetPitch = -0.03;
-            targetRoll = 0;
-            setFlightLabel('Arrow Head Formation & Loop — 6 pesawat merapat membentuk ujung anak panah');
-          } else {
-            const p = easeInOut((pt - 19.0) / 9.0);
-            const a = p * Math.PI * 2;
-            const R = 7.5;
-            targetY = 2.95 + (1 - Math.cos(a)) * R;
-            targetZ = Math.sin(a) * R;
-            directPitch = -a;
-            directRoll = 0;
-            setFlightLabel('Arrow Head Formation & Loop — 6 pesawat menanjak membentuk lingkaran vertikal');
-          }
-        } else if (pt < 33.5) {
-          // Atraksi 3A: Jupiter Roll
-          const p = easeInOut((pt - 28.0) / 5.5);
-          targetPitch = -0.14 * Math.sin(p * Math.PI);
-          targetY = 3.6;
+        } else if (pt < 17.5) {
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali ke formasi Arrowhead perlahan');
+        } else if (pt < 20.5) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Formasi Arrowhead stabil');
+        } else if (pt < 30.0) {
+          // Atraksi 2: Arrow Head Formation & Loop (9.5s)
+          const p = easeInOut((pt - 20.5) / 9.5);
+          const a = p * Math.PI * 2;
+          const R = 9.5;
+          targetY = 3.0 + (1 - Math.cos(a)) * R;
+          targetZ = Math.sin(a) * R;
+          directPitch = -a;
+          directRoll = 0;
+          setFlightLabel('Arrow Head Formation & Loop — 6 pesawat membentuk lingkaran vertikal');
+        } else if (pt < 33.0) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Formasi Arrowhead stabil');
+        } else if (pt < 39.0) {
+          // Atraksi 3A: Jupiter Roll (6s)
+          const p = easeInOut((pt - 33.0) / 6.0);
+          targetPitch = -0.12 * Math.sin(p * Math.PI);
+          targetY = 3.8;
           directRoll = -p * Math.PI * 2;
           setFlightLabel('Jupiter Roll — 6 pesawat bergulung serempak pada sumbunya');
-        } else if (pt < 40.0) {
+        } else if (pt < 42.0) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Persiapan Screw Roll');
+        } else if (pt < 50.0) {
           // Atraksi 3B: Screw Roll
           targetPitch = -0.025;
           targetRoll = 0;
-          setFlightLabel('Screw Roll — 1 pesawat berputar melingkari formasi utama yang terbang lurus');
-        } else if (pt < 51.0) {
-          // Atraksi 4: Mirror (J1 normal, J5 inverted sangat dekat di atasnya)
-          targetX = 0;
-          targetY = 2.95;
-          targetZ = 0;
+          setFlightLabel('Screw Roll — 1 pesawat berputar melingkari formasi utama');
+        } else if (pt < 53.5) {
           targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali ke formasi Arrowhead perlahan');
+        } else if (pt < 56.5) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Persiapan formasi Mirror');
+        } else if (pt < 60.0) {
+          const p = easeInOut((pt - 56.5) / 3.5);
+          targetX = 0;
+          targetY = THREE.MathUtils.lerp(3.0, 4.0, p);
+          targetPitch = -0.02;
+          setFlightLabel('Mirror — Pesawat lain menjauh, 2 pesawat masuk posisi cermin');
+        } else if (pt < 68.0) {
+          // Atraksi 4: Mirror (J1 normal di Y=4.0, J5 inverted di Y=9.2)
+          targetX = 0;
+          targetY = 4.0;
+          targetZ = 0;
+          targetPitch = -0.02;
           targetRoll = 0;
-          setFlightLabel('Mirror — 2 pesawat terbang sangat dekat, 1 normal dan 1 terbalik seperti cermin');
-        } else if (pt < 60.5) {
-          // Atraksi 5A: Heart (Love) & Roll — J5 & J6 melukis hati asap putih, J1–J4 siap menusuk
-          targetZ = -115.0;
-          targetY = 18.0;
+          setFlightLabel('Mirror — 2 pesawat terbang dekat, 1 normal dan 1 terbalik seperti cermin');
+        } else if (pt < 72.0) {
+          const p = easeInOut((pt - 68.0) / 4.0);
+          targetY = THREE.MathUtils.lerp(4.0, 3.0, p);
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
+        } else if (pt < 75.0) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Persiapan Heart (Love) & Roll');
+        } else if (pt < 78.5) {
+          const p = easeInOut((pt - 75.0) / 3.5);
+          targetZ = THREE.MathUtils.lerp(0, -100.0, p);
+          targetY = THREE.MathUtils.lerp(3.0, 22.0, p);
           targetPitch = -0.03;
-          targetRoll = 0;
+          setFlightLabel('Heart (Love) & Roll — 2 pesawat bersiap melukis hati raksasa');
+        } else if (pt < 89.5) {
+          // Atraksi 5A: J5 & J6 melukis Hati Raksasa asap putih; J1–J4 jauh di luar arena
+          targetZ = -100.0;
+          targetY = 22.0;
+          targetPitch = -0.03;
           setFlightLabel('Heart (Love) & Roll — 2 pesawat melukis hati raksasa dengan asap putih');
-        } else if (pt < 67.0) {
-          // Atraksi 5B: 4 pesawat (J1–J4) menusuk tepat di tengah hati sambil melakukan putaran roll!
-          const p = easeInOut(Math.min(1, (pt - 60.5) / 6.0));
-          targetX = THREE.MathUtils.lerp(-18.0, 18.0, p);
-          targetY = THREE.MathUtils.lerp(2.0, 18.5, p);
-          targetZ = -3.0;
-          targetPitch = -0.38;
+        } else if (pt < 97.5) {
+          // Atraksi 5B: 4 pesawat (J1–J4) berjarak lega menusuk tengah hati sambil melakukan roll!
+          const p = easeInOut((pt - 89.5) / 8.0);
+          targetX = THREE.MathUtils.lerp(-28.0, 28.0, p);
+          targetY = THREE.MathUtils.lerp(4.0, 28.0, p);
+          targetZ = -4.0;
+          targetPitch = -0.35;
           targetYawOffset = Math.PI * 0.32;
           directRoll = -p * Math.PI * 4;
           setFlightLabel('Heart (Love) & Roll — 4 pesawat menusuk tengah hati sambil melakukan roll');
-        } else if (pt < 77.0) {
-          // Atraksi 6: Solo Spin — 1 pesawat menanjak tinggi -> stall berputar vertikal jatuh ke bawah -> recovery!
-          const sp = (pt - 67.0) / 10.0;
+        } else if (pt < 101.5) {
+          const p = easeInOut((pt - 97.5) / 4.0);
+          targetX = THREE.MathUtils.lerp(28.0, 0, p);
+          targetY = THREE.MathUtils.lerp(28.0, 3.0, p);
+          targetZ = THREE.MathUtils.lerp(-4.0, 0, p);
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
+        } else if (pt < 104.5) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Persiapan Solo Spin');
+        } else if (pt < 108.0) {
+          targetX = 0;
+          targetY = 3.0;
+          targetPitch = -0.025;
+          setFlightLabel('Solo Spin — Pesawat lain menjauh, 1 pesawat bersiap atraksi tunggal');
+        } else if (pt < 118.0) {
+          // Atraksi 6: Solo Spin — J1 menanjak -> stall spin vertikal -> recovery!
+          const sp = (pt - 108.0) / 10.0;
           targetX = 0;
           targetZ = 0;
-          if (sp < 0.3) {
-            const p = easeInOut(sp / 0.3);
-            targetY = THREE.MathUtils.lerp(2.95, 14.95, p);
+          if (sp < 0.32) {
+            const p = easeInOut(sp / 0.32);
+            targetY = THREE.MathUtils.lerp(3.0, 17.0, p);
             targetPitch = -0.92 * p;
             targetRoll = 0;
-          } else if (sp < 0.8) {
-            const p = (sp - 0.3) / 0.5;
-            targetY = THREE.MathUtils.lerp(14.95, 3.45, easeInOut(p));
-            targetPitch = 1.12; // Hidung menukik vertikal stall
-            targetYawOffset = p * Math.PI * 6; // Berputar vertikal 3 putaran (Solo Spin!)
+          } else if (sp < 0.78) {
+            const p = (sp - 0.32) / 0.46;
+            targetY = THREE.MathUtils.lerp(17.0, 4.0, easeInOut(p));
+            targetPitch = 1.1;
+            targetYawOffset = p * Math.PI * 6;
             directRoll = p * Math.PI * 4;
           } else {
-            const p = easeInOut((sp - 0.8) / 0.2);
-            targetY = THREE.MathUtils.lerp(3.45, 2.95, p);
+            const p = easeInOut((sp - 0.78) / 0.22);
+            targetY = THREE.MathUtils.lerp(4.0, 3.0, p);
             targetPitch = THREE.MathUtils.lerp(0.45, -0.025, p);
             targetRoll = 0;
           }
-          setFlightLabel('Solo Spin — 1 pesawat menanjak, stall berputar vertikal lalu recovery stabil');
-        } else if (pt < 81.5) {
-          // Atraksi 7A: Loop & Bomb Burst — menanjak bersama ke puncak
-          const p = easeInOut((pt - 77.0) / 4.5);
-          targetY = 3.0 + 7.2 * p;
-          targetPitch = -0.85 * p;
+          setFlightLabel('Solo Spin — 1 pesawat menanjak, stall berputar vertikal lalu recovery');
+        } else if (pt < 122.0) {
+          targetX = 0;
+          targetY = 3.0;
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
+        } else if (pt < 125.0) {
+          // Jeda 3 detik
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Persiapan penutup Loop & Bomb Burst');
+        } else if (pt < 129.5) {
+          // Atraksi 7A: Menanjak bersama ke titik puncak
+          const p = easeInOut((pt - 125.0) / 4.5);
+          targetY = 3.0 + 8.5 * p;
+          targetPitch = -0.82 * p;
           targetRoll = 0;
           setFlightLabel('Loop & Bomb Burst — 6 pesawat menanjak bersama menuju titik puncak');
-        } else if (pt < 88.5) {
-          // Atraksi 7B: Bomb Burst — berpencar ke segala arah bak kembang api!
-          const p = easeInOut((pt - 81.5) / 7.0);
+        } else if (pt < 137.0) {
+          // Atraksi 7B: Bomb Burst!
+          const p = easeInOut((pt - 129.5) / 7.5);
           const arch = Math.sin(p * Math.PI);
-          targetY = 10.2 + 3.6 * arch - 6.8 * p;
-          targetZ = 4.5 * arch;
-          targetPitch = THREE.MathUtils.lerp(-0.85, 0.12, p);
-          targetRoll = 0.25 * arch;
+          targetY = 11.5 + 4.0 * arch - 8.5 * p;
+          targetZ = 8.0 * arch;
+          targetPitch = THREE.MathUtils.lerp(-0.82, 0.12, p);
+          targetRoll = 0.22 * arch;
           setFlightLabel('Loop & Bomb Burst — 6 pesawat berpencar ke segala arah bak kembang api');
+        } else if (pt < 142.0) {
+          const p = easeInOut((pt - 137.0) / 5.0);
+          targetY = THREE.MathUtils.lerp(6.0, 3.0, p);
+          targetPitch = -0.025;
+          setFlightLabel('JAT — Kembali ke formasi Echelon perlahan');
         } else {
           targetPitch = -0.025 + Math.sin(t * 1.1) * 0.012;
           targetRoll = Math.cos(t * 0.9) * 0.025;
