@@ -914,27 +914,63 @@ export function AircraftModel() {
               targetPitch = -0.04 * Math.sin(p * Math.PI);
               break;
             }
-            case 'immelmann': {
-              // Immelmann Turn halus: Menanjak melengkung -> Guling 180° tegak di puncak -> Turun melandai mulus kembali ke level!
-              if (p < 0.48) {
-                const q = easeInOut(p / 0.48);
-                const a = q * Math.PI;
-                directPitch = -a;
-                directRoll = 0;
-                targetY = baseH + (1 - Math.cos(a)) * 1.65;
-                targetZ = Math.sin(a) * 2.0;
-              } else if (p < 0.74) {
-                const q = easeInOut((p - 0.48) / 0.26);
-                directPitch = -Math.PI;
-                directRoll = q * Math.PI; // Guling 180° perlahan dari terbalik menjadi tegak lurus!
-                targetY = baseH + 3.3;
-              } else {
-                // Kembalikan ketinggian & sudut secara halus selama 2.2 detik (tanpa tersentak!)
-                const q = easeInOut((p - 0.74) / 0.26);
-                targetY = THREE.MathUtils.lerp(baseH + 3.3, baseH, q);
-                targetZ = 0;
-                targetPitch = 0.08 * Math.sin(q * Math.PI);
+            case 'turnRight': {
+              // Manuver Kanan: belokan miring kanan halus lalu kembali lurus stabil
+              const s = Math.sin(p * Math.PI);
+              targetX = -3.4 * s;
+              targetY = baseH + 0.45 * s;
+              targetRoll = 0.82 * s;
+              targetPitch = -0.08 * s;
+              targetYawOffset = -0.42 * s;
+              break;
+            }
+            case 'turnLeft': {
+              // Manuver Kiri: belokan miring kiri halus lalu kembali lurus stabil
+              const s = Math.sin(p * Math.PI);
+              targetX = 3.4 * s;
+              targetY = baseH + 0.45 * s;
+              targetRoll = -0.82 * s;
+              targetPitch = -0.08 * s;
+              targetYawOffset = 0.42 * s;
+              break;
+            }
+            case 'climbUp': {
+              // Manuver Ke Atas: tanjakan tinggi bertenaga penuh lalu melandai halus kembali ke level
+              const s = Math.sin(p * Math.PI);
+              targetX = 0;
+              targetY = baseH + 3.8 * s;
+              targetZ = 1.4 * s;
+              targetPitch = -0.68 * Math.sin(p * Math.PI * 0.92);
+              targetRoll = 0;
+              break;
+            }
+            case 'bombBurst': {
+              // Bomb Burst: menanjak tinggi ke puncak -> pecah miring melebar dramatis -> kembali datar mulus!
+              if (p < 0.42) {
+                const q = easeInOut(p / 0.42);
+                targetX = 0;
+                targetY = THREE.MathUtils.lerp(baseH, baseH + 4.0, q);
+                targetZ = 1.2 * q;
+                targetPitch = -0.82 * q;
                 targetRoll = 0;
+                targetYawOffset = 0;
+              } else if (p < 0.78) {
+                const q = easeInOut((p - 0.42) / 0.36);
+                const arc = Math.sin(q * Math.PI);
+                targetX = -3.8 * q;
+                targetY = THREE.MathUtils.lerp(baseH + 4.0, baseH + 0.7, q) + 0.6 * arc;
+                targetZ = THREE.MathUtils.lerp(1.2, -0.5, q);
+                targetPitch = THREE.MathUtils.lerp(-0.82, 0.24, q);
+                targetRoll = 0.95 * arc;
+                targetYawOffset = -0.48 * arc;
+              } else {
+                const q = easeInOut((p - 0.78) / 0.22);
+                targetX = THREE.MathUtils.lerp(-3.8, 0, q);
+                targetY = THREE.MathUtils.lerp(baseH + 0.7, baseH, q);
+                targetZ = THREE.MathUtils.lerp(-0.5, 0, q);
+                targetPitch = THREE.MathUtils.lerp(0.24, -0.025, q);
+                targetRoll = 0;
+                targetYawOffset = 0;
               }
               break;
             }

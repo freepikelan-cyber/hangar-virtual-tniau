@@ -2,7 +2,10 @@ export type FighterManeuverId =
   | 'auto'
   | 'barrelRoll'
   | 'aileronRoll'
-  | 'immelmann'
+  | 'turnRight'
+  | 'turnLeft'
+  | 'climbUp'
+  | 'bombBurst'
   | 'chandelle';
 
 export interface FighterManeuverSpec {
@@ -23,21 +26,39 @@ export const FIGHTER_MANEUVERS: FighterManeuverSpec[] = [
     desc: 'Pesawat berputar 360° pada poros memanjang tanpa mengubah arah terbang lurus.',
   },
   {
-    id: 'immelmann',
-    name: 'Immelmann Turn',
-    desc: 'Setengah loop menanjak diikuti setengah gulung 180° untuk berbalik arah & tambah ketinggian.',
+    id: 'turnRight',
+    name: 'Manuver Kanan',
+    desc: 'Belokan tempur miring kanan dengan sudut bank halus lalu kembali lurus stabil.',
+  },
+  {
+    id: 'turnLeft',
+    name: 'Manuver Kiri',
+    desc: 'Belokan tempur miring kiri dengan sudut bank halus lalu kembali lurus stabil.',
+  },
+  {
+    id: 'climbUp',
+    name: 'Manuver Ke Atas',
+    desc: 'Tanjakan tinggi bertenaga penuh menembus langit lalu melandai mulus ke posisi normal.',
+  },
+  {
+    id: 'bombBurst',
+    name: 'Bomb Burst',
+    desc: 'Tanjakan tajam menuju puncak diikuti pecahan miring melebar dramatis lalu kembali stabil.',
   },
   {
     id: 'chandelle',
     name: 'Chandelle',
-    desc: 'Belokan menanjak tajam 180° mengonversi kecepatan menjadi ketinggian maksimal.',
+    desc: 'Belokan menanjak 180° mengonversi kecepatan menjadi ketinggian maksimal.',
   },
 ];
 
 export const FIGHTER_AUTO_ORDER: Exclude<FighterManeuverId, 'auto'>[] = [
   'barrelRoll',
   'aileronRoll',
-  'immelmann',
+  'turnRight',
+  'turnLeft',
+  'climbUp',
+  'bombBurst',
   'chandelle',
 ];
 

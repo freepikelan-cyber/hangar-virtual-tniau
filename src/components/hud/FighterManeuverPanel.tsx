@@ -43,7 +43,7 @@ export function FighterManeuverPanel() {
             MANUVER TEMPUR • {unit.name}
           </div>
           <p className="mt-0.5 text-[10px] text-slate-300">
-            4 Manuver Terbang Sederhana &amp; Aerobatik Dasar
+            {FIGHTER_MANEUVERS.length} Manuver Terbang &amp; Aerobatik Pesawat Tempur
           </p>
         </div>
 
@@ -56,10 +56,10 @@ export function FighterManeuverPanel() {
           ) : (
             <>
               <div className="font-display text-xs font-bold text-[#ffb703] uppercase">
-                AUTO MANUVER SEDERHANA
+                AUTO MANUVER TEMPUR
               </div>
               <p className="text-[11px] text-slate-200 leading-snug mt-0.5">
-                Menjalankan 4 manuver dasar otomatis, atau pilih langsung di bawah (untuk pertempuran klik tombol Dogfight).
+                Menjalankan {FIGHTER_MANEUVERS.length} manuver otomatis secara perlahan &amp; berjeda, atau pilih langsung di bawah.
               </p>
             </>
           )}
@@ -70,7 +70,7 @@ export function FighterManeuverPanel() {
 
           <div className="space-y-1.5">
             <div className="flex items-center gap-1 font-display text-[10px] font-bold tracking-[0.14em] text-cyan-300 uppercase">
-              <Flame className="h-3 w-3" /> Manuver Dasar Sederhana (4)
+              <Flame className="h-3 w-3" /> Pilihan Manuver ({FIGHTER_MANEUVERS.length})
             </div>
             <div className="grid grid-cols-2 gap-1.5">{FIGHTER_MANEUVERS.map((m) => renderBtn(m.id, m.name))}</div>
           </div>
