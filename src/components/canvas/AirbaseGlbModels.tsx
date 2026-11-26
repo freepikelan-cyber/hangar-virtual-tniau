@@ -151,25 +151,60 @@ export function AirbaseGlbModels() {
 }
 
 /**
- * Kota 3D Realistis (.GLB) dari folder footage (beautiful_city.glb & city_pack_3.glb)
- * ditempatkan di sisi kota pangkalan udara (X = -98) menggantikan gedung kotak lama!
+ * Kota 3D Realistis (.GLB) dari folder footage (beautiful_city.glb, city_pack_3.glb, & 3d_scan_of_a_russian_city_quarter.glb)
+ * ditempatkan di sisi kota pangkalan udara (X = -104) menggantikan gedung kotak lama!
  */
 export function CityGlbModels() {
   const mainCityGltf = useGLTF('/models/env/city-main.glb');
   const districtGltf = useGLTF('/models/env/city-district.glb');
+  const scanCityGltf = useGLTF('/models/env/city-scan.glb');
 
   const cities = useMemo(() => {
     const mainCenter = normalizeGlbPart(mainCityGltf.scene, 30.0);
     const districtNorth = normalizeGlbPart(districtGltf.scene, 20.0);
     const districtSouth = normalizeGlbPart(districtGltf.scene, 22.0);
-    return { mainCenter, districtNorth, districtSouth };
-  }, [mainCityGltf.scene, districtGltf.scene]);
+    const scanQuarter1 = normalizeGlbPart(scanCityGltf.scene, 18.0);
+    const scanQuarter2 = normalizeGlbPart(scanCityGltf.scene, 16.0);
+    return { mainCenter, districtNorth, districtSouth, scanQuarter1, scanQuarter2 };
+  }, [mainCityGltf.scene, districtGltf.scene, scanCityGltf.scene]);
 
   return (
     <group name="city-glb-models">
       <primitive object={cities.mainCenter} position={[-106.0, -0.1, -6.0]} rotation={[0, Math.PI * 0.5, 0]} />
       <primitive object={cities.districtNorth} position={[-104.0, -0.1, -112.0]} rotation={[0, 0, 0]} />
       <primitive object={cities.districtSouth} position={[-104.0, -0.1, 106.0]} rotation={[0, Math.PI, 0]} />
+      <primitive object={cities.scanQuarter1} position={[-76.0, -0.1, -72.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={cities.scanQuarter2} position={[-76.0, -0.1, 68.0]} rotation={[0, -Math.PI * 0.5, 0]} />
+    </group>
+  );
+}
+
+/**
+ * Gunung Sumbing Jawa Tengah 3D Asli (.GLB: mount_sumbing_-_java_indonesia.glb)
+ * Menjulang megah mengapit lembah terbang Zona 2 (Pegunungan) — jalur tengah X ∈ [-25..+25] tetap 100% aman bebas tabrakan!
+ */
+export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | 'airbase' }) {
+  const sumbingGltf = useGLTF('/models/env/mount-sumbing.glb');
+
+  const peaks = useMemo(() => {
+    if (mode === 'airbase') {
+      return [
+        { obj: normalizeGlbPart(sumbingGltf.scene, 42.0), pos: [-110, -1.0, 148] as [number, number, number], rot: 0.3 },
+        { obj: normalizeGlbPart(sumbingGltf.scene, 34.0), pos: [85, -1.0, 152] as [number, number, number], rot: 2.1 },
+      ];
+    }
+    return [
+      { obj: normalizeGlbPart(sumbingGltf.scene, 46.0), pos: [-88, -1.2, -55] as [number, number, number], rot: 0.2 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 52.0), pos: [94, -1.2, 24] as [number, number, number], rot: 1.8 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 38.0), pos: [-82, -1.2, 95] as [number, number, number], rot: 3.4 },
+    ];
+  }, [sumbingGltf.scene, mode]);
+
+  return (
+    <group name={`mount-sumbing-${mode}`}>
+      {peaks.map((pk, idx) => (
+        <primitive key={idx} object={pk.obj} position={pk.pos} rotation={[0, pk.rot, 0]} />
+      ))}
     </group>
   );
 }

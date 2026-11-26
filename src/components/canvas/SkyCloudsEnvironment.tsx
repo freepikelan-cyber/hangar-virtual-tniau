@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AirbaseGlbModels, CityGlbModels, OceanRocksGlbModels } from './AirbaseGlbModels';
+import { AirbaseGlbModels, CityGlbModels, MountSumbingGlbModels, OceanRocksGlbModels } from './AirbaseGlbModels';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
@@ -1120,6 +1120,7 @@ export function SkyCloudsEnvironment() {
           <Suspense fallback={null}>
             <AirbaseGlbModels />
             <CityGlbModels />
+            <MountSumbingGlbModels mode="airbase" />
           </Suspense>
 
           {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
@@ -1222,8 +1223,11 @@ export function SkyCloudsEnvironment() {
           </mesh>
         </group>
 
-        {/* === ZONA 2: PEGUNUNGAN HEIGHTMAP 3D FOTOREALISTIS & LEMBAH SUNGAI === */}
+        {/* === ZONA 2: PEGUNUNGAN HEIGHTMAP 3D + GUNUNG SUMBING JAWA TENGAH (.GLB) & LEMBAH SUNGAI === */}
         <group ref={mountainChunkRef} name="biome-mountains">
+          <Suspense fallback={null}>
+            <MountSumbingGlbModels mode="valley" />
+          </Suspense>
           {/* Mesh Pegunungan Heightmap 3D dengan tekstur kanopi hutan tropis, strata tebing batu & bump map */}
           <mesh geometry={mountainGeo} receiveShadow>
             <meshStandardMaterial
