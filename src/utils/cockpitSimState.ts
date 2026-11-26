@@ -86,6 +86,8 @@ export interface CockpitTelemetry {
   stickY: number; // -1..1 (pitch input)
   isVtol: boolean;
   cameraMode: SimCameraMode;
+  lookYaw: number; // rad (0 = depan, + = kiri, - = kanan, ±PI = belakang)
+  lookPitch: number; // rad (+ = atas, - = bawah)
   crashed: boolean;
   crashTimer: number;
   crashReason: string;
@@ -207,6 +209,8 @@ export const cockpitTelemetry: CockpitTelemetry = {
   stickY: 0,
   isVtol: false,
   cameraMode: 'cockpit',
+  lookYaw: 0,
+  lookPitch: 0,
   crashed: false,
   crashTimer: 0,
   crashReason: '',
@@ -254,6 +258,8 @@ export function resetCockpitSimState(isVtol: boolean, keepMission = true) {
   cockpitTelemetry.stickX = 0;
   cockpitTelemetry.stickY = 0;
   cockpitTelemetry.isVtol = isVtol;
+  cockpitTelemetry.lookYaw = 0;
+  cockpitTelemetry.lookPitch = 0;
   cockpitTelemetry.crashed = false;
   cockpitTelemetry.crashTimer = 0;
   cockpitTelemetry.crashReason = '';

@@ -42,6 +42,8 @@ interface HudSnapshot {
   nextRingDistM: number;
   nextRingBearingDeg: number;
   cameraMode: SimCameraMode;
+  lookYawDeg: number;
+  lookPitchDeg: number;
   crashed: boolean;
   crashTimer: number;
   crashReason: string;
@@ -105,6 +107,8 @@ export function CockpitSimulatorHud() {
     nextRingDistM: 180,
     nextRingBearingDeg: 0,
     cameraMode: 'cockpit',
+    lookYawDeg: 0,
+    lookPitchDeg: 0,
     crashed: false,
     crashTimer: 0,
     crashReason: '',
@@ -132,6 +136,12 @@ export function CockpitSimulatorHud() {
       if (k === 'g' && !e.repeat) cockpitInput.toggleGearRequested = true;
       if (k === 'c' && !e.repeat) cockpitInput.cycleCameraRequested = true;
       if (k === 'm' && !e.repeat) setManualOpen((v) => !v);
+      if (k === 'q') cockpitTelemetry.lookYaw = Math.min(Math.PI, cockpitTelemetry.lookYaw + 0.16);
+      if (k === 'e') cockpitTelemetry.lookYaw = Math.max(-Math.PI, cockpitTelemetry.lookYaw - 0.16);
+      if (k === 'v' && !e.repeat) {
+        cockpitTelemetry.lookYaw = 0;
+        cockpitTelemetry.lookPitch = 0;
+      }
       if (k === 'r' && !e.repeat) {
         cockpitInput.resetRequested = true;
         setSliderPct(0);
@@ -185,6 +195,8 @@ export function CockpitSimulatorHud() {
         nextRingDistM: t.nextRingDistM,
         nextRingBearingDeg: Math.round(t.nextRingBearingDeg),
         cameraMode: t.cameraMode,
+        lookYawDeg: Math.round((t.lookYaw * 180) / Math.PI),
+        lookPitchDeg: Math.round((t.lookPitch * 180) / Math.PI),
         crashed: t.crashed,
         crashTimer: t.crashTimer,
         crashReason: t.crashReason,
@@ -379,13 +391,59 @@ export function CockpitSimulatorHud() {
             <ChevronRight className="h-4 w-4" />
           </button>
         )}
+
+        {/* Kontrol Cepat Arah Kepala Pilot 360° (Tengok Kiri / Atas / Depan / Kanan / Belakang — bisa juga seret layar!) */}
+        <div className="mt-2 border-t border-emerald-400/25 pt-1.5">
+          <div className="flex items-center justify-between text-[9px] font-bold tracking-wider text-cyan-300/90 uppercase mb-1">
+            <span>Tengok Kepala (Seret Layar / Q-E)</span>
+            <span>
+              {hud.lookYawDeg === 0 && hud.lookPitchDeg === 0
+                ? 'DEPAN'
+                : `${hud.lookYawDeg > 0 ? `KIRI ${hud.lookYawDeg}°` : hud.lookYawDeg < 0 ? `KANAN ${Math.abs(hud.lookYawDeg)}°` : ''}${
+                    hud.lookPitchDeg > 8 ? ' ATAS' : ''
+                  }`}
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {[
+              { label: 'Kiri', yaw: Math.PI / 2, pitch: 0.05 },
+              { label: 'Atas', yaw: 0, pitch: 0.95 },
+              { label: 'Depan', yaw: 0, pitch: 0 },
+              { label: 'Kanan', yaw: -Math.PI / 2, pitch: 0.05 },
+              { label: 'Belakang', yaw: Math.PI, pitch: 0.14 },
+            ].map((view) => {
+              const isCur =
+                Math.abs(hud.lookYawDeg - Math.round((view.yaw * 180) / Math.PI)) < 15 &&
+                Math.abs(hud.lookPitchDeg - Math.round((view.pitch * 180) / Math.PI)) < 20;
+              return (
+                <button
+                  key={view.label}
+                  type="button"
+                  onClick={() => {
+                    cockpitTelemetry.lookYaw = view.yaw;
+                    cockpitTelemetry.lookPitch = view.pitch;
+                  }}
+                  className={`rounded py-1 font-display text-[9px] font-bold uppercase cursor-pointer active:scale-95 ${
+                    isCur
+                      ? 'bg-cyan-400 text-[#03140d]'
+                      : 'border border-cyan-400/35 bg-[#072030] text-cyan-200 hover:bg-cyan-500/25'
+                  }`}
+                >
+                  {view.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* === HEAD-UP DISPLAY (HUD) MILITER HIJAU BERCAHAYA DI TENGAH LAYAR === */}
       {!hud.crashed && (
         <div
           className={`pointer-events-none fixed inset-0 flex items-center justify-center transition-opacity ${
-            hud.cameraMode === 'cockpit' ? 'opacity-100' : 'opacity-65'
+            hud.cameraMode === 'cockpit' && Math.abs(hud.lookYawDeg) < 35 && Math.abs(hud.lookPitchDeg) < 35
+              ? 'opacity-100'
+              : 'opacity-45'
           }`}
         >
           <div
@@ -649,6 +707,9 @@ export function CockpitSimulatorHud() {
                   </div>
                   <p className="text-xs text-cyan-200">
                     Tekan tombol <kbd className="rounded bg-slate-800 px-1.5 py-0.5 text-cyan-300">C</kbd> atau klik tombol <strong>Kamera</strong> di pojok kanan atas untuk melihat pesawat dari <strong>Dalam Kokpit</strong>, <strong>Ekor (Chase)</strong>, <strong>Sayap (Wing)</strong>, dan <strong>Orbit 360°</strong>!
+                  </p>
+                  <p className="text-xs text-emerald-200">
+                    Saat berada di dalam kokpit, Anda bebas menengok ke segala arah (<strong>Kiri, Kanan, Atas, Bawah, hingga Belakang 180°</strong>) dengan <strong>menyeret layar (Mouse/Sentuh)</strong>, tombol cepat <strong>Tengok Kepala</strong>, atau tombol <kbd className="rounded bg-slate-800 px-1.5 py-0.5 text-emerald-300">Q</kbd> / <kbd className="rounded bg-slate-800 px-1.5 py-0.5 text-emerald-300">E</kbd> (dan <kbd className="rounded bg-slate-800 px-1.5 py-0.5 text-emerald-300">V</kbd> untuk kembali lurus ke depan).
                   </p>
                 </div>
               )}

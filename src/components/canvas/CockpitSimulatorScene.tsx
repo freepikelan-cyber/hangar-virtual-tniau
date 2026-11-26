@@ -198,11 +198,14 @@ function CockpitWorldAndPhysics() {
 
   const euler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const quat = useMemo(() => new THREE.Quaternion(), []);
+  const headEuler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
+  const headQuat = useMemo(() => new THREE.Quaternion(), []);
   const extEuler = useMemo(() => new THREE.Euler(0, 0, 0, 'YXZ'), []);
   const extQuat = useMemo(() => new THREE.Quaternion(), []);
   const forwardVec = useMemo(() => new THREE.Vector3(), []);
   const camOffset = useMemo(() => new THREE.Vector3(), []);
   const lookTarget = useMemo(() => new THREE.Vector3(), []);
+  const camUpVec = useMemo(() => new THREE.Vector3(0, 1, 0), []);
 
   // Tekstur & geometri dunia terbang 3D
   const skyTex = useMemo(() => makeSimSkyTexture(timeOfDay), [timeOfDay]);
@@ -288,6 +291,8 @@ function CockpitWorldAndPhysics() {
       const order: SimCameraMode[] = ['cockpit', 'chase', 'wing', 'orbit'];
       const nextIdx = (order.indexOf(tel.cameraMode) + 1) % order.length;
       tel.cameraMode = order[nextIdx];
+      tel.lookYaw = 0;
+      tel.lookPitch = 0;
     }
 
     // Reset posisi ke Runway 09
@@ -641,13 +646,18 @@ function CockpitWorldAndPhysics() {
     if (tel.cameraMode === 'cockpit') {
       euler.set(tel.pitch, tel.yaw + Math.PI, -tel.roll, 'YXZ');
       quat.setFromEuler(euler);
+      headEuler.set(tel.lookPitch, tel.lookYaw, 0, 'YXZ');
+      headQuat.setFromEuler(headEuler);
+
       camera.position.set(tel.x + shakeX, tel.y + shakeY, tel.z);
-      camera.quaternion.copy(quat);
+      // Kamera ikut arah pandangan kepala pilot (360° kiri/kanan/atas/bawah/belakang),
+      // sedangkan kokpit 3D tetap menempel pada badan pesawat!
+      camera.quaternion.copy(quat).multiply(headQuat);
 
       if (cockpitRigRef.current) {
         cockpitRigRef.current.visible = true;
         cockpitRigRef.current.position.copy(camera.position);
-        cockpitRigRef.current.quaternion.copy(camera.quaternion);
+        cockpitRigRef.current.quaternion.copy(quat);
       }
       if (extAircraftRef.current) {
         extAircraftRef.current.visible = false;
@@ -682,19 +692,19 @@ function CockpitWorldAndPhysics() {
       }
 
       if (tel.cameraMode === 'chase') {
-        camOffset.set(0, 5.2, -17.5).applyQuaternion(extQuat);
+        camOffset.set(0, 5.2 + tel.lookPitch * 6.5, -17.5).applyAxisAngle(camUpVec, tel.lookYaw).applyQuaternion(extQuat);
         camera.position.set(tel.x + camOffset.x + shakeX, tel.y + camOffset.y + shakeY, tel.z + camOffset.z);
-        lookTarget.set(tel.x + Math.sin(tel.yaw) * 14, tel.y + Math.sin(tel.pitch) * 6, tel.z + Math.cos(tel.yaw) * 14);
+        lookTarget.set(tel.x + Math.sin(tel.yaw) * 6, tel.y + Math.sin(tel.pitch) * 4, tel.z + Math.cos(tel.yaw) * 6);
         camera.lookAt(lookTarget);
       } else if (tel.cameraMode === 'wing') {
-        camOffset.set(13.5, 3.2, -8.5).applyQuaternion(extQuat);
+        camOffset.set(13.5, 3.2 + tel.lookPitch * 5.0, -8.5).applyAxisAngle(camUpVec, tel.lookYaw).applyQuaternion(extQuat);
         camera.position.set(tel.x + camOffset.x, tel.y + camOffset.y, tel.z + camOffset.z);
         lookTarget.set(tel.x, tel.y - 0.5, tel.z);
         camera.lookAt(lookTarget);
       } else {
         // Orbit sinematik 360° mengelilingi pesawat sambil terbang!
-        const ang = t * 0.45;
-        camera.position.set(tel.x + Math.cos(ang) * 22, tel.y + 6.8, tel.z + Math.sin(ang) * 22);
+        const ang = t * 0.45 + tel.lookYaw;
+        camera.position.set(tel.x + Math.cos(ang) * 22, tel.y + 6.8 + tel.lookPitch * 7, tel.z + Math.sin(ang) * 22);
         lookTarget.set(tel.x, tel.y - 0.4, tel.z);
         camera.lookAt(lookTarget);
       }
@@ -971,14 +981,68 @@ function CockpitWorldAndPhysics() {
             <meshStandardMaterial color="#0f172a" roughness={0.65} />
           </mesh>
         </group>
+
+        {/* Sandaran Kepala Kursi Ejeksi, Sayap Kiri-Kanan, & Sirip Ekor Belakang (Terlihat nyata saat pilot menengok kanan, kiri, atas, & belakang!) */}
+        <group position={[0, 0.05, 0.42]}>
+          <mesh>
+            <boxGeometry args={[0.42, 0.56, 0.12]} />
+            <meshStandardMaterial color="#1e293b" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.34, 0]}>
+            <boxGeometry args={[0.32, 0.16, 0.12]} />
+            <meshStandardMaterial color="#eab308" roughness={0.6} />
+          </mesh>
+        </group>
+        {/* Sayap Kiri & Kanan terlihat saat menengok samping */}
+        <mesh position={[-2.4, -0.45, 0.85]} rotation={[0, 0.25, 0]}>
+          <boxGeometry args={[3.4, 0.08, 1.35]} />
+          <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
+        </mesh>
+        <mesh position={[2.4, -0.45, 0.85]} rotation={[0, -0.25, 0]}>
+          <boxGeometry args={[3.4, 0.08, 1.35]} />
+          <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
+        </mesh>
+        {/* Punggung badan & sirip ekor vertikal terlihat saat menengok ke belakang */}
+        <mesh position={[0, -0.38, 2.3]}>
+          <boxGeometry args={[0.72, 0.46, 3.2]} />
+          <meshStandardMaterial color="#334155" roughness={0.55} metalness={0.35} />
+        </mesh>
+        <mesh position={[0, 0.72, 3.5]} rotation={[-0.22, 0, 0]}>
+          <boxGeometry args={[0.1, 1.65, 1.15]} />
+          <meshStandardMaterial color="#1e3a8a" roughness={0.45} metalness={0.4} />
+        </mesh>
       </group>
     </>
   );
 }
 
 export function CockpitSimulatorScene() {
+  const dragPtr = useRef<{ id: number; x: number; y: number } | null>(null);
+
   return (
-    <div className="fixed inset-0 z-10 bg-[#07152c] touch-none">
+    <div
+      className="fixed inset-0 z-10 bg-[#07152c] touch-none cursor-grab active:cursor-grabbing"
+      onPointerDown={(e) => {
+        dragPtr.current = { id: e.pointerId, x: e.clientX, y: e.clientY };
+        e.currentTarget.setPointerCapture(e.pointerId);
+      }}
+      onPointerMove={(e) => {
+        if (!dragPtr.current || dragPtr.current.id !== e.pointerId) return;
+        const dx = e.clientX - dragPtr.current.x;
+        const dy = e.clientY - dragPtr.current.y;
+        dragPtr.current.x = e.clientX;
+        dragPtr.current.y = e.clientY;
+        // Geser kanan -> tengok kanan; geser atas -> dongak ke atas; geser terus -> tengok ke belakang (±180°)!
+        cockpitTelemetry.lookYaw = THREE.MathUtils.clamp(cockpitTelemetry.lookYaw - dx * 0.0055, -Math.PI, Math.PI);
+        cockpitTelemetry.lookPitch = THREE.MathUtils.clamp(cockpitTelemetry.lookPitch - dy * 0.005, -0.75, 1.35);
+      }}
+      onPointerUp={(e) => {
+        if (dragPtr.current?.id === e.pointerId) dragPtr.current = null;
+      }}
+      onPointerCancel={() => {
+        dragPtr.current = null;
+      }}
+    >
       <Canvas
         dpr={[1, 1.5]}
         camera={{ fov: 62, near: 0.05, far: 2400 }}
