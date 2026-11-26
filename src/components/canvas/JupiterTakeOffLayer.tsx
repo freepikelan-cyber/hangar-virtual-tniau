@@ -67,14 +67,14 @@ const STANDBY_FAR_SLOTS: [number, number, number][] = [
   [-68.0, 20.0, -96.0],
 ];
 
-// Formasi 6-Ship SIAP TAKE OFF berjarak LEGA & MAJU jauh dari tepi laut di Runway 09 3-jalur (WORLD SPACE)!
-// (J1 paling depan di [0, +16]; J4 di [0, -4] berjarak 20m penuh di belakang J1; semua bebas numpuk!)
+// Formasi 6-Ship SIAP TAKE OFF berjarak LEGA & MAJU jauh di depan jalur taxiway (Z = -10.5) agar 0% tabrakan antar J1–J6!
+// J1 paling depan di [0, +32]; J4 di [0, +10] (20.5m di depan taxiway Z=-10.5 -> J5 melintas X=0 di Z=-10.5 100% aman bebas tabrakan!)
 const RUNWAY_FORM_SPOTS: [number, number][] = [
-  [14.0, 6.0],   // Jupiter 2 (Jalur kanan, 14m kanan & 10m belakang J1)
-  [-14.0, 6.0],  // Jupiter 3 (Jalur kiri, 14m kiri & 10m belakang J1)
-  [0.0, -4.0],   // Jupiter 4 (Jalur tengah, 20m penuh di belakang J1!)
-  [14.0, -14.0], // Jupiter 5 (Jalur kanan, 20m belakang J2)
-  [-14.0, -14.0],// Jupiter 6 (Jalur kiri, 20m belakang J3)
+  [14.0, 22.0],  // Jupiter 2 (Jalur kanan, 14m kanan & 10m belakang J1)
+  [-14.0, 22.0], // Jupiter 3 (Jalur kiri, 14m kiri & 10m belakang J1)
+  [0.0, 10.0],   // Jupiter 4 (Jalur tengah, 22m belakang J1 & 20.5m jauh di depan taxiway!)
+  [14.0, 2.0],   // Jupiter 5 (Jalur kanan, 20m belakang J2 & 12.5m di depan taxiway!)
+  [-14.0, 2.0],  // Jupiter 6 (Jalur kiri, 20m belakang J3 & 12.5m di depan taxiway!)
 ];
 
 const HEART_SEGMENTS = 64;

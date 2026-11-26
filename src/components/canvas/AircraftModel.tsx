@@ -453,17 +453,17 @@ export function AircraftModel() {
             targetGear = 0;
             setFlightLabel('JUPITER 1 • LINE UP JALUR TENGAH • JUPITER 2–6 MENYUSUL TIAP 5 DETIK');
           } else if (pt < 8.4) {
-            // Tahap 1C: Maju ke posisi start paling depan (Z = +16) jauh dari tepi laut!
+            // Tahap 1C: Maju ke posisi start paling depan (Z = +32) memberi ruang ekstra lega bagi J2–J6 di belakang!
             const p = easeInOut((pt - 6.6) / 1.8);
             targetX = 0;
-            targetZ = THREE.MathUtils.lerp(-4.0, 16.0, p);
+            targetZ = THREE.MathUtils.lerp(-4.0, 32.0, p);
             targetY = 0;
             targetYawOffset = 0;
             targetGear = 0;
             setFlightLabel('JUPITER 1–6 • TAXI SATU PER SATU (JEDA 5 DETIK) KE RUNWAY 09');
           } else if (pt < 29.0) {
             targetX = 0;
-            targetZ = 16.0;
+            targetZ = 32.0;
             targetY = 0;
             targetYawOffset = 0;
             targetGear = 0;
@@ -474,7 +474,7 @@ export function AircraftModel() {
             );
           } else if (pt < to.rollStart) {
             targetX = 0;
-            targetZ = 16.0;
+            targetZ = 32.0;
             targetY = 0;
             targetYawOffset = 0;
             const nearRoll = pt > to.rollStart - 1.2;
@@ -484,7 +484,7 @@ export function AircraftModel() {
           } else if (pt < to.rotStart) {
             const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
             targetX = 0;
-            targetZ = THREE.MathUtils.lerp(16.0, 24.5, p * p);
+            targetZ = THREE.MathUtils.lerp(32.0, 40.5, p * p);
             targetY = 0;
             targetPitch = -0.02 * p;
             targetGear = 0;
@@ -493,7 +493,7 @@ export function AircraftModel() {
             const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
             const ease = easeInOut(p);
             targetX = 0;
-            targetZ = THREE.MathUtils.lerp(24.5, 26.2, ease);
+            targetZ = THREE.MathUtils.lerp(40.5, 42.2, ease);
             targetY = THREE.MathUtils.lerp(0, 1.85, p * p);
             targetPitch = -0.25 * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
             targetGear = 0;
@@ -501,7 +501,7 @@ export function AircraftModel() {
           } else if (pt < to.airborneStart) {
             const p = easeInOut((pt - to.climbStart) / Math.max(0.5, to.airborneStart - to.climbStart));
             targetX = 0;
-            targetZ = THREE.MathUtils.lerp(26.2, 0, p);
+            targetZ = THREE.MathUtils.lerp(42.2, 0, p);
             targetY = THREE.MathUtils.lerp(1.85, 2.95, p);
             targetPitch = THREE.MathUtils.lerp(-0.24, -0.03, p);
             targetGear = 1;
