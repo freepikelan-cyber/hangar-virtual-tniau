@@ -272,25 +272,90 @@ export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | '
 }
 
 /**
- * Formasi Batu Karang Pantai 3D Fotorealistis (.GLB: rock_by_the_sea.glb)
- * menjulang di tengah samudra Zona 3 (Lautan) & pesisir pantai!
+ * Formasi Batu Karang Laut 3D Bulat & Organik (tertanam dalam di dasar laut — 0% kotak, 0% lempengan mengambang!)
+ * Menggunakan gugusan batu karang bulat halus terkikis ombak + cincin buih ombak di permukaan air.
  */
 export function OceanRocksGlbModels() {
-  const rockGltf = useGLTF('/models/env/sea-rock.glb');
+  const rockGeo = useMemo(() => {
+    const g = new THREE.SphereGeometry(1, 18, 14);
+    const pos = g.attributes.position as THREE.BufferAttribute;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      // Variasi organik halus agar seperti batu karang bulat alami terkikis ombak (tanpa sudut tajam/kotak)
+      const wobble = 1 + 0.14 * Math.sin(x * 3.1 + z * 2.7) * Math.cos(y * 2.5);
+      pos.setXYZ(i, x * wobble, y * wobble, z * wobble);
+    }
+    g.computeVertexNormals();
+    return g;
+  }, []);
 
-  const rocks = useMemo(() => {
-    return [
-      { obj: normalizeGlbPart(rockGltf.scene, 14.5), pos: [-62, -0.6, -78] as [number, number, number], rot: 0.4 },
-      { obj: normalizeGlbPart(rockGltf.scene, 18.0), pos: [66, -0.7, -26] as [number, number, number], rot: 1.9 },
-      { obj: normalizeGlbPart(rockGltf.scene, 12.5), pos: [-48, -0.5, 86] as [number, number, number], rot: 3.1 },
-      { obj: normalizeGlbPart(rockGltf.scene, 15.5), pos: [58, -0.6, 74] as [number, number, number], rot: 4.6 },
-    ];
-  }, [rockGltf.scene]);
+  const rockMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#4b5563',
+        roughness: 0.88,
+        metalness: 0.06,
+      }),
+    [],
+  );
+
+  const wetRockMat = useMemo(
+    () =>
+      new THREE.MeshStandardMaterial({
+        color: '#374151',
+        roughness: 0.72,
+        metalness: 0.12,
+      }),
+    [],
+  );
+
+  const foamMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#e0f6ff',
+        transparent: true,
+        opacity: 0.36,
+        depthWrite: false,
+      }),
+    [],
+  );
+
+  useEffect(() => {
+    return () => {
+      rockGeo.dispose();
+      rockMat.dispose();
+      wetRockMat.dispose();
+      foamMat.dispose();
+    };
+  }, [rockGeo, rockMat, wetRockMat, foamMat]);
+
+  const clusters = useMemo(
+    () => [
+      { pos: [-62, -1.4, -78] as [number, number, number], scale: 1.0, rot: 0.4 },
+      { pos: [66, -1.4, -26] as [number, number, number], scale: 1.2, rot: 1.9 },
+      { pos: [-48, -1.4, 86] as [number, number, number], scale: 0.9, rot: 3.1 },
+      { pos: [58, -1.4, 74] as [number, number, number], scale: 1.05, rot: 4.6 },
+    ],
+    [],
+  );
 
   return (
-    <group name="ocean-rocks-glb-models">
-      {rocks.map((r, idx) => (
-        <primitive key={idx} object={r.obj} position={r.pos} rotation={[0, r.rot, 0]} />
+    <group name="ocean-rocks-rounded-models">
+      {clusters.map((cl, idx) => (
+        <group key={idx} position={cl.pos} rotation={[0, cl.rot, 0]} scale={cl.scale}>
+          {/* Batu karang utama bulat tertanam dalam ke dasar laut */}
+          <mesh geometry={rockGeo} material={rockMat} position={[0, 1.6, 0]} scale={[7.2, 4.6, 6.4]} />
+          {/* Batu pendamping bulat halus di sisi kanan & kiri */}
+          <mesh geometry={rockGeo} material={wetRockMat} position={[5.6, 0.7, 2.2]} scale={[4.4, 2.8, 4.0]} />
+          <mesh geometry={rockGeo} material={wetRockMat} position={[-5.0, 0.9, -2.5]} scale={[4.8, 3.1, 4.2]} />
+          <mesh geometry={rockGeo} material={rockMat} position={[1.5, 0.4, -5.2]} scale={[3.6, 2.2, 3.4]} />
+          {/* Cincin buih ombak lembut melingkari karang di permukaan air */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 1.32, 0]} material={foamMat}>
+            <ringGeometry args={[6.8, 9.4, 24]} />
+          </mesh>
+        </group>
       ))}
     </group>
   );

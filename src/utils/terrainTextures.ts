@@ -118,39 +118,47 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
 }
 
 /**
- * Membuat pulau tropis 3D organik (bukan kerucut!) dengan pantai pasir keemasan & perbukitan hijau.
+ * Membuat pulau tropis 3D BULAT organik (tanpa tepi kotak/lempengan!), tertanam dalam di bawah permukaan laut (Y = -3.5)
+ * dengan pantai pasir keemasan melingkar & perbukitan hijau lembut.
  */
 export function buildOrganicIslandGeometry(radius: number, maxHeight: number, seedOffset: number): THREE.BufferGeometry {
-  const geo = new THREE.PlaneGeometry(radius * 2.2, radius * 2.2, 32, 32);
-  geo.rotateX(-Math.PI / 2);
+  // Gunakan kubah setengah bola bulat (hemisphere) agar 100% melingkar halus & tidak pernah berbentuk kotak/lempengan!
+  const geo = new THREE.SphereGeometry(radius, 32, 18, 0, Math.PI * 2, 0, Math.PI * 0.56);
 
   const pos = geo.attributes.position as THREE.BufferAttribute;
   const colors = new Float32Array(pos.count * 3);
   const c = new THREE.Color();
-  const cReef = new THREE.Color('#2ca8b8');
+  const cReef = new THREE.Color('#1c7e96');
   const cSand = new THREE.Color('#e3d2a4');
   const cJungle = new THREE.Color('#2b6b3b');
   const cHill = new THREE.Color('#476b48');
 
   for (let i = 0; i < pos.count; i++) {
     const x = pos.getX(i);
+    const yOrig = pos.getY(i);
     const z = pos.getZ(i);
-    const dist = Math.hypot(x, z) / radius;
-    const coastNoise = (valueNoise2D(x * 0.12 + seedOffset, z * 0.12 + seedOffset) - 0.5) * 0.36;
-    const effDist = dist + coastNoise;
-    const falloff = Math.max(0, 1 - effDist);
-    const hill = ridgedFbm(x * 0.08 + seedOffset, z * 0.08 + seedOffset);
-    const h = falloff > 0 ? Math.pow(falloff, 1.35) * maxHeight * (0.55 + hill * 0.7) : -0.45;
+    const radial = Math.hypot(x, z) / radius; // 0 di puncak tengah -> 1 di tepi lingkaran
+    const coastNoise = (valueNoise2D(x * 0.09 + seedOffset, z * 0.09 + seedOffset) - 0.5) * 0.24;
+    const hill = valueNoise2D(x * 0.14 + seedOffset * 1.7, z * 0.14 + seedOffset * 1.7);
+
+    // Sedikit variasi bentuk garis pantai namun tetap membulat halus
+    const rScale = 1 + coastNoise * Math.min(1, radial * 1.2);
+    pos.setX(i, x * rScale);
+    pos.setZ(i, z * rScale);
+
+    // Ketinggian membulat lembut: puncak di tengah, melandai mulus dan tenggelam dalam ke dasar laut (-3.5) di tepi!
+    const dome = Math.max(0, yOrig / radius);
+    const h = dome > 0.04 ? Math.pow(dome, 1.25) * maxHeight * (0.72 + hill * 0.45) - 1.6 : -3.5;
     pos.setY(i, h);
 
-    if (h <= 0.05) {
+    if (h <= 0.1) {
       c.copy(cReef);
-    } else if (h < 0.75) {
-      c.copy(cSand).lerp(cJungle, Math.max(0, (h - 0.35) / 0.4));
-    } else if (h < maxHeight * 0.65) {
+    } else if (h < 1.1) {
+      c.copy(cSand).lerp(cJungle, Math.max(0, (h - 0.35) / 0.75));
+    } else if (h < maxHeight * 0.55) {
       c.copy(cJungle);
     } else {
-      c.copy(cJungle).lerp(cHill, Math.min(1, (h - maxHeight * 0.65) / (maxHeight * 0.35)));
+      c.copy(cJungle).lerp(cHill, Math.min(1, (h - maxHeight * 0.55) / (maxHeight * 0.45)));
     }
     colors[i * 3] = c.r;
     colors[i * 3 + 1] = c.g;
