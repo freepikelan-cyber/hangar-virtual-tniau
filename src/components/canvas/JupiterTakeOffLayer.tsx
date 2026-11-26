@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { useHangarStore } from '../../store/useHangarStore';
+import { flightSync, useHangarStore } from '../../store/useHangarStore';
 
 interface Props {
   sourceGroup: THREE.Group;
@@ -218,8 +218,8 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   useFrame((state, delta) => {
     if (!isActive || wingClones.length === 0) return;
     const dt = Math.min(delta, 0.05);
-    phaseTime.current += dt;
-    const pt = phaseTime.current;
+    phaseTime.current = flightSync.phaseTime;
+    const pt = flightSync.phaseTime;
     const t = state.clock.getElapsedTime();
 
     // Update lukisan asap putih HATI RAKSASA di langit saat Atraksi 5: Heart (Love) & Roll (78.5..98.5s)

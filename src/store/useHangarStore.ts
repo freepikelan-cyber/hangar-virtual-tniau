@@ -46,6 +46,11 @@ export const DEFAULT_CAMERA: { pos: Vec3; target: Vec3 } = {
 /** Registri objek pin 3D (non-reaktif) agar UI di luar kanvas dapat menghitung posisi dunia pin. */
 export const pinRegistry = new Map<number, THREE.Object3D>();
 
+/** Jam fase penerbangan tunggal (non-reaktif) agar AircraftModel, SkyCloudsEnvironment (runway), & JupiterTakeOffLayer 100% sinkron tanpa selisih 1ms pun! */
+export const flightSync = {
+  phaseTime: 0,
+};
+
 export interface QuizAnswer {
   kind: 'hotspot' | 'mcq';
   questionId: number;
@@ -463,6 +468,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   triggerTakeOff: () => {
     const s = get();
     if (s.flightMode !== 'parked') return;
+    flightSync.phaseTime = 0;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers(true);
     const isJupiter = s.selectedId === 'kt1b';
@@ -517,6 +523,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       s.flightMode !== 'aar'
     )
       return;
+    flightSync.phaseTime = 0;
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
     set({

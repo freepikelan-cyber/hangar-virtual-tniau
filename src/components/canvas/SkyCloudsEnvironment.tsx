@@ -9,7 +9,7 @@ import {
   OceanRocksGlbModels,
   SkyboxDayGlb,
 } from './AirbaseGlbModels';
-import { useHangarStore } from '../../store/useHangarStore';
+import { flightSync, useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
 import {
@@ -534,8 +534,8 @@ export function SkyCloudsEnvironment() {
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
-    phaseTime.current += dt;
-    const pt = phaseTime.current;
+    phaseTime.current = flightSync.phaseTime;
+    const pt = flightSync.phaseTime;
 
     const targetMix = isOutdoorSim ? 1 : 0;
     skyOpacity.current = THREE.MathUtils.lerp(skyOpacity.current, targetMix, Math.min(1, dt * 3.2));
@@ -630,14 +630,15 @@ export function SkyCloudsEnvironment() {
         scrollZ.current = 0;
         kinematicRollDist = 0;
       } else if (pt < rotStart) {
-        // AKSELERASI KINEMATIK PENUH DI RUNWAY (0% tersendat, berlaku untuk SEMUA pesawat: Tempur, Angkut, VVIP, Latih, & JAT!):
-        // Pesawat melaju semakin kencang sepanjang 285m (265m untuk KT-1B) hingga tepat mencapai ujung runway saat rotStart!
+        // AKSELERASI KINEMATIK PENUH DI RUNWAY (100% sinkron dengan AircraftModel, berlaku untuk SEMUA pesawat sayap tetap!):
+        // Segera melaju maju tanpa jeda/tersendat sepanjang 285m (265m KT-1B) hingga tepat mencapai ujung runway saat rotStart!
         const rollDur = Math.max(0.5, rotStart - rollStart);
         const p = Math.min(1, (pt - rollStart) / rollDur);
         const totalRollDist = selectedId === 'kt1b' ? 265 : 285;
-        kinematicRollDist = totalRollDist * p * p;
+        const accel = 0.22 * p + 0.78 * p * p;
+        kinematicRollDist = totalRollDist * accel;
         targetWorldY = -0.02;
-        groundSpeed = (2 * totalRollDist / rollDur) * p;
+        groundSpeed = (totalRollDist / rollDur) * (0.22 + 1.56 * p);
         currentSpeed.current = groundSpeed;
       } else if (pt < airborneStart) {
         const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));

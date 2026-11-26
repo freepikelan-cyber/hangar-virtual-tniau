@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { flightSync, useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { FIGHTER_AUTO_ORDER, getFighterManeuverSpec, type FighterManeuverId } from '../../data/fighterManeuvers';
 import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { customGlbRegistry, GLB_SLOTS, tryAutoLoadGlb } from '../../utils/glbEquipmentLoader';
@@ -173,6 +173,7 @@ export function AircraftModel() {
   useEffect(() => {
     aircraftAudio.stop();
     phaseTime.current = 0;
+    flightSync.phaseTime = 0;
     gearRetract.current = 0;
     currentX.current = 0;
     currentY.current = 0;
@@ -192,6 +193,7 @@ export function AircraftModel() {
   // Inisialisasi posisi awal saat tombol Take Off atau Landing ditekan
   useEffect(() => {
     phaseTime.current = 0;
+    flightSync.phaseTime = 0;
     const isHeli = unit.category === 'Helikopter';
 
     if (flightMode === 'takeoff') {
@@ -260,6 +262,7 @@ export function AircraftModel() {
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     phaseTime.current += dt;
+    flightSync.phaseTime = phaseTime.current;
     const pt = phaseTime.current;
     const isHeli = unit.category === 'Helikopter';
     const isHeavy = unit.category === 'Angkut & VIP';
@@ -554,18 +557,19 @@ export function AircraftModel() {
               : '🎙️ KOMUNIKASI KOKPIT & TOWER • PERSIAPAN LEPAS LANDAS DI RUNWAY',
           );
         } else if (pt < to.rotStart) {
-          // Fase 2: Akselerasi panjang di sepanjang aspal runway (tepat saat aba-aba "Rolling / Power Set"!)
+          // Fase 2: Akselerasi panjang & kencang di sepanjang aspal runway (roda menempel penuh sampai ujung runway!)
           const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
-          targetZ = THREE.MathUtils.lerp(-8.5, 2.8, p * p);
+          const accel = 0.22 * p + 0.78 * p * p;
+          targetZ = THREE.MathUtils.lerp(-8.5, 4.5, accel);
           targetY = 0;
-          targetPitch = -0.02 * p;
+          targetPitch = -0.015 * p;
           targetGear = 0;
-          setFlightLabel('TAHAP 1 • TAKE OFF • ROLLING & AKSELERASI DI RUNWAY');
+          setFlightLabel('TAHAP 1 • TAKE OFF • MELAJU KENCANG DI RUNWAY MENUJU UJUNG LANDASAN');
         } else if (pt < to.climbStart) {
-          // Fase 3: Rotation & Liftoff (tepat saat aba-aba "Rotate / Airborne"!)
+          // Fase 3: Rotation & Liftoff di ujung runway!
           const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
           const ease = easeInOut(p);
-          targetZ = THREE.MathUtils.lerp(2.8, 5.2, ease);
+          targetZ = THREE.MathUtils.lerp(4.5, 6.2, ease);
           targetY = THREE.MathUtils.lerp(0, 1.75, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
@@ -573,7 +577,7 @@ export function AircraftModel() {
         } else if (pt < to.airborneStart) {
           // Fase 4: Initial Climb & Roda masuk otomatis
           const p = easeInOut((pt - to.climbStart) / Math.max(0.5, to.airborneStart - to.climbStart));
-          targetZ = THREE.MathUtils.lerp(5.2, 0, p);
+          targetZ = THREE.MathUtils.lerp(6.2, 0, p);
           targetY = THREE.MathUtils.lerp(1.75, 3.05, p);
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.18 : -0.26, -0.04, p);
           targetRoll = Math.sin(p * Math.PI) * -0.08;
