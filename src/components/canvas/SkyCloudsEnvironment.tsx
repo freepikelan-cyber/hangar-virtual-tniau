@@ -690,14 +690,15 @@ export function SkyCloudsEnvironment() {
         // Selaraskan Helipad Selatan (local z = +145) tepat di world z = 0.0!
         const heliStopScroll = LOOP_LEN + 286.5;
         if (pt < 19.0) {
-          // Hover menunggu seluruh suara persiapan landing Halim Tower selesai
-          targetWorldY = -13.5;
-          scrollZ.current = heliStopScroll - 160;
+          // Saat pilot melapor & meminta izin mendarat ke Halim Tower, helikopter MASIH MENGUDARA & TERBANG MAJU mendekati pangkalan!
+          const p = pt / 19.0;
+          targetWorldY = THREE.MathUtils.lerp(-24.0, -12.5, p);
+          scrollZ.current = THREE.MathUtils.lerp(heliStopScroll - 460, heliStopScroll - 130, p);
           groundSpeed = 0;
-        } else if (pt < 25.0) {
-          const p = Math.min(1, (pt - 19.0) / 6.0);
-          targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
-          scrollZ.current = THREE.MathUtils.lerp(heliStopScroll - 160, heliStopScroll, 1 - (1 - p) * (1 - p));
+        } else if (pt < 25.4) {
+          const p = Math.min(1, (pt - 19.0) / 6.4);
+          targetWorldY = THREE.MathUtils.lerp(-12.5, -0.02, p);
+          scrollZ.current = THREE.MathUtils.lerp(heliStopScroll - 130, heliStopScroll, 1 - (1 - p) * (1 - p));
           groundSpeed = 0;
         } else {
           targetWorldY = -0.02;

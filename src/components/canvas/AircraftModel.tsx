@@ -1117,30 +1117,36 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'landing') {
       if (isHeli) {
-        // LANDING HELIKOPTER: Tunggu suara Halim Tower (18.08s) selesai penuh di udara -> baru turun Approach -> Hover -> Touchdown -> Taxi Hanggar!
+        // LANDING HELIKOPTER: Saat melapor & izin mendarat ke Halim Tower (0..19s), helikopter MASIH MENGUDARA & TERBANG MAJU mendekati pangkalan -> baru turun Approach -> Hover -> Touchdown!
         if (pt < 19.0) {
+          targetX = Math.sin(t * 0.65) * 0.45;
           targetZ = -10.5;
-          targetY = 6.4 + Math.sin(t * 1.4) * 0.1;
-          targetPitch = 0.03;
-          targetGear = 0;
+          targetY = 6.4 + Math.sin(t * 1.4) * 0.14;
+          targetPitch = 0.065; // Hidung sedikit menunduk tanda sedang terbang maju di udara!
+          targetRoll = Math.cos(t * 0.65) * 0.04;
+          targetGear = pt < 15.0 ? 1 : 0;
           gearSpeed = 2.0;
-          setFlightLabel('📡 HALIM TOWER • CARACAL 01 PERSIAPAN LANDING MENUJU HELIPAD SELATAN');
-        } else if (pt < 22.4) {
-          const p = easeInOut((pt - 19.0) / 3.4);
+          setFlightLabel('📡 HALIM TOWER • HELIKOPTER MENGUDARA & MENDEKAT — MEMINTA IZIN MENDARAT');
+        } else if (pt < 22.8) {
+          const p = easeInOut((pt - 19.0) / 3.8);
+          targetX = 0;
           targetZ = THREE.MathUtils.lerp(-10.5, 0, p);
           targetY = THREE.MathUtils.lerp(6.4, 1.8, p);
-          targetPitch = 0.06 * (1 - p);
+          targetPitch = 0.05 * (1 - p);
+          targetRoll = 0;
           targetGear = 0;
           gearSpeed = 2.0;
-          setFlightLabel('TAHAP 3 • LANDING • TURUN PERLAHAN MENUJU HELIPAD SELATAN');
-        } else if (pt < 25.0) {
-          const p = easeInOut((pt - 22.4) / 2.6);
+          setFlightLabel('TAHAP 3 • LANDING • IZIN DITERIMA — TURUN PERLAHAN MENUJU HELIPAD SELATAN');
+        } else if (pt < 25.4) {
+          const p = easeInOut((pt - 22.8) / 2.6);
+          targetX = 0;
           targetZ = 0;
           targetY = THREE.MathUtils.lerp(1.8, 0, p);
           targetPitch = -0.08 * Math.sin(p * Math.PI);
+          targetRoll = 0;
           targetGear = 0;
           setFlightLabel('TAHAP 3 • LANDING • HOVER & TOUCHDOWN VERTIKAL');
-        } else if (pt < 27.6) {
+        } else if (pt < 28.0) {
           // Tetap berhenti mantap tepat di tengah Helipad Selatan H sambil rotor melambat (idle) — tidak masuk hanggar!
           targetX = 0;
           targetZ = 0;
