@@ -14,16 +14,21 @@ function easeInOut(t: number): number {
 }
 
 /**
- * Kurva Hati Parametrik RAKSASA, Landai & Bebas Tabrakan untuk Jupiter 5 (s=+1) & Jupiter 6 (s=-1):
- * - Tinggi aman di atas langit (Y = 10..27m, tidak menukik tajam ke bawah!)
- * - Kedalaman Z dipisah 7 meter penuh (J5 di Z=-2, J6 di Z=-9) sehingga 100% bebas tabrakan baik di puncak maupun saat bersilangan di ujung bawah!
+ * Kurva Hati Parametrik RAKSASA, Landai & 100% Bebas Tabrakan:
+ * - Untuk jejak asap putih (`forTrail = true`): simetris sempurna membentuk Hati (Love) utuh di bidang Z = -2.
+ * - Untuk lintasan pesawat J5 (s=+1) & J6 (s=-1): terpisah JAUH baik secara kedalaman Z (24m: +10 vs -14)
+ *   maupun ketinggian Y saat turun & crossing (8m: J5 tinggi +4m, J6 rendah -4m) sehingga dari sudut kamera mana pun
+ *   pesawat TIDAK PERNAH terlihat bertabrakan!
  */
-function heartPoint(u: number, s: 1 | -1): THREE.Vector3 {
+function heartPoint(u: number, s: 1 | -1, forTrail = false): THREE.Vector3 {
   const sinU = Math.sin(u);
-  const hx = s * (4.2 + 23.0 * sinU * sinU * sinU);
-  const hy = (13.0 * Math.cos(u) - 5.0 * Math.cos(2 * u) - 2.0 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.62;
-  const hz = s === 1 ? -2.0 : -9.0;
-  return new THREE.Vector3(hx, 19.5 + hy, hz);
+  const hx = s * (forTrail ? 23.0 * sinU * sinU * sinU : 6.0 + 23.0 * sinU * sinU * sinU);
+  const hyBase = (13.0 * Math.cos(u) - 5.0 * Math.cos(2 * u) - 2.0 * Math.cos(3 * u) - Math.cos(4 * u)) * 0.62;
+  // Saat turun menuju ujung bawah hati (u > 0.55*PI), pisahkan ketinggian Y sejauh 8m (J5 naik +4m, J6 turun -4m)
+  const descentFrac = forTrail ? 0 : easeInOut((u / Math.PI - 0.52) / 0.42);
+  const yStagger = s * 4.0 * descentFrac;
+  const hz = forTrail ? -2.0 : s === 1 ? 10.0 : -14.0;
+  return new THREE.Vector3(hx, 20.5 + hyBase + yStagger, hz);
 }
 
 // Formasi Arrowhead 5 wingmen (J2–J6) berjarak LEGA (≥ 15 unit antar pesawat agar sayap 100% bebas bersentuhan!)
@@ -147,7 +152,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     const makeHalf = (s: 1 | -1) => {
       const pos = new Float32Array((HEART_SEGMENTS + 1) * 3);
       for (let k = 0; k <= HEART_SEGMENTS; k++) {
-        const pt = heartPoint((k / HEART_SEGMENTS) * Math.PI, s);
+        const pt = heartPoint((k / HEART_SEGMENTS) * Math.PI, s, true);
         pos[k * 3] = pt.x;
         pos[k * 3 + 1] = pt.y;
         pos[k * 3 + 2] = pt.z;
@@ -661,14 +666,14 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             smokeOn = p < 0.5;
           }
         } else if (pt < 89.5) {
-          // 78.5..89.5s — ATRAKSI 5A: HEART (LOVE) — J5 & J6 melukis Hati RAKSASA (tinggi & landai, Z terpisah 7m -> 0% tabrakan!)
-          // Di ujung bawah (85%..100%), masing-masing pesawat TIDAK menukik tajam, melainkan mendatar & bersilangan (J5 ke kiri, J6 ke kanan)!
+          // 78.5..89.5s — ATRAKSI 5A: HEART (LOVE) — J5 & J6 melukis Hati RAKSASA dengan jarak aman LEGA (Z terpisah 24m + Y terpisah 8m -> 0% tabrakan!)
+          // Saat turun di ujung bawah (82%..100%), J5 tetap TINGGI (Y=16.5, Z=+10) meluncur ke kiri, J6 RENDAH (Y=8.5, Z=-14) meluncur ke kanan!
           if (i === 3 || i === 4) {
             const s: 1 | -1 = i === 3 ? 1 : -1;
             const rawP = (pt - 78.5) / 11.0;
-            if (rawP < 0.84) {
-              const p = easeInOut(rawP / 0.84);
-              const u = p * Math.PI * 0.94;
+            if (rawP < 0.82) {
+              const p = easeInOut(rawP / 0.82);
+              const u = p * Math.PI * 0.92;
               const uNext = Math.min(Math.PI, u + 0.03);
               tmpPos.copy(heartPoint(u, s));
               tmpNext.copy(heartPoint(uNext, s));
@@ -681,15 +686,16 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
                 useTangentQuat = true;
               }
             } else {
-              // Ujung bawah Hati: tarik mendatar halus & saling CROSS (J5 meluncur ke KIRI -28m, J6 meluncur ke KANAN +28m pada Z berbeda!)
-              const cp = easeInOut((rawP - 0.84) / 0.16);
-              const tip = heartPoint(Math.PI * 0.94, s);
-              tx = THREE.MathUtils.lerp(tip.x, -s * 28.0, cp);
-              ty = THREE.MathUtils.lerp(tip.y, 11.5, cp);
+              // Ujung bawah Hati: crossing mulus pada ketinggian & kedalaman SANGAT BERBEDA (J5: Y=16.5, Z=+10 -> X=-34; J6: Y=8.5, Z=-14 -> X=+34)
+              const cp = easeInOut((rawP - 0.82) / 0.18);
+              const tip = heartPoint(Math.PI * 0.92, s);
+              const exitY = s === 1 ? 16.5 : 8.5;
+              tx = THREE.MathUtils.lerp(tip.x, -s * 34.0, cp);
+              ty = THREE.MathUtils.lerp(tip.y, exitY, cp);
               tz = tip.z;
               tyaw = -s * Math.PI * 0.5;
               tp = 0;
-              tr = s * 0.25 * Math.sin(cp * Math.PI);
+              tr = s * 0.22 * Math.sin(cp * Math.PI);
             }
             smokeOn = true;
           } else {
@@ -702,12 +708,12 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         } else if (pt < 97.5) {
           // 89.5..97.5s — ATRAKSI 5B: 4 PESAWAT (J1–J4) BERJARAK LEGA MENUSUK TENGAH HATI SAMBIL ROLL!
           if (i === 3 || i === 4) {
-            // J5 (sudah di kiri -28) & J6 (sudah di kanan +28) meluncur menjauh perlahan keluar arena
+            // J5 (sudah di kiri -34, Y=16.5, Z=+10) & J6 (sudah di kanan +34, Y=8.5, Z=-14) meluncur menjauh perlahan keluar arena
             const s: 1 | -1 = i === 3 ? 1 : -1;
             const p = easeInOut((pt - 89.5) / 5.0);
-            tx = THREE.MathUtils.lerp(-s * 28.0, farSlot[0], p);
-            ty = THREE.MathUtils.lerp(11.5, farSlot[1], p);
-            tz = THREE.MathUtils.lerp(s === 1 ? -2.0 : -9.0, farSlot[2], p);
+            tx = THREE.MathUtils.lerp(-s * 34.0, farSlot[0], p);
+            ty = THREE.MathUtils.lerp(s === 1 ? 16.5 : 8.5, farSlot[1], p);
+            tz = THREE.MathUtils.lerp(s === 1 ? 10.0 : -14.0, farSlot[2], p);
             smokeOn = false;
           } else {
             const p = easeInOut((pt - 89.5) / 8.0);
@@ -902,7 +908,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           ref={(el) => {
             wingRefs.current[i] = el;
           }}
-          position={[-34.0, 0, -10.5]}
+          position={[-82.0, 0, -10.5]}
           rotation={[0, Math.PI / 2, 0]}
           visible={false}
         >
