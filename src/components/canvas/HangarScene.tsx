@@ -3,7 +3,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
+import { flightSync, getDefaultCamera, useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
@@ -103,7 +103,7 @@ function StudioLighting() {
         position={timeOfDay === 'sunset' ? [22, 12, 18] : [12, 24, 14]}
         intensity={sunInt}
         color={sunColor}
-        castShadow
+        castShadow={!isOutdoorSim}
         shadow-mapSize={[512, 512]}
         shadow-camera-left={-36}
         shadow-camera-right={36}
@@ -141,7 +141,7 @@ function StudioLighting() {
 
 function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null);
-  const { camera, scene, size } = useThree();
+  const { camera, size } = useThree();
   const camRequest = useHangarStore((s) => s.camRequest);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
@@ -202,22 +202,19 @@ function CameraRig() {
     if (!controlsRef.current) return;
 
     // Ikuti pergeseran X pesawat secara halus saat Taxi Out (Take Off) & Taxi In (Landing)
-    // tanpa mengganggu kebebasan pengguna memutar / zoom OrbitControls!
+    // membaca langsung dari flightSync.aircraftX (0% scene traversal -> 60 FPS mulus!)
     if ((flightMode === 'takeoff' || flightMode === 'landing') && selectedId !== 'kt1b') {
-      const aircraftRoot = scene.getObjectByName('aircraft-root');
-      if (aircraftRoot) {
-        const ax = aircraftRoot.position.x;
-        if (lastTrackedX.current !== null) {
-          const dx = ax - lastTrackedX.current;
-          if (Math.abs(dx) > 0.0001 && Math.abs(dx) < 25) {
-            camera.position.x += dx;
-            controlsRef.current.target.x += dx;
-            desiredPos.current.x += dx;
-            desiredTarget.current.x += dx;
-          }
+      const ax = flightSync.aircraftX;
+      if (lastTrackedX.current !== null) {
+        const dx = ax - lastTrackedX.current;
+        if (Math.abs(dx) > 0.0001 && Math.abs(dx) < 25) {
+          camera.position.x += dx;
+          controlsRef.current.target.x += dx;
+          desiredPos.current.x += dx;
+          desiredTarget.current.x += dx;
         }
-        lastTrackedX.current = ax;
       }
+      lastTrackedX.current = ax;
     }
 
     if (!animating.current) return;
@@ -266,7 +263,7 @@ export function HangarScene() {
     <div className="absolute inset-0 bg-[#07152c] touch-none">
       <Canvas
         shadows
-        dpr={[1, 1.25]}
+        dpr={isOutdoorSim ? 1 : [1, 1.25]}
         camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
         gl={{
           antialias: true,

@@ -49,6 +49,7 @@ export const pinRegistry = new Map<number, THREE.Object3D>();
 /** Jam fase penerbangan tunggal (non-reaktif) agar AircraftModel, SkyCloudsEnvironment (runway), & JupiterTakeOffLayer 100% sinkron tanpa selisih 1ms pun! */
 export const flightSync = {
   phaseTime: 0,
+  aircraftX: 0,
 };
 
 export interface QuizAnswer {

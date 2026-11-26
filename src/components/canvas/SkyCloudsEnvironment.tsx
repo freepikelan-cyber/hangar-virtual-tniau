@@ -438,13 +438,13 @@ export function SkyCloudsEnvironment() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 26; i++) {
+    for (let i = 0; i < 14; i++) {
       const layer = i % 3;
       let x = (rand() - 0.5) * 140;
       if (Math.abs(x) < 14) x = x >= 0 ? 15 + rand() * 28 : -(15 + rand() * 28);
       const y = layer === 0 ? 10 + rand() * 14 : layer === 1 ? -1 + rand() * 10 : -10 + rand() * 6;
       const z = -110 + rand() * 220;
-      const scale = layer === 2 ? 1.8 + rand() * 2.2 : 1.4 + rand() * 2.0;
+      const scale = layer === 2 ? 2.1 + rand() * 2.3 : 1.7 + rand() * 2.1;
       const speed = 13 + rand() * 11;
       const puffs: CloudPuff[] = [
         { ox: -1.7, oy: -0.35, oz: 0.1, sx: 2.0, sy: 0.72, sz: 1.55, isTop: false },
@@ -529,7 +529,7 @@ export function SkyCloudsEnvironment() {
 
   const runwayLightZ = useMemo(() => {
     const arr: number[] = [];
-    for (let z = -160; z <= 160; z += 16) arr.push(z);
+    for (let z = -156; z <= 156; z += 24) arr.push(z);
     return arr;
   }, []);
 

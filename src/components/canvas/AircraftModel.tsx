@@ -147,6 +147,7 @@ export function AircraftModel() {
   const currentZ = useRef(0);
 
   const procedural = useMemo(() => getProceduralAircraft(unit.id, liveryId), [unit.id, liveryId]);
+  const cachedGearObj = useMemo(() => procedural.group.getObjectByName('landing-gear') ?? null, [procedural.group]);
 
   // Muat otomatis model .GLB dari public/models/<id>.glb (khusus G-Suit & Helm) atau dari unggahan lokal
   useEffect(() => {
@@ -1377,6 +1378,7 @@ export function AircraftModel() {
     rootRef.current.position.x = currentX.current;
     rootRef.current.position.y = currentY.current;
     rootRef.current.position.z = currentZ.current;
+    flightSync.aircraftX = currentX.current;
     if (directPitch !== null) {
       rootRef.current.rotation.x = directPitch;
     } else {
@@ -1403,14 +1405,13 @@ export function AircraftModel() {
       rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * yawSpeed));
     }
 
-    // Animasi halus roda pendarat masuk/keluar ke dalam badan pesawat
+    // Animasi halus roda pendarat masuk/keluar ke dalam badan pesawat (cachedGearObj — 0 traversal per frame!)
     gearRetract.current = THREE.MathUtils.lerp(gearRetract.current, targetGear, Math.min(1, dt * gearSpeed));
-    const gearObj = procedural.group.getObjectByName('landing-gear');
-    if (gearObj) {
+    if (cachedGearObj) {
       const r = gearRetract.current;
-      gearObj.visible = r < 0.96;
-      gearObj.position.y = r * 0.78;
-      gearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
+      cachedGearObj.visible = r < 0.96;
+      cachedGearObj.position.y = r * 0.78;
+      cachedGearObj.scale.set(1 - r * 0.25, Math.max(0.01, 1 - r * 0.94), 1 - r * 0.25);
     }
 
     // Animasi hidup & Simulasi G-Force pada G-Suit (nafas halus, kepala menoleh natural, & 5 kantung mengembang sesuai 1G/4G/9G!)

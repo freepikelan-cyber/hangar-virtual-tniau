@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -432,6 +433,8 @@ export function OceanLoopGlb() {
     oceanGltf.scene.traverse((obj) => {
       if ((obj as THREE.Mesh).isMesh) {
         const mesh = obj as THREE.Mesh;
+        mesh.castShadow = false;
+        mesh.receiveShadow = false;
         mesh.material = new THREE.MeshStandardMaterial({
           color: '#0e5a8a',
           roughness: 0.14,
@@ -450,6 +453,16 @@ export function OceanLoopGlb() {
       }
     });
   }, [actions]);
+
+  // Jeda otomatis animasi gelombang laut saat Zona Laut di luar jarak pandang (hemat CPU/GPU 100% di Bandara, Gunung, & Kota!)
+  useFrame(() => {
+    const visible = Boolean(groupRef.current?.parent?.visible);
+    Object.values(actions).forEach((action) => {
+      if (action && action.paused === visible) {
+        action.paused = !visible;
+      }
+    });
+  });
 
   return (
     <group ref={groupRef} position={[0, -0.45, 0]} scale={normalizedScale} name="ocean-perfect-loop-glb">
