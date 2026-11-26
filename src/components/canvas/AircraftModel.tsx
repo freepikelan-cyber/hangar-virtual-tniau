@@ -421,12 +421,12 @@ export function AircraftModel() {
           setFlightState('airborne', 'TERBANG JELAJAH // SIAP 2. MANUVER ATAU 3. LANDING');
         }
       } else {
-        // TAKE OFF PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba suara kokpit Tempur, Angkut, & VVIP!):
+        // TAKE OFF PESAWAT SAYAP TETAP (Taxi santai, belok busur 90° presisi tanpa terseret, & sinkron penuh dengan suara Kokpit ↔ ATC!):
         const to = getTakeOffTiming(unit.id);
         const isVvipUnit = unit.id === 'b737vip' || unit.id === 'falcon8x';
         const taxiStart = isVvipUnit ? 34.0 : 0.0;
-        const taxiEnd = isVvipUnit ? 42.5 : 8.5;
-        const lineUpEnd = isVvipUnit ? 45.0 : 11.0;
+        const taxiEnd = isVvipUnit ? 46.5 : 12.5;
+        const lineUpEnd = isVvipUnit ? 52.0 : 18.0;
 
         if (unit.id === 'kt1b') {
           // KHUSUS KT-1B WONG BEE (JUPITER AEROBATIC SHOW):
@@ -521,31 +521,33 @@ export function AircraftModel() {
           targetGear = 0;
           setFlightLabel('🎙️ KAPTEN PNB HERLANI (INDONESIA ONE) • PENGUMUMAN KEBERANGKATAN MENUJU SENTANI JAYAPURA');
         } else if (pt < taxiEnd) {
-          // Fase 0A: Taxi keluar perlahan dari Hanggar jauh (-82) melewati Parallel Taxiway (-46) menyusuri taxiway kuning panjang ke Holding Point (-8.5)
+          // Fase 0A: Taxi keluar PERLAHAN dari Hanggar jauh (-82) melewati Parallel Taxiway (-46) hingga titik belok Holding Point (-12.0)
           const p = easeInOut((pt - taxiStart) / Math.max(0.5, taxiEnd - taxiStart));
-          targetX = THREE.MathUtils.lerp(-82.0, -8.5, p);
+          targetX = THREE.MathUtils.lerp(-82.0, -12.0, p);
           targetZ = -10.5;
           targetY = 0;
           targetYawOffset = Math.PI / 2;
           targetGear = 0;
           setFlightLabel(
             p < 0.48
-              ? 'TAXI OUT • KELUAR DARI HANGGAR MENUJU PARALLEL TAXIWAY'
-              : 'TAXI OUT • MENYUSURI TAXIWAY PANJANG MENUJU RUNWAY 09',
+              ? 'TAXI OUT • KELUAR PERLAHAN DARI HANGGAR MENUJU PARALLEL TAXIWAY'
+              : 'TAXI OUT • MENYUSURI TAXIWAY MENUJU HOLDING POINT RUNWAY 09',
           );
         } else if (pt < lineUpEnd) {
-          // Fase 0B: Belok kiri mulus (Line-Up) masuk garis tengah Runway!
+          // Fase 0B: Belok kiri perlahan mengikuti BUSUR LINGKARAN 90° (R = 12m, hidung 100% searah lintasan -> 0% terseret!)
           const p = easeInOut((pt - taxiEnd) / Math.max(0.5, lineUpEnd - taxiEnd));
-          targetX = THREE.MathUtils.lerp(-8.5, 0, p);
-          targetZ = THREE.MathUtils.lerp(-10.5, -8.5, p);
+          const theta = p * (Math.PI / 2);
+          const turnR = 12.0;
+          targetX = -12.0 + turnR * Math.sin(theta);
+          targetZ = 1.5 - turnR * Math.cos(theta);
           targetY = 0;
-          targetYawOffset = THREE.MathUtils.lerp(Math.PI / 2, 0, p);
+          targetYawOffset = Math.PI / 2 - theta;
           targetGear = 0;
-          setFlightLabel('LINE UP • MASUK POSISI START RUNWAY');
+          setFlightLabel('LINE UP • BERBELOK PERLAHAN MASUK GARIS TENGAH RUNWAY 09');
         } else if (pt < to.rollStart) {
-          // Fase 1: BERHENTI MANTAP di garis start Runway sambil komunikasi radio Tower & checklist selesai!
+          // Fase 1: BERHENTI MANTAP di garis start Runway sambil komunikasi radio Kokpit ↔ ATC selesai pas!
           targetX = 0;
-          targetZ = -8.5;
+          targetZ = 1.5;
           targetY = 0;
           targetYawOffset = 0;
           const nearRoll = pt > to.rollStart - 1.4;
@@ -554,13 +556,13 @@ export function AircraftModel() {
           setFlightLabel(
             nearRoll
               ? '📡 ATC: CLEARED FOR TAKE OFF • FULL POWER / AFTERBURNER ON!'
-              : '🎙️ KOMUNIKASI KOKPIT & TOWER • PERSIAPAN LEPAS LANDAS DI RUNWAY',
+              : '🎙️ KOMUNIKASI KOKPIT & ATC TOWER • SIAP LEPAS LANDAS DI RUNWAY 09',
           );
         } else if (pt < to.rotStart) {
           // Fase 2: Akselerasi panjang & kencang di sepanjang aspal runway (roda menempel penuh sampai ujung runway!)
           const p = (pt - to.rollStart) / Math.max(0.5, to.rotStart - to.rollStart);
           const accel = 0.22 * p + 0.78 * p * p;
-          targetZ = THREE.MathUtils.lerp(-8.5, 4.5, accel);
+          targetZ = THREE.MathUtils.lerp(1.5, 6.5, accel);
           targetY = 0;
           targetPitch = -0.015 * p;
           targetGear = 0;
@@ -569,7 +571,7 @@ export function AircraftModel() {
           // Fase 3: Rotation & Liftoff di ujung runway!
           const p = (pt - to.rotStart) / Math.max(0.5, to.climbStart - to.rotStart);
           const ease = easeInOut(p);
-          targetZ = THREE.MathUtils.lerp(4.5, 6.2, ease);
+          targetZ = THREE.MathUtils.lerp(6.5, 7.8, ease);
           targetY = THREE.MathUtils.lerp(0, 1.75, p * p);
           targetPitch = (isHeavy ? -0.18 : -0.27) * Math.sin(Math.min(1, p * 1.2) * (Math.PI / 2));
           targetGear = 0;
@@ -577,7 +579,7 @@ export function AircraftModel() {
         } else if (pt < to.airborneStart) {
           // Fase 4: Initial Climb & Roda masuk otomatis
           const p = easeInOut((pt - to.climbStart) / Math.max(0.5, to.airborneStart - to.climbStart));
-          targetZ = THREE.MathUtils.lerp(6.2, 0, p);
+          targetZ = THREE.MathUtils.lerp(7.8, 0, p);
           targetY = THREE.MathUtils.lerp(1.75, 3.05, p);
           targetPitch = THREE.MathUtils.lerp(isHeavy ? -0.18 : -0.26, -0.04, p);
           targetRoll = Math.sin(p * Math.PI) * -0.08;
@@ -1396,7 +1398,9 @@ export function AircraftModel() {
     } else {
       while (rootRef.current.rotation.y < -Math.PI) rootRef.current.rotation.y += Math.PI * 2;
       while (rootRef.current.rotation.y > Math.PI) rootRef.current.rotation.y -= Math.PI * 2;
-      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * 2.8));
+      // Saat taxi Take Off / Landing, samakan kecepatan rotasi yaw dengan posSpeed (5.5) agar hidung selalu presisi searah lintasan belok (0% terseret)!
+      const yawSpeed = flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
+      rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * yawSpeed));
     }
 
     // Animasi halus roda pendarat masuk/keluar ke dalam badan pesawat

@@ -61,27 +61,32 @@ export function getTakeOffTiming(unitId: string): TakeOffTiming {
   }
   if (isBasicTrainer) {
     // Khusus Pesawat Latih selain T-50i Golden Eagle & KT-1B Wong Bee:
-    // Part 1: trainer-voice-takeoff.wav (6.0..18.35s) -> Part 2: trainer-voice-roll.wav (19.0..42.99s)
-    // "Full power" di ~25.8s (rollStart) -> melaju penuh di runway -> "Rotate!" di 38.8s (rotStart) -> "Oke selamat terbang" 40.8..43.4s (airborne)!
-    return { voiceStart: 6.0, rollStart: 25.8, rotStart: 38.8, climbStart: 40.8, airborneStart: 43.4 };
+    // 0..12.5s Taxi pelan dari Hanggar jauh -> 12.5..18.0s Belok melingkar halus ke Runway
+    // Part 1: trainer-voice-takeoff.wav (12.0..24.35s) -> Part 2: trainer-voice-roll.wav (25.0..48.99s)
+    // "Full power" di ~31.8s (rollStart) -> melaju penuh 285m di runway -> "Rotate!" di 44.8s (rotStart) -> Airborne 49.4s!
+    return { voiceStart: 12.0, rollStart: 31.8, rotStart: 44.8, climbStart: 46.8, airborneStart: 49.4 };
   }
   if (unitId === 'rafale') {
-    // Khusus Dassault Rafale: melaju kencang full afterburner sepanjang runway penuh (24.4..31.4s = 7.0s) -> Rotate di ujung runway -> Climb!
-    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 31.4, climbStart: 34.0, airborneStart: 37.8 };
+    // Dassault Rafale: 0..12.5s Taxi pelan -> 12.5..18.0s Belok halus ke Runway;
+    // fighter-voice-takeoff.wav (18.08s: 12.0..30.08s) selesai pas di Runway -> 30.6..37.6s sprint 285m -> Rotate -> Climb!
+    return { voiceStart: 12.0, rollStart: 30.6, rotStart: 37.6, climbStart: 40.2, airborneStart: 44.0 };
   }
   if (isFighter) {
-    // Pesawat Tempur: fighter-voice-takeoff.wav selesai di 24.08s -> melaju kencang 7.0s penuh sepanjang runway (24.4..31.4s) -> baru Rotate di ujung runway!
-    return { voiceStart: 6.0, rollStart: 24.4, rotStart: 31.4, climbStart: 33.8, airborneStart: 37.0 };
+    // Pesawat Tempur: 0..12.5s Taxi pelan -> 12.5..18.0s Belok halus ke Runway;
+    // fighter-voice-takeoff.wav (18.08s: 12.0..30.08s) selesai pas di titik start -> 30.6..37.6s sprint 285m -> Rotate di ujung runway!
+    return { voiceStart: 12.0, rollStart: 30.6, rotStart: 37.6, climbStart: 40.0, airborneStart: 43.2 };
   }
   if (isCargoTransport) {
-    // Pesawat Angkut (C-130J, A400M, CN295, dll): suara selesai di 26.56s -> akselerasi penuh 8.5s sepanjang seluruh runway (28.0..36.5s) -> baru Rotate di ujung runway!
-    return { voiceStart: 6.0, rollStart: 28.0, rotStart: 36.5, climbStart: 39.2, airborneStart: 42.6 };
+    // Pesawat Angkut (C-130J, A400M, CN295, dll): 0..12.5s Taxi pelan -> 12.5..18.0s Belok halus ke Runway;
+    // transport-voice-takeoff.wav (20.56s: 12.0..32.56s) selesai penuh -> 33.4..41.9s akselerasi penuh 285m -> Rotate di ujung runway!
+    return { voiceStart: 12.0, rollStart: 33.4, rotStart: 41.9, climbStart: 44.6, airborneStart: 48.0 };
   }
   if (isVvip) {
-    // Pesawat VVIP (B737-400, Falcon 8X): akselerasi penuh 8.5s sepanjang seluruh runway (51.8..60.3s) -> baru Rotate di ujung runway!
-    return { voiceStart: 40.6, rollStart: 51.8, rotStart: 60.3, climbStart: 63.0, airborneStart: 66.4 };
+    // Pesawat VVIP (B737-400, Falcon 8X): 0..34s Pengumuman di Apron -> 34..46.5s Taxi pelan -> 46.5..52.0s Belok halus ke Runway;
+    // vvip-voice-takeoff.wav (10.84s: 46.5..57.34s) selesai pas di Runway -> 58.0..66.5s akselerasi penuh 285m -> Rotate di ujung runway!
+    return { voiceStart: 46.5, rollStart: 58.0, rotStart: 66.5, climbStart: 69.2, airborneStart: 72.6 };
   }
-  return { voiceStart: 6.0, rollStart: 12.6, rotStart: 19.8, climbStart: 22.0, airborneStart: 25.2 };
+  return { voiceStart: 12.0, rollStart: 19.2, rotStart: 26.4, climbStart: 28.6, airborneStart: 31.8 };
 }
 
 /**
@@ -1386,7 +1391,7 @@ class AircraftAudioEngine {
         this.playAtcRadio('jupiter-airborne');
       }
 
-      if (isBasicTrainer && phaseTime > 19.0 && !this.trainerRollPlayed) {
+      if (isBasicTrainer && phaseTime > atcTime + 13.0 && !this.trainerRollPlayed) {
         this.trainerRollPlayed = true;
         this.playAtcRadio('trainer-roll');
       }
