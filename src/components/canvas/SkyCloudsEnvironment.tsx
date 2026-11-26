@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { AirbaseGlbModels } from './AirbaseGlbModels';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
@@ -1111,89 +1112,14 @@ export function SkyCloudsEnvironment() {
             </>
           )}
 
-          {/* Terminal Bandara Modern Beratap Gelombang Perak + Fasad Kaca Biru + 3 Garbarata (sesuai 4 foto referensi!) */}
-          <group position={[-42.0, 0, -28]}>
-            {/* Apron beton luas di depan terminal */}
-            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.0, 0.008, 0]} receiveShadow>
-              <planeGeometry args={[28, 72]} />
-              <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
-            </mesh>
-            {/* Dinding kaca curtain-wall biru reflektif */}
-            <mesh position={[0, 3.4, 0]}>
-              <boxGeometry args={[12.0, 6.8, 56.0]} />
-              <meshStandardMaterial map={skyscraperTex} color="#7dd3fc" roughness={0.22} metalness={0.68} />
-            </mesh>
-            {/* Atap lengkung gelombang perak futuristik (2 kubah memanjang khas terminal bandara modern!) */}
-            <mesh position={[0, 6.9, -13]} rotation={[Math.PI / 2, 0, 0]} scale={[1.15, 1, 0.36]}>
-              <cylinderGeometry args={[7.4, 7.4, 28, 18, 1, false, 0, Math.PI]} />
-              <meshStandardMaterial color="#d8e1eb" roughness={0.32} metalness={0.72} />
-            </mesh>
-            <mesh position={[0, 6.9, 14]} rotation={[Math.PI / 2, 0, 0]} scale={[1.15, 1, 0.36]}>
-              <cylinderGeometry args={[7.4, 7.4, 28, 18, 1, false, 0, Math.PI]} />
-              <meshStandardMaterial color="#d8e1eb" roughness={0.32} metalness={0.72} />
-            </mesh>
-            {/* 3 Garbarata (Jetbridge) menjorok ke apron */}
-            {[-18, 0, 18].map((jz, jIdx) => (
-              <group key={`jb-${jIdx}`} position={[9.2, 2.8, jz]}>
-                <mesh>
-                  <boxGeometry args={[7.2, 1.85, 2.0]} />
-                  <meshStandardMaterial color="#cbd5e1" roughness={0.45} metalness={0.4} />
-                </mesh>
-                <mesh position={[2.8, -1.5, 0]}>
-                  <cylinderGeometry args={[0.22, 0.28, 2.8, 8]} />
-                  <meshStandardMaterial color="#475569" />
-                </mesh>
-              </group>
-            ))}
-          </group>
-
-          {/* Menara ATC Beton Bertingkat Ikonik (Kabin Kaca Ganda Bertingkat + Antena + Radar Berputar seperti 4 foto!) */}
-          <group position={[-34.0, 0, 16]}>
-            {/* Podium dasar menara ATC */}
-            <mesh position={[0, 1.5, 0]}>
-              <boxGeometry args={[7.5, 3.0, 7.5]} />
-              <meshStandardMaterial map={concreteApronTex} color="#e2e8f0" roughness={0.75} />
-            </mesh>
-            {/* Batang menara beton oktagonal ramping tinggi */}
-            <mesh position={[0, 9.2, 0]}>
-              <cylinderGeometry args={[1.65, 2.15, 15.5, 8]} />
-              <meshStandardMaterial map={concreteApronTex} color="#e5e9ef" roughness={0.72} />
-            </mesh>
-            {/* Kabin observasi kaca tingkat bawah */}
-            <mesh position={[0, 17.5, 0]}>
-              <cylinderGeometry args={[2.75, 2.25, 2.0, 10]} />
-              <meshStandardMaterial color="#134e4a" roughness={0.14} metalness={0.82} />
-            </mesh>
-            {/* Balkon pemisah beton putih */}
-            <mesh position={[0, 18.65, 0]}>
-              <cylinderGeometry args={[3.05, 2.85, 0.38, 10]} />
-              <meshStandardMaterial color="#f1f5f9" roughness={0.55} />
-            </mesh>
-            {/* Kabin kontrol kaca panoramik tingkat atas (miring keluar) */}
-            <mesh position={[0, 19.95, 0]}>
-              <cylinderGeometry args={[3.35, 2.65, 2.25, 10]} />
-              <meshStandardMaterial color="#0f4c5c" roughness={0.12} metalness={0.85} />
-            </mesh>
-            {/* Atap kabin & Radar Pengawas Berputar + Antena komunikasi */}
-            <mesh position={[0, 21.25, 0]}>
-              <cylinderGeometry args={[3.55, 3.35, 0.35, 10]} />
-              <meshStandardMaterial color="#e2e8f0" roughness={0.5} metalness={0.35} />
-            </mesh>
-            <group ref={atcRadarRef} position={[0, 22.05, 0]}>
-              <mesh>
-                <cylinderGeometry args={[0.16, 0.22, 1.2, 8]} />
-                <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.35} />
-              </mesh>
-              <mesh position={[0, 0.6, 0]}>
-                <boxGeometry args={[2.8, 0.36, 0.2]} />
-                <meshStandardMaterial color="#f8fafc" metalness={0.55} roughness={0.3} />
-              </mesh>
-            </group>
-            <mesh position={[0, 23.15, 0]}>
-              <sphereGeometry args={[0.26, 8, 8]} />
-              <meshBasicMaterial color="#ef4444" />
-            </mesh>
-          </group>
+          {/* Apron beton luas + Model 3D Bandara Asli (.GLB: Menara ATC, Terminal, Hanggar, 4 Pesawat Parkir, & Kendaraan Darat!) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-38.0, 0.008, -16]} receiveShadow>
+            <planeGeometry args={[36, 175]} />
+            <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
+          </mesh>
+          <Suspense fallback={null}>
+            <AirbaseGlbModels />
+          </Suspense>
 
           {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-104, -0.1, 0]}>
