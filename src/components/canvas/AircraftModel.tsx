@@ -860,64 +860,83 @@ export function AircraftModel() {
         // - Pitch < 0 = Hidung naik (climb), Pitch > 0 = Hidung turun (dive)
         // - Roll < 0 = Miring kiri (bank left) -> Yaw > 0 (belok kiri ke +X)
         // - Roll > 0 = Miring kanan (bank right) -> Yaw < 0 (belok kanan ke -X)
-        const cycleLen = 8.0;
+        // 4 MANUVER DASAR PESAWAT TEMPUR YANG HALUS, ANGGUN & TIDAK TERBURU-BURU:
+        // Setiap siklus 12.5 detik = 8.5 detik manuver perlahan + 4.0 detik jeda terbang datar mulus sebelum manuver berikutnya!
+        const actionDur = 8.5;
+        const pauseDur = 4.0;
+        const cycleLen = actionDur + pauseDur;
         const activeF: Exclude<FighterManeuverId, 'auto'> =
           fighterManeuver === 'auto'
             ? FIGHTER_AUTO_ORDER[Math.floor(pt / cycleLen) % FIGHTER_AUTO_ORDER.length]
             : fighterManeuver;
         const fSpec = getFighterManeuverSpec(activeF);
-        const p = (pt % cycleLen) / cycleLen;
-        const e = easeInOut(p);
-        setFlightLabel(`MANUVER TEMPUR // ${fSpec.name.toUpperCase()}`);
+        const localT = pt % cycleLen;
 
-        switch (activeF) {
-          case 'barrelRoll': {
-            // Helical Barrel Roll: gulingan 360° kiri sambil menyusuri lintasan melingkar spiral di udara
-            const a = e * Math.PI * 2;
-            directRoll = -a;
-            targetX = Math.sin(a) * 1.85;
-            targetY = baseH + (1 - Math.cos(a)) * 1.35;
-            targetPitch = -0.18 * Math.sin(a);
-            break;
-          }
-          case 'aileronRoll': {
-            // Pure Aileron Roll 360° pada poros longitudinal tanpa melenceng dari jalur lurus
-            directRoll = -e * Math.PI * 2;
-            targetY = baseH + 0.2;
-            targetPitch = -0.05;
-            break;
-          }
-          case 'immelmann': {
-            // Immelmann Turn sejati: Setengah loop menanjak -> Guling 180° tegak di puncak -> Terbang rata di ketinggian!
-            if (p < 0.52) {
-              const q = easeInOut(p / 0.52);
-              const a = q * Math.PI;
-              directPitch = -a;
-              directRoll = 0;
-              targetY = baseH - 0.5 + (1 - Math.cos(a)) * 1.8;
-              targetZ = Math.sin(a) * 2.0;
-            } else if (p < 0.8) {
-              const q = easeInOut((p - 0.52) / 0.28);
-              directPitch = -Math.PI;
-              directRoll = q * Math.PI; // Guling 180° dari terbalik menjadi tegak lurus!
-              targetY = baseH + 3.1;
-            } else {
-              const q = easeInOut((p - 0.8) / 0.2);
-              targetY = THREE.MathUtils.lerp(baseH + 3.1, baseH - 0.5, q);
-              targetPitch = 0;
-              targetRoll = 0;
+        if (localT >= actionDur) {
+          // Fase jeda 4 detik: terbang datar stabil perlahan sebelum masuk manuver selanjutnya
+          targetX = Math.sin(t * 0.55) * 0.25;
+          targetY = baseH + Math.sin(t * 1.4) * 0.08;
+          targetZ = 0;
+          targetPitch = -0.025;
+          targetRoll = Math.cos(t * 0.9) * 0.025;
+          targetYawOffset = 0;
+          setFlightLabel(`MANUVER TEMPUR // STABILISASI & PERSIAPAN MANUVER BERIKUTNYA`);
+        } else {
+          const p = localT / actionDur;
+          const e = easeInOut(p);
+          setFlightLabel(`MANUVER TEMPUR // ${fSpec.name.toUpperCase()}`);
+
+          switch (activeF) {
+            case 'barrelRoll': {
+              // Helical Barrel Roll: gulingan 360° kiri santai & mulus kembali tepat ke titik awal
+              const a = e * Math.PI * 2;
+              directRoll = -a;
+              targetX = Math.sin(a) * 1.85;
+              targetY = baseH + (1 - Math.cos(a)) * 1.35;
+              targetPitch = -0.16 * Math.sin(a);
+              break;
             }
-            break;
-          }
-          case 'chandelle': {
-            // Chandelle: Belokan menanjak 180° ke KIRI dengan bank, yaw, pitch, & X selaras 100%!
-            const s = Math.sin(p * Math.PI);
-            targetX = 3.2 * s;
-            targetY = baseH - 0.3 + 2.6 * e;
-            targetRoll = -0.82 * s; // Bank kiri
-            targetPitch = -0.36 * s; // Hidung menanjak
-            targetYawOffset = 0.62 * s; // Hidung mengarah masuk ke belokan kiri (+X)
-            break;
+            case 'aileronRoll': {
+              // Pure Aileron Roll 360° halus & santai pada poros longitudinal
+              directRoll = -e * Math.PI * 2;
+              targetY = baseH + 0.18 * Math.sin(p * Math.PI);
+              targetPitch = -0.04 * Math.sin(p * Math.PI);
+              break;
+            }
+            case 'immelmann': {
+              // Immelmann Turn halus: Menanjak melengkung -> Guling 180° tegak di puncak -> Turun melandai mulus kembali ke level!
+              if (p < 0.48) {
+                const q = easeInOut(p / 0.48);
+                const a = q * Math.PI;
+                directPitch = -a;
+                directRoll = 0;
+                targetY = baseH + (1 - Math.cos(a)) * 1.65;
+                targetZ = Math.sin(a) * 2.0;
+              } else if (p < 0.74) {
+                const q = easeInOut((p - 0.48) / 0.26);
+                directPitch = -Math.PI;
+                directRoll = q * Math.PI; // Guling 180° perlahan dari terbalik menjadi tegak lurus!
+                targetY = baseH + 3.3;
+              } else {
+                // Kembalikan ketinggian & sudut secara halus selama 2.2 detik (tanpa tersentak!)
+                const q = easeInOut((p - 0.74) / 0.26);
+                targetY = THREE.MathUtils.lerp(baseH + 3.3, baseH, q);
+                targetZ = 0;
+                targetPitch = 0.08 * Math.sin(q * Math.PI);
+                targetRoll = 0;
+              }
+              break;
+            }
+            case 'chandelle': {
+              // Chandelle: Belokan menanjak ke KIRI lalu melandai perlahan kembali ke posisi normal!
+              const s = Math.sin(p * Math.PI);
+              targetX = 3.2 * s;
+              targetY = baseH + 2.4 * s;
+              targetRoll = -0.78 * s; // Bank kiri halus
+              targetPitch = -0.34 * Math.sin(p * Math.PI * 0.9);
+              targetYawOffset = 0.56 * s;
+              break;
+            }
           }
         }
       } else if (isTrainer) {
