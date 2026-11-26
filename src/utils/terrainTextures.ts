@@ -347,98 +347,125 @@ export function makeRoofTileTexture(): THREE.CanvasTexture {
 /** Tekstur Aspal Runway 3D TNI AU lengkap: Threshold Piano Keys, Garis Start, Nomor "09", Aiming Point & Centerline. */
 export function makeRunwayAsphaltTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
-  c.width = 512;
+  c.width = 1024;
   c.height = 2048;
   const ctx = c.getContext('2d')!;
 
-  ctx.fillStyle = '#252930';
-  ctx.fillRect(0, 0, 512, 2048);
+  // Aspal landasan fotorealistis bergaya bandara Indonesia (abu-abu arang bervariasi & jalur pengaspalan memanjang)
+  ctx.fillStyle = '#333840';
+  ctx.fillRect(0, 0, 1024, 2048);
+
+  // Jalur paving memanjang tipis khas aspal bandara asli
+  const laneShades = ['#373d46', '#2f343c', '#3b414a', '#31363f', '#383e47', '#30353d'];
+  for (let i = 0; i < laneShades.length; i++) {
+    ctx.fillStyle = laneShades[i];
+    ctx.fillRect(48 + i * 154, 0, 152, 2048);
+  }
 
   let seed = 9187;
   const rand = () => {
     seed = (seed * 16807) % 2147483647;
     return (seed - 1) / 2147483646;
   };
-  for (let i = 0; i < 9000; i++) {
-    const x = rand() * 512;
+  // Tekstur agregat aspal halus & cuaca
+  for (let i = 0; i < 18000; i++) {
+    const x = rand() * 1024;
     const y = rand() * 2048;
-    const v = 30 + Math.floor(rand() * 26);
+    const v = 38 + Math.floor(rand() * 38);
     ctx.fillStyle = `rgb(${v},${v + 2},${v + 5})`;
-    ctx.fillRect(x, y, 2 + rand() * 3, 2 + rand() * 4);
+    ctx.fillRect(x, y, 2 + rand() * 4, 2 + rand() * 5);
   }
 
-  // Bekas karet ban di zona touchdown
-  const skidGrad = ctx.createLinearGradient(0, 260, 0, 760);
-  skidGrad.addColorStop(0, 'rgba(12,14,18,0)');
-  skidGrad.addColorStop(0.4, 'rgba(10,12,16,0.55)');
-  skidGrad.addColorStop(0.75, 'rgba(10,12,16,0.45)');
-  skidGrad.addColorStop(1, 'rgba(12,14,18,0)');
+  // Goresan karet ban (rubber skid marks) pekat & realistis di zona touchdown (seperti foto referensi!)
+  for (let s = 0; s < 28; s++) {
+    const sx = 280 + rand() * 464;
+    const sy = 240 + rand() * 420;
+    const sh = 180 + rand() * 420;
+    const sw = 4 + rand() * 12;
+    const sg = ctx.createLinearGradient(0, sy, 0, sy + sh);
+    sg.addColorStop(0, 'rgba(10,12,15,0)');
+    sg.addColorStop(0.25, `rgba(10,12,15,${0.25 + rand() * 0.35})`);
+    sg.addColorStop(0.75, `rgba(10,12,15,${0.18 + rand() * 0.28})`);
+    sg.addColorStop(1, 'rgba(10,12,15,0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(sx, sy, sw, sh);
+  }
+  const skidGrad = ctx.createLinearGradient(0, 260, 0, 920);
+  skidGrad.addColorStop(0, 'rgba(10,12,15,0)');
+  skidGrad.addColorStop(0.35, 'rgba(10,12,15,0.52)');
+  skidGrad.addColorStop(0.75, 'rgba(10,12,15,0.36)');
+  skidGrad.addColorStop(1, 'rgba(10,12,15,0)');
   ctx.fillStyle = skidGrad;
-  ctx.fillRect(150, 260, 82, 500);
-  ctx.fillRect(280, 260, 82, 500);
+  ctx.fillRect(310, 260, 155, 660);
+  ctx.fillRect(560, 260, 155, 660);
 
-  // Garis tepi putih tebal
-  ctx.fillStyle = '#e8eef5';
-  ctx.fillRect(24, 0, 12, 2048);
-  ctx.fillRect(476, 0, 12, 2048);
+  // Garis tepi putih tebal (Runway Edge Stripes)
+  ctx.fillStyle = '#eef2f6';
+  ctx.fillRect(46, 0, 22, 2048);
+  ctx.fillRect(956, 0, 22, 2048);
 
-  // Piano Keys (Threshold Stripes)
-  const keyPositions = [64, 108, 152, 196, 286, 330, 374, 418];
+  // Piano Keys (10 Threshold Stripes tebal seperti di foto bandara!)
+  const keyPositions = [110, 184, 258, 332, 406, 566, 640, 714, 788, 862];
   for (const kx of keyPositions) {
-    ctx.fillRect(kx, 22, 26, 86);
-    ctx.fillRect(kx, 1940, 26, 86);
+    ctx.fillRect(kx, 22, 48, 118);
+    ctx.fillRect(kx, 1908, 48, 118);
   }
 
-  // Garis Titik Start Take Off kuning
-  ctx.fillStyle = '#ffb703';
-  ctx.fillRect(42, 118, 428, 12);
+  // Garis threshold putih melintang
+  ctx.fillRect(46, 146, 932, 14);
+  ctx.fillRect(46, 1888, 932, 14);
 
-  // Nomor Landasan "09"
+  // Nomor Landasan "09" (depan) & "23" (ujung jauh) bergaya stencil bandara asli
   ctx.save();
   ctx.fillStyle = '#f1f5f9';
-  ctx.font = 'bold 110px sans-serif';
+  ctx.font = 'bold 165px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('09', 256, 200);
+  ctx.fillText('09', 512, 252);
   ctx.restore();
 
-  // Nomor "27" di ujung jauh
   ctx.save();
-  ctx.translate(256, 1850);
+  ctx.translate(512, 1796);
   ctx.rotate(Math.PI);
   ctx.fillStyle = '#f1f5f9';
-  ctx.font = 'bold 110px sans-serif';
+  ctx.font = 'bold 165px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('27', 0, 0);
+  ctx.fillText('23', 0, 0);
   ctx.restore();
 
-  // Aiming Point Blocks
-  ctx.fillStyle = '#e8eef5';
-  ctx.fillRect(92, 310, 62, 140);
-  ctx.fillRect(358, 310, 62, 140);
-  ctx.fillRect(92, 1580, 62, 140);
-  ctx.fillRect(358, 1580, 62, 140);
+  // Aiming Point Blocks putih besar (kiri & kanan zona touchdown)
+  ctx.fillStyle = '#eef2f6';
+  ctx.fillRect(176, 390, 118, 155);
+  ctx.fillRect(730, 390, 118, 155);
+  ctx.fillRect(176, 1500, 118, 155);
+  ctx.fillRect(730, 1500, 118, 155);
 
-  // Centerline putus-putus putih
-  for (let y = 310; y <= 1710; y += 110) {
-    ctx.fillRect(247, y, 18, 62);
+  // Touchdown zone pair bars
+  ctx.fillRect(216, 620, 42, 95);
+  ctx.fillRect(274, 620, 42, 95);
+  ctx.fillRect(708, 620, 42, 95);
+  ctx.fillRect(766, 620, 42, 95);
+
+  // Centerline putus-putus putih tegas
+  for (let y = 370; y <= 1650; y += 116) {
+    ctx.fillRect(496, y, 32, 66);
   }
 
-  // Sambungan melintang beton/aspal realistis & garis drainase tipis
-  ctx.fillStyle = 'rgba(12,14,18,0.22)';
+  // Sambungan melintang beton/aspal realistis
+  ctx.fillStyle = 'rgba(12,14,18,0.24)';
   for (let y = 0; y < 2048; y += 128) {
-    ctx.fillRect(28, y, 456, 2);
+    ctx.fillRect(52, y, 920, 3);
   }
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   tex.needsUpdate = true;
   return tex;
 }
 
-/** Tekstur satelit rumput & tanah pangkalan udara nyata (jalur potong rumput, variasi tanah & drainase). */
+/** Tekstur rumput hijau tropis cerah khas bandara Indonesia (strip pemotongan rumput + variasi tanah alami). */
 export function makeAirbaseGrassTexture(): THREE.CanvasTexture {
   const size = 512;
   const c = document.createElement('canvas');
@@ -449,15 +476,16 @@ export function makeAirbaseGrassTexture(): THREE.CanvasTexture {
 
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const n1 = valueNoise2D(x * 0.04, y * 0.04);
+      const n1 = valueNoise2D(x * 0.035, y * 0.035);
       const n2 = valueNoise2D(x * 0.14 + 12.1, y * 0.14 + 4.7);
       const n3 = hash2(x, y);
-      const stripe = Math.sin((x / size) * Math.PI * 12) * 0.045;
-      const v = n1 * 0.55 + n2 * 0.3 + n3 * 0.15 + stripe;
+      const stripe = Math.sin((x / size) * Math.PI * 10) * 0.06;
+      const v = n1 * 0.52 + n2 * 0.32 + n3 * 0.16 + stripe;
       const idx = (y * size + x) * 4;
-      img.data[idx] = Math.min(255, Math.max(0, Math.round(44 + v * 36)));
-      img.data[idx + 1] = Math.min(255, Math.max(0, Math.round(78 + v * 48)));
-      img.data[idx + 2] = Math.min(255, Math.max(0, Math.round(40 + v * 26)));
+      // Hijau rumput tropis tersinari matahari (sesuai foto referensi bandara!)
+      img.data[idx] = Math.min(255, Math.max(0, Math.round(74 + v * 58)));
+      img.data[idx + 1] = Math.min(255, Math.max(0, Math.round(122 + v * 66)));
+      img.data[idx + 2] = Math.min(255, Math.max(0, Math.round(34 + v * 32)));
       img.data[idx + 3] = 255;
     }
   }
@@ -469,6 +497,70 @@ export function makeAirbaseGrassTexture(): THREE.CanvasTexture {
   tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(6, 22);
   tex.anisotropy = 8;
+  return tex;
+}
+
+/** Tekstur papan fascia Hanggar TNI AU (logo sayap emas + tulisan TNI AU seperti foto referensi #4). */
+export function makeTniAuHangarSignTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 160;
+  const ctx = c.getContext('2d')!;
+
+  ctx.fillStyle = '#3c4c63';
+  ctx.fillRect(0, 0, 512, 160);
+  // Panel bergelombang halus
+  for (let x = 0; x < 512; x += 12) {
+    ctx.fillStyle = x % 24 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.09)';
+    ctx.fillRect(x, 0, 6, 160);
+  }
+  // Emblem sayap emas TNI AU di atas tulisan
+  ctx.fillStyle = '#eab308';
+  ctx.beginPath();
+  ctx.moveTo(256, 24);
+  ctx.lineTo(298, 42);
+  ctx.lineTo(286, 56);
+  ctx.lineTo(256, 48);
+  ctx.lineTo(226, 56);
+  ctx.lineTo(214, 42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(256, 44, 9, 0, Math.PI * 2);
+  ctx.fillStyle = '#fef08a';
+  ctx.fill();
+
+  // Tulisan TNI AU tegas putih bersih
+  ctx.fillStyle = '#f8fafc';
+  ctx.font = 'bold 54px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('TNI AU', 256, 112);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
+/** Tekstur rambu kuning-hitam penunjuk jalur Taxiway (A <- B ->) di pulau rumput bandara. */
+export function makeTaxiwaySignTexture(): THREE.CanvasTexture {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 96;
+  const ctx = c.getContext('2d')!;
+  ctx.fillStyle = '#facc15';
+  ctx.fillRect(0, 0, 256, 96);
+  ctx.strokeStyle = '#111827';
+  ctx.lineWidth = 8;
+  ctx.strokeRect(4, 4, 248, 88);
+  ctx.fillStyle = '#111827';
+  ctx.font = 'bold 44px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('A ← B →', 128, 50);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
 

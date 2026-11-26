@@ -18,6 +18,8 @@ import {
   makeRoofTileTexture,
   makeRunwayAsphaltTexture,
   makeSkyscraperGlassTexture,
+  makeTaxiwaySignTexture,
+  makeTniAuHangarSignTexture,
 } from '../../utils/terrainTextures';
 
 interface CloudPuff {
@@ -282,6 +284,8 @@ export function SkyCloudsEnvironment() {
   const photorealCloudTex = useMemo(() => makePhotorealCloudTexture(), []);
   const helipadTex = useMemo(() => makeHelipadTexture(), []);
   const skyscraperTex = useMemo(() => makeSkyscraperGlassTexture(), []);
+  const tniAuSignTex = useMemo(() => makeTniAuHangarSignTexture(), []);
+  const taxiSignTex = useMemo(() => makeTaxiwaySignTexture(), []);
   const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
   const roofTileTex = useMemo(() => makeRoofTileTexture(), []);
   const oceanTextures = useMemo(() => makeOceanTextures(), []);
@@ -360,6 +364,8 @@ export function SkyCloudsEnvironment() {
       photorealCloudTex.dispose();
       helipadTex.dispose();
       skyscraperTex.dispose();
+      tniAuSignTex.dispose();
+      taxiSignTex.dispose();
       houseWallTex.dispose();
       roofTileTex.dispose();
       oceanTextures.map.dispose();
@@ -383,6 +389,8 @@ export function SkyCloudsEnvironment() {
     photorealCloudTex,
     helipadTex,
     skyscraperTex,
+    tniAuSignTex,
+    taxiSignTex,
     houseWallTex,
     roofTileTex,
     oceanTextures,
@@ -1026,83 +1034,185 @@ export function SkyCloudsEnvironment() {
                 ))}
               </group>
 
-              {/* Hanggar TNI AU Terbuka (baja bergelombang + beton apron nyata) */}
+              {/* Hanggar TNI AU Terbuka (baja abu-biru + papan logo sayap emas & tulisan "TNI AU" seperti foto referensi!) */}
               {[-152.0, 145.0].map((hz, hIdx) => (
                 <group key={hIdx} position={[-36.0, 0, hz]}>
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.5, 0.01, 0]} receiveShadow>
-                    <planeGeometry args={[32, 14]} />
+                    <planeGeometry args={[34, 18]} />
                     <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
                   </mesh>
                   <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15.0, 0.03, 0]}>
-                    <planeGeometry args={[30, 0.34]} />
+                    <planeGeometry args={[32, 0.34]} />
                     <meshBasicMaterial color="#fbbf24" />
                   </mesh>
-                  <mesh position={[-5.5, 3.6, 0]}>
-                    <boxGeometry args={[0.6, 7.2, 16.4]} />
-                    <meshStandardMaterial map={hangarMetalTex} color="#33517a" roughness={0.62} metalness={0.35} />
+                  {/* Dinding belakang & samping baja bergelombang abu-biru TNI AU */}
+                  <mesh position={[-5.5, 3.8, 0]}>
+                    <boxGeometry args={[0.6, 7.6, 17.4]} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#475972" roughness={0.62} metalness={0.35} />
                   </mesh>
-                  <mesh position={[0, 3.6, -8.0]}>
-                    <boxGeometry args={[11.4, 7.2, 0.5]} />
-                    <meshStandardMaterial map={hangarMetalTex} roughness={0.66} metalness={0.28} />
+                  <mesh position={[0, 3.8, -8.5]}>
+                    <boxGeometry args={[11.6, 7.6, 0.5]} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#526580" roughness={0.65} metalness={0.3} />
                   </mesh>
-                  <mesh position={[0, 3.6, 8.0]}>
-                    <boxGeometry args={[11.4, 7.2, 0.5]} />
-                    <meshStandardMaterial map={hangarMetalTex} roughness={0.66} metalness={0.28} />
+                  <mesh position={[0, 3.8, 8.5]}>
+                    <boxGeometry args={[11.6, 7.6, 0.5]} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#526580" roughness={0.65} metalness={0.3} />
                   </mesh>
-                  <mesh position={[0, 7.45, 0]}>
-                    <boxGeometry args={[12.0, 0.7, 17.0]} />
-                    <meshStandardMaterial map={hangarMetalTex} color="#1a4a8f" roughness={0.5} metalness={0.4} />
+                  {/* Atap pelana landai baja + fascia depan berlogo sayap emas & tulisan "TNI AU" */}
+                  <mesh position={[0, 7.85, 0]}>
+                    <boxGeometry args={[12.4, 0.85, 18.2]} />
+                    <meshStandardMaterial map={hangarMetalTex} color="#3b4d66" roughness={0.52} metalness={0.4} />
                   </mesh>
-                  <mesh position={[5.95, 7.45, 0]}>
-                    <boxGeometry args={[0.25, 0.5, 16.8]} />
-                    <meshBasicMaterial color="#ffb703" />
+                  <mesh position={[6.25, 7.55, 0]} rotation={[0, Math.PI / 2, 0]}>
+                    <planeGeometry args={[11.5, 2.3]} />
+                    <meshStandardMaterial map={tniAuSignTex} roughness={0.48} metalness={0.25} />
                   </mesh>
-                  <pointLight position={[0, 6.2, 0]} color="#ffe9b8" intensity={6} distance={22} />
+                  <pointLight position={[0, 6.4, 0]} color="#ffe9b8" intensity={6} distance={22} />
+                </group>
+              ))}
+
+              {/* Rambu kuning-hitam penunjuk Taxiway (A <- B ->) di pulau rumput antara runway & taxiway */}
+              {[-125, -45, 35, 115].map((sz, sIdx) => (
+                <group key={`tx-sign-${sIdx}`} position={[-11.5, 0.55, sz]} rotation={[0, 0.35, 0]}>
+                  <mesh>
+                    <boxGeometry args={[1.9, 0.72, 0.14]} />
+                    <meshStandardMaterial map={taxiSignTex} roughness={0.45} />
+                  </mesh>
+                  <mesh position={[-0.6, -0.45, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 0.4, 6]} />
+                    <meshStandardMaterial color="#334155" />
+                  </mesh>
+                  <mesh position={[0.6, -0.45, 0]}>
+                    <cylinderGeometry args={[0.05, 0.05, 0.4, 6]} />
+                    <meshStandardMaterial color="#334155" />
+                  </mesh>
+                </group>
+              ))}
+
+              {/* Tiang lampu sorot Apron merah-putih tinggi (seperti di foto bandara!) */}
+              {[-105, -62, -18, 28, 74].map((pz, pIdx) => (
+                <group key={`flood-pole-${pIdx}`} position={[-25.5, 0, pz]}>
+                  <mesh position={[0, 6.0, 0]}>
+                    <cylinderGeometry args={[0.14, 0.24, 12.0, 8]} />
+                    <meshStandardMaterial color="#f1f5f9" roughness={0.5} />
+                  </mesh>
+                  {[2.2, 5.4, 8.6].map((ry, rIdx) => (
+                    <mesh key={rIdx} position={[0, ry, 0]}>
+                      <cylinderGeometry args={[0.19, 0.21, 1.3, 8]} />
+                      <meshStandardMaterial color="#dc2626" roughness={0.5} />
+                    </mesh>
+                  ))}
+                  <mesh position={[0.35, 12.15, 0]}>
+                    <boxGeometry args={[0.9, 0.45, 1.6]} />
+                    <meshStandardMaterial color="#e2e8f0" emissive="#fef9c3" emissiveIntensity={0.65} />
+                  </mesh>
                 </group>
               ))}
             </>
           )}
 
-          {/* Hanggar cadangan & Menara ATC dengan Radar Berputar */}
-          <group position={[-36.0, 0, -32]}>
-            <mesh position={[0, 2.2, 0]}>
-              <boxGeometry args={[7.5, 4.4, 14]} />
-              <meshStandardMaterial map={hangarMetalTex} roughness={0.68} metalness={0.28} />
+          {/* Terminal Bandara Modern Beratap Gelombang Perak + Fasad Kaca Biru + 3 Garbarata (sesuai 4 foto referensi!) */}
+          <group position={[-42.0, 0, -28]}>
+            {/* Apron beton luas di depan terminal */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[14.0, 0.008, 0]} receiveShadow>
+              <planeGeometry args={[28, 72]} />
+              <meshStandardMaterial map={concreteApronTex} roughness={0.86} />
             </mesh>
-            <mesh position={[0, 4.45, 0]}>
-              <boxGeometry args={[7.8, 0.35, 14.3]} />
-              <meshStandardMaterial map={hangarMetalTex} color="#1d4ed8" roughness={0.55} metalness={0.35} />
+            {/* Dinding kaca curtain-wall biru reflektif */}
+            <mesh position={[0, 3.4, 0]}>
+              <boxGeometry args={[12.0, 6.8, 56.0]} />
+              <meshStandardMaterial map={skyscraperTex} color="#7dd3fc" roughness={0.22} metalness={0.68} />
             </mesh>
+            {/* Atap lengkung gelombang perak futuristik (2 kubah memanjang khas terminal bandara modern!) */}
+            <mesh position={[0, 6.9, -13]} rotation={[Math.PI / 2, 0, 0]} scale={[1.15, 1, 0.36]}>
+              <cylinderGeometry args={[7.4, 7.4, 28, 18, 1, false, 0, Math.PI]} />
+              <meshStandardMaterial color="#d8e1eb" roughness={0.32} metalness={0.72} />
+            </mesh>
+            <mesh position={[0, 6.9, 14]} rotation={[Math.PI / 2, 0, 0]} scale={[1.15, 1, 0.36]}>
+              <cylinderGeometry args={[7.4, 7.4, 28, 18, 1, false, 0, Math.PI]} />
+              <meshStandardMaterial color="#d8e1eb" roughness={0.32} metalness={0.72} />
+            </mesh>
+            {/* 3 Garbarata (Jetbridge) menjorok ke apron */}
+            {[-18, 0, 18].map((jz, jIdx) => (
+              <group key={`jb-${jIdx}`} position={[9.2, 2.8, jz]}>
+                <mesh>
+                  <boxGeometry args={[7.2, 1.85, 2.0]} />
+                  <meshStandardMaterial color="#cbd5e1" roughness={0.45} metalness={0.4} />
+                </mesh>
+                <mesh position={[2.8, -1.5, 0]}>
+                  <cylinderGeometry args={[0.22, 0.28, 2.8, 8]} />
+                  <meshStandardMaterial color="#475569" />
+                </mesh>
+              </group>
+            ))}
           </group>
-          <group position={[-27.5, 0, 18]}>
-            <mesh position={[0, 4.5, 0]}>
-              <boxGeometry args={[2.2, 9.0, 2.2]} />
-              <meshStandardMaterial map={concreteApronTex} color="#e2e8f0" roughness={0.72} />
+
+          {/* Menara ATC Beton Bertingkat Ikonik (Kabin Kaca Ganda Bertingkat + Antena + Radar Berputar seperti 4 foto!) */}
+          <group position={[-34.0, 0, 16]}>
+            {/* Podium dasar menara ATC */}
+            <mesh position={[0, 1.5, 0]}>
+              <boxGeometry args={[7.5, 3.0, 7.5]} />
+              <meshStandardMaterial map={concreteApronTex} color="#e2e8f0" roughness={0.75} />
             </mesh>
-            {/* Kabin kaca kontrol ATC */}
-            <mesh position={[0, 9.8, 0]}>
-              <cylinderGeometry args={[2.2, 1.5, 1.85, 8]} />
-              <meshStandardMaterial color="#164e63" roughness={0.14} metalness={0.78} />
+            {/* Batang menara beton oktagonal ramping tinggi */}
+            <mesh position={[0, 9.2, 0]}>
+              <cylinderGeometry args={[1.65, 2.15, 15.5, 8]} />
+              <meshStandardMaterial map={concreteApronTex} color="#e5e9ef" roughness={0.72} />
             </mesh>
-            {/* Atap kabin & Radar Pengawas Berputar */}
-            <mesh position={[0, 10.82, 0]}>
-              <cylinderGeometry args={[2.35, 2.2, 0.25, 8]} />
-              <meshStandardMaterial color="#cbd5e1" roughness={0.55} metalness={0.35} />
+            {/* Kabin observasi kaca tingkat bawah */}
+            <mesh position={[0, 17.5, 0]}>
+              <cylinderGeometry args={[2.75, 2.25, 2.0, 10]} />
+              <meshStandardMaterial color="#134e4a" roughness={0.14} metalness={0.82} />
             </mesh>
-            <group ref={atcRadarRef} position={[0, 11.45, 0]}>
+            {/* Balkon pemisah beton putih */}
+            <mesh position={[0, 18.65, 0]}>
+              <cylinderGeometry args={[3.05, 2.85, 0.38, 10]} />
+              <meshStandardMaterial color="#f1f5f9" roughness={0.55} />
+            </mesh>
+            {/* Kabin kontrol kaca panoramik tingkat atas (miring keluar) */}
+            <mesh position={[0, 19.95, 0]}>
+              <cylinderGeometry args={[3.35, 2.65, 2.25, 10]} />
+              <meshStandardMaterial color="#0f4c5c" roughness={0.12} metalness={0.85} />
+            </mesh>
+            {/* Atap kabin & Radar Pengawas Berputar + Antena komunikasi */}
+            <mesh position={[0, 21.25, 0]}>
+              <cylinderGeometry args={[3.55, 3.35, 0.35, 10]} />
+              <meshStandardMaterial color="#e2e8f0" roughness={0.5} metalness={0.35} />
+            </mesh>
+            <group ref={atcRadarRef} position={[0, 22.05, 0]}>
               <mesh>
-                <cylinderGeometry args={[0.14, 0.18, 0.9, 8]} />
+                <cylinderGeometry args={[0.16, 0.22, 1.2, 8]} />
                 <meshStandardMaterial color="#94a3b8" metalness={0.6} roughness={0.35} />
               </mesh>
-              <mesh position={[0, 0.45, 0]}>
-                <boxGeometry args={[2.2, 0.32, 0.18]} />
+              <mesh position={[0, 0.6, 0]}>
+                <boxGeometry args={[2.8, 0.36, 0.2]} />
                 <meshStandardMaterial color="#f8fafc" metalness={0.55} roughness={0.3} />
               </mesh>
             </group>
-            <mesh position={[0, 12.15, 0]}>
-              <sphereGeometry args={[0.22, 8, 8]} />
+            <mesh position={[0, 23.15, 0]}>
+              <sphereGeometry args={[0.26, 8, 8]} />
               <meshBasicMaterial color="#ef4444" />
             </mesh>
+          </group>
+
+          {/* Pegunungan Vulkanik Hijau-Biru Berkabut di Cakrawala Bandara (seperti latar 4 foto referensi!) */}
+          <group position={[-20, -0.5, 152]}>
+            {[
+              [-95, 26, 20, 48],
+              [-42, 34, 10, 56],
+              [18, 42, 18, 62],
+              [78, 30, 8, 52],
+              [132, 24, 16, 46],
+            ].map(([mx, mh, mz, mr], mIdx) => (
+              <mesh key={`bg-mtn-${mIdx}`} position={[mx, mh * 0.42, mz]} scale={[1.45, 1, 0.72]}>
+                <coneGeometry args={[mr, mh, 7]} />
+                <meshStandardMaterial
+                  color={mIdx % 2 === 0 ? '#4d7396' : '#3d6386'}
+                  roughness={0.95}
+                  metalness={0.02}
+                />
+              </mesh>
+            ))}
           </group>
 
           {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
