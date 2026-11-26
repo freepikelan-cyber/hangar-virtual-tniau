@@ -242,11 +242,14 @@ export function CityGlbModels() {
 }
 
 /**
- * Gunung Sumbing Jawa Tengah 3D Asli (.GLB: mount_sumbing_-_java_indonesia.glb)
- * Menjulang megah mengapit lembah terbang Zona 2 (Pegunungan) — jalur tengah X ∈ [-25..+25] tetap 100% aman bebas tabrakan!
+ * Pegunungan Nusantara 3D Asli di Zona 2 (Lembah Pegunungan):
+ * - Gunung Sumbing Jawa Tengah (.GLB: mount-sumbing.glb, 739 KB)
+ * - Perbukitan & Lembah Wotawati Gunungkidul (.GLB: wotawati.glb, terkompresi WebP+Quantized ~770 KB)
+ * Seluruh mesh statis (matrixAutoUpdate = false, tanpa shadow pass) & jalur tengah X ∈ [-28..+28] 100% aman bebas tabrakan!
  */
 export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | 'airbase' }) {
   const sumbingGltf = useGLTF('/models/env/mount-sumbing.glb');
+  const wotawatiGltf = useGLTF('/models/env/wotawati.glb');
 
   const peaks = useMemo(() => {
     if (mode === 'airbase') {
@@ -258,12 +261,13 @@ export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | '
     return [
       { obj: normalizeGlbPart(sumbingGltf.scene, 38.0), pos: [-112, -1.2, -55] as [number, number, number], rot: 0.2 },
       { obj: normalizeGlbPart(sumbingGltf.scene, 42.0), pos: [116, -1.2, 24] as [number, number, number], rot: 1.8 },
-      { obj: normalizeGlbPart(sumbingGltf.scene, 35.0), pos: [-108, -1.2, 95] as [number, number, number], rot: 3.4 },
+      { obj: normalizeGlbToFootprint(wotawatiGltf.scene, 145.0, 24.0), pos: [102, -1.5, -92] as [number, number, number], rot: 0.6 },
+      { obj: normalizeGlbToFootprint(wotawatiGltf.scene, 145.0, 24.0), pos: [-102, -1.5, 92] as [number, number, number], rot: 2.7 },
     ];
-  }, [sumbingGltf.scene, mode]);
+  }, [sumbingGltf.scene, wotawatiGltf.scene, mode]);
 
   return (
-    <group name={`mount-sumbing-${mode}`}>
+    <group name={`mount-sumbing-wotawati-${mode}`}>
       {peaks.map((pk, idx) => (
         <primitive key={idx} object={pk.obj} position={pk.pos} rotation={[0, pk.rot, 0]} />
       ))}
