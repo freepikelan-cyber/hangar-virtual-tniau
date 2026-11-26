@@ -214,8 +214,8 @@ export function SkyCloudsEnvironment() {
   const currentSpeed = useRef(0);
   const chunkZ = useRef({
     runway: RUNWAY_OFFSET,
-    mountain: RUNWAY_OFFSET + CHUNK_LEN,
-    ocean: RUNWAY_OFFSET + CHUNK_LEN * 2,
+    ocean: RUNWAY_OFFSET + CHUNK_LEN,
+    mountain: RUNWAY_OFFSET + CHUNK_LEN * 2,
     city: RUNWAY_OFFSET + CHUNK_LEN * 3,
   });
   const prevFlightMode = useRef<string>('parked');
@@ -241,10 +241,11 @@ export function SkyCloudsEnvironment() {
       worldY.current = -0.02;
       scrollZ.current = 0;
       currentSpeed.current = 0;
+      // Setelah lepas landas dari ujung Runway, langsung menanjak aman di atas LAUT terbuka -> Pegunungan -> Kota (0% tabrak gunung!)
       chunkZ.current = {
         runway: RUNWAY_OFFSET,
-        mountain: RUNWAY_OFFSET + CHUNK_LEN,
-        ocean: RUNWAY_OFFSET + CHUNK_LEN * 2,
+        ocean: RUNWAY_OFFSET + CHUNK_LEN,
+        mountain: RUNWAY_OFFSET + CHUNK_LEN * 2,
         city: RUNWAY_OFFSET + CHUNK_LEN * 3,
       };
     } else if (flightMode === 'landing') {
@@ -774,10 +775,10 @@ export function SkyCloudsEnvironment() {
         // Pegunungan (Gunung Sumbing) -> Laut (ocean-loop.glb & Karang) -> Perkotaan 3D -> Pegunungan!
         const cz = chunkZ.current;
         if (kinematicRollDist !== null) {
-          // Posisi kinematik presisi saat diam & akselerasi di runway (0% tersendat, pas sampai ujung runway saat Rotate!)
+          // Posisi kinematik presisi saat diam & akselerasi di runway (urutan lepas landas: Runway -> Laut terbuka -> Pegunungan -> Kota!)
           cz.runway = RUNWAY_OFFSET - kinematicRollDist;
-          cz.mountain = RUNWAY_OFFSET + CHUNK_LEN - kinematicRollDist;
-          cz.ocean = RUNWAY_OFFSET + CHUNK_LEN * 2 - kinematicRollDist;
+          cz.ocean = RUNWAY_OFFSET + CHUNK_LEN - kinematicRollDist;
+          cz.mountain = RUNWAY_OFFSET + CHUNK_LEN * 2 - kinematicRollDist;
           cz.city = RUNWAY_OFFSET + CHUNK_LEN * 3 - kinematicRollDist;
         } else {
           const step = smoothSpeed * dt;

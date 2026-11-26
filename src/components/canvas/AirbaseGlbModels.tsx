@@ -256,9 +256,9 @@ export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | '
       ];
     }
     return [
-      { obj: normalizeGlbPart(sumbingGltf.scene, 46.0), pos: [-88, -1.2, -55] as [number, number, number], rot: 0.2 },
-      { obj: normalizeGlbPart(sumbingGltf.scene, 52.0), pos: [94, -1.2, 24] as [number, number, number], rot: 1.8 },
-      { obj: normalizeGlbPart(sumbingGltf.scene, 38.0), pos: [-82, -1.2, 95] as [number, number, number], rot: 3.4 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 38.0), pos: [-112, -1.2, -55] as [number, number, number], rot: 0.2 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 42.0), pos: [116, -1.2, 24] as [number, number, number], rot: 1.8 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 35.0), pos: [-108, -1.2, 95] as [number, number, number], rot: 3.4 },
     ];
   }, [sumbingGltf.scene, mode]);
 
