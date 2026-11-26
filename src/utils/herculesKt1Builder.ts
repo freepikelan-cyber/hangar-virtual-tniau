@@ -501,6 +501,8 @@ export function buildDetailedKT1B(liveryId = 'jupiter'): BuildResult {
 
   const prop = makePropeller(4, 1.48, 0.17, bladeMat, whiteTipMat, 0.18, whiteSpinnerMat);
   prop.wrap.position.set(0, yC, 6.45);
+  prop.pivot.name = 'kt1b-prop-pivot';
+  prop.blur.name = 'kt1b-prop-blur';
   g.add(prop.wrap);
   const spinners: SpinnerFx[] = [{ obj: prop.pivot, axis: 'z', speed: 38, blur: prop.blur }];
 

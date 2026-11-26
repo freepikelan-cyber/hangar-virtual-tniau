@@ -284,9 +284,25 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       if (!grp) continue;
 
       const clone = wingClones[i];
+      // Putar baling-baling & tampilkan efek blur piringan baling-baling untuk SEMUA 5 pesawat pendamping (J2–J6)!
+      const propSpeed = flightMode === 'landing' && pt >= 18.8 ? 8.0 : 38.0;
+      const blurOpacity = flightMode === 'landing' && pt >= 18.8 ? 0.08 : 0.28;
       clone.traverse((child) => {
-        if (child.name.includes('prop') || child.name.includes('blade') || child.name.includes('spinner')) {
-          child.rotation.z += dt * 36;
+        if (
+          child.name === 'kt1b-prop-pivot' ||
+          child.name.includes('prop') ||
+          child.name.includes('blade') ||
+          child.name.includes('spinner')
+        ) {
+          if (child.name !== 'kt1b-prop-blur') {
+            child.rotation.z += dt * propSpeed;
+          }
+        }
+        if (child.name === 'kt1b-prop-blur' && (child as THREE.Mesh).isMesh) {
+          const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
+          if (mat && 'opacity' in mat) {
+            mat.opacity = blurOpacity;
+          }
         }
       });
 
