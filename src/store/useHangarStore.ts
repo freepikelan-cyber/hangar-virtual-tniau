@@ -452,7 +452,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const s = get();
     if (s.flightMode !== 'parked') return;
     aircraftAudio.unlock();
-    aircraftAudio.resetPhaseTriggers();
+    aircraftAudio.resetPhaseTriggers(true);
     const isJupiter = s.selectedId === 'kt1b';
     set({
       flightMode: 'takeoff',

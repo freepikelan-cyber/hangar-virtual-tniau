@@ -600,13 +600,20 @@ class AircraftAudioEngine {
     this.lfo.start();
   }
 
-  /** Reset penanda one-shot SFX & transmisi ATC saat fase baru (Take Off / Landing) dimulai. */
-  resetPhaseTriggers() {
+  /**
+   * Reset penanda one-shot SFX & transmisi ATC saat fase baru dimulai.
+   * `resetSessionVoices = true` dipakai hanya saat penerbangan baru dimulai (Take Off / stop / ganti pesawat)
+   * agar suara jelajah ("Anda sedang berada di ketinggian...") hanya diputar SEKALI per penerbangan,
+   * tidak diulang-ulang setiap kali Manuver / Drop Barang / AAR dihentikan kembali ke mode mengudara!
+   */
+  resetPhaseTriggers(resetSessionVoices = false) {
     this.touchdownPlayed = false;
     this.gearChimePlayed = false;
     this.atcStartPlayed = false;
     this.atcVacatePlayed = false;
-    this.transportCruisePlayed = false;
+    if (resetSessionVoices) {
+      this.transportCruisePlayed = false;
+    }
     this.vvipWelcomePlayed = false;
     this.trainerRollPlayed = false;
     this.trainerLandRollPlayed = false;
@@ -1781,7 +1788,7 @@ class AircraftAudioEngine {
   }
 
   stop() {
-    this.resetPhaseTriggers();
+    this.resetPhaseTriggers(true);
     if (this.ctx && this.masterGain) {
       const now = this.ctx.currentTime;
       this.masterGain.gain.cancelScheduledValues(now);
