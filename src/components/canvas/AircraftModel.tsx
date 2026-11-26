@@ -622,22 +622,28 @@ export function AircraftModel() {
           targetPitch = -0.025;
           setFlightLabel('JAT — Formasi Arrowhead stabil');
         } else if (pt < 39.0) {
-          // Atraksi 3A: Jupiter Roll (6s)
+          // Atraksi 3A: Jupiter Roll (6s — bergulung 360° serempak pada sumbu masing-masing)
           const p = easeInOut((pt - 33.0) / 6.0);
-          targetPitch = -0.12 * Math.sin(p * Math.PI);
-          targetY = 3.8;
+          const arch = Math.sin(p * Math.PI);
+          targetPitch = -0.14 * arch;
+          targetY = 3.0 + 2.8 * arch;
           directRoll = -p * Math.PI * 2;
           setFlightLabel('Jupiter Roll — 6 pesawat bergulung serempak pada sumbunya');
         } else if (pt < 42.0) {
-          // Jeda 3 detik
+          // Jeda 3 detik & naik perlahan ke Y=12 untuk ruang aman Screw Roll
+          const p = easeInOut((pt - 39.0) / 3.0);
+          targetY = THREE.MathUtils.lerp(3.0, 12.0, p);
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan Screw Roll');
         } else if (pt < 50.0) {
-          // Atraksi 3B: Screw Roll
+          // Atraksi 3B: Screw Roll (J1–J5 stabil di Y=12; J6 melingkar jauh di luar radius aman!)
+          targetY = 12.0;
           targetPitch = -0.025;
           targetRoll = 0;
           setFlightLabel('Screw Roll — 1 pesawat berputar melingkari formasi utama');
         } else if (pt < 53.5) {
+          const p = easeInOut((pt - 50.0) / 3.5);
+          targetY = THREE.MathUtils.lerp(12.0, 3.0, p);
           targetPitch = -0.025;
           setFlightLabel('JAT — Kembali ke formasi Arrowhead perlahan');
         } else if (pt < 56.5) {
@@ -645,22 +651,20 @@ export function AircraftModel() {
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan formasi Mirror');
         } else if (pt < 60.0) {
-          const p = easeInOut((pt - 56.5) / 3.5);
           targetX = 0;
-          targetY = THREE.MathUtils.lerp(3.0, 4.0, p);
+          targetY = 3.0;
           targetPitch = -0.02;
-          setFlightLabel('Mirror — Pesawat lain menjauh, 2 pesawat masuk posisi cermin');
+          setFlightLabel('Mirror — 2 pesawat naik ke atas formasi 4 pesawat masuk posisi cermin');
         } else if (pt < 68.0) {
-          // Atraksi 4: Mirror (J1 normal di Y=4.0, J5 inverted di Y=9.2)
+          // Atraksi 4: Mirror — J1–J4 mengudara stabil di bawah (Y=3.0), sementara J5 (normal) & J6 (terbalik) di atasnya!
           targetX = 0;
-          targetY = 4.0;
+          targetY = 3.0;
           targetZ = 0;
           targetPitch = -0.02;
           targetRoll = 0;
-          setFlightLabel('Mirror — 2 pesawat terbang dekat, 1 normal dan 1 terbalik seperti cermin');
+          setFlightLabel('Mirror — 2 pesawat cermin (normal & terbalik) di atas 4 pesawat yang mengudara');
         } else if (pt < 72.0) {
-          const p = easeInOut((pt - 68.0) / 4.0);
-          targetY = THREE.MathUtils.lerp(4.0, 3.0, p);
+          targetY = 3.0;
           targetPitch = -0.025;
           setFlightLabel('JAT — Kembali berkumpul ke formasi perlahan');
         } else if (pt < 75.0) {
