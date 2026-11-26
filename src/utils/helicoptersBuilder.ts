@@ -828,13 +828,13 @@ export function buildDetailedColibri(liveryId = 'grey'): BuildResult {
   fenPivot.add(fenBlur);
   g.add(fenPivot);
 
-  // ---- 7. MARKING PERSIS FOTO ASLI: Bendera + "HL-1211", "TNI-AU" hitam, & Roundel ----
+  // ---- 7. MARKING PERSIS FOTO ASLI: Bendera + "HL-1211", "TNI AU" hitam, & Roundel ----
   addDecal(g, upperFinMesh, [0.10, 3.24, -6.28], [0, Math.PI / 2, 0], [0.42, 0.28, 0.18], flagTexture());
   addDecal(g, upperFinMesh, [-0.10, 3.24, -6.28], [0, -Math.PI / 2, 0], [0.42, 0.28, 0.18], flagTexture());
   addDecal(g, upperFinMesh, [0.10, 2.94, -6.18], [0, Math.PI / 2, 0], [0.85, 0.22, 0.18], textTexture('HL-1211', { color: '#111827', aspect: 3.8 }));
   addDecal(g, upperFinMesh, [-0.10, 2.94, -6.18], [0, -Math.PI / 2, 0], [0.85, 0.22, 0.18], textTexture('HL-1211', { color: '#111827', aspect: 3.8 }));
-  addDecal(g, boomMesh, [0.28, 1.94, -3.55], [0, Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI-AU', { color: '#111827', aspect: 4.5 }));
-  addDecal(g, boomMesh, [-0.28, 1.94, -3.55], [0, -Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI-AU', { color: '#111827', aspect: 4.5 }));
+  addDecal(g, boomMesh, [0.28, 1.94, -3.55], [0, Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI AU', { color: '#111827', aspect: 4.5 }));
+  addDecal(g, boomMesh, [-0.28, 1.94, -3.55], [0, -Math.PI / 2, 0], [1.45, 0.28, 0.25], textTexture('TNI AU', { color: '#111827', aspect: 4.5 }));
   addDecal(g, fuseMesh, [0.94, 1.44, 0.22], [0, Math.PI / 2, 0], [0.56, 0.56, 0.25], roundelTexture());
   addDecal(g, fuseMesh, [-0.94, 1.44, 0.22], [0, -Math.PI / 2, 0], [0.56, 0.56, 0.25], roundelTexture());
 

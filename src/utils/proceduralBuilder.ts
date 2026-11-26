@@ -536,6 +536,7 @@ function buildB737(): BuildResult {
   seat(g, k, 5.6, 1.6, -0.25, 0.75);
 
   decalSides(g, fuse, [0.58, 2.04, 0.3], [4.6, 0.32, 0.6], TEXT('REPUBLIK INDONESIA', '#1b2a4a', 11));
+  decalSides(g, fuse, [0.56, 1.78, -3.1], [1.25, 0.26, 0.5], TEXT('TNI AU', '#1b2a4a', 4.2));
   finMarkings(g, finM, 0, 0.14, [3.55, -6.0], 1.3, 'A-7304', [2.75, -5.95], 1.2, '#1b2a4a');
   decalSides(g, fuse, [0.7, 1.62, -4.3], [0.55, 0.55, 0.6], ROUNDEL());
   void wings;

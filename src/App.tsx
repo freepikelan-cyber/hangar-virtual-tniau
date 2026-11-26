@@ -7,6 +7,7 @@ import { InfoPanel } from './components/hud/InfoPanel';
 import { HotspotCard } from './components/hud/HotspotCard';
 import { BottomDock } from './components/hud/BottomDock';
 import { WelcomeScreen } from './components/hud/WelcomeScreen';
+import { ShowcaseOverlay } from './components/hud/ShowcaseOverlay';
 import { useHangarStore } from './store/useHangarStore';
 import { bgmPlayer } from './utils/bgmPlayer';
 
@@ -114,11 +115,8 @@ function FloatingQuizBanner() {
   );
 }
 
-const SHOWCASE_FLEET = ['su30mk2', 'rafale', 'f16id', 'kt1b', 'c130j', 'b737vip', 'caracal'];
-
 export function App() {
   const showWelcome = useHangarStore((s) => s.showWelcome);
-  const showcaseMode = useHangarStore((s) => s.showcaseMode);
   const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
   const bgmVolume = useHangarStore((s) => s.bgmVolume);
   const flightMode = useHangarStore((s) => s.flightMode);
@@ -134,17 +132,6 @@ export function App() {
   useEffect(() => {
     bgmPlayer.setVolume(bgmVolume);
   }, [bgmVolume]);
-
-  useEffect(() => {
-    if (!showcaseMode) return;
-    let idx = Math.max(0, SHOWCASE_FLEET.indexOf(useHangarStore.getState().selectedId));
-    const timer = window.setInterval(() => {
-      idx = (idx + 1) % SHOWCASE_FLEET.length;
-      useHangarStore.getState().selectAircraft(SHOWCASE_FLEET[idx]);
-      useHangarStore.setState({ autoRotate: true, leftOpen: false, rightOpen: false });
-    }, 12000);
-    return () => window.clearInterval(timer);
-  }, [showcaseMode]);
 
   if (cockpitSimMode) {
     return (
@@ -186,6 +173,7 @@ export function App() {
           </Suspense>
           <FloatingQuizBanner />
           <HotspotCard />
+          <ShowcaseOverlay />
           <BottomDock />
         </>
       )}

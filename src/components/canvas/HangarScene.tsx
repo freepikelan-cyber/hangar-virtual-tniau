@@ -253,17 +253,20 @@ export function HangarScene() {
   const clearHotspot = useHangarStore((s) => s.clearHotspot);
   const flightMode = useHangarStore((s) => s.flightMode);
   const safetyMode = useHangarStore((s) => s.safetyMode);
+  const showcaseMode = useHangarStore((s) => s.showcaseMode);
   const selectedId = useHangarStore((s) => s.selectedId);
   const initialCam = useMemo(() => getDefaultCamera(), []);
   const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
   const isOutdoorSim = !isEquipment && (flightMode !== 'parked' || safetyMode);
-  const showGroundShadow = isEquipment || flightMode === 'parked';
+  const everOutdoorRef = useRef(false);
+  if (isOutdoorSim) everOutdoorRef.current = true;
+  const showGroundShadow = (isEquipment || flightMode === 'parked') && !showcaseMode;
 
   return (
     <div className="absolute inset-0 bg-[#07152c] touch-none">
       <Canvas
         shadows
-        dpr={isOutdoorSim ? 1 : [1, 1.25]}
+        dpr={isOutdoorSim || showcaseMode ? 1 : [1, 1.25]}
         camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
         gl={{
           antialias: true,
@@ -277,7 +280,7 @@ export function HangarScene() {
         <fog attach="fog" args={['#07152c', 26, 62]} />
 
         <StudioLighting />
-        {isOutdoorSim && <SkyCloudsEnvironment />}
+        {(isOutdoorSim || everOutdoorRef.current) && <SkyCloudsEnvironment />}
         <RadarPlatform />
         {showGroundShadow && (
           <ContactShadows

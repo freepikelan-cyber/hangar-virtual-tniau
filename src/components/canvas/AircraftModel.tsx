@@ -1371,55 +1371,52 @@ export function AircraftModel() {
         }
       }
     } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
-      // Animasi 3D Aerodinamika: langsung aktif instan tanpa jeda!
+      // Animasi 3D Aerodinamika: SAT-SET, langsung bergerak instan begitu diklik tanpa menunggu!
       aeroTime.current += dt;
       if (aeroManeuver === 'liftDemo') {
-        const cyc = aeroTime.current % 9.5;
-        if (cyc < 0.35) {
-          targetY = 0;
-          targetPitch = 0;
-          targetGear = 0;
-        } else if (cyc < 3.6) {
-          const p = easeInOut((cyc - 0.35) / 3.25);
-          targetY = THREE.MathUtils.lerp(0, 2.15, p);
-          targetPitch = -0.15 * Math.sin(p * Math.PI * 0.75);
-          targetGear = p > 0.5 ? 1 : 0;
-        } else if (cyc < 8.0) {
-          targetY = 2.15 + Math.sin(t * 2.2) * 0.12;
-          targetPitch = -0.08 + Math.sin(t * 1.5) * 0.02;
+        const cyc = aeroTime.current % 5.6;
+        if (cyc < 1.35) {
+          const p = easeInOut(cyc / 1.35);
+          targetY = THREE.MathUtils.lerp(0.25, 2.25, p);
+          targetPitch = -0.18 * Math.sin(p * Math.PI * 0.75);
+          targetGear = p > 0.3 ? 1 : 0;
+        } else if (cyc < 4.4) {
+          targetY = 2.25 + Math.sin(t * 2.8) * 0.14;
+          targetPitch = -0.09 + Math.sin(t * 2.0) * 0.025;
           targetGear = 1;
         } else {
-          const p = easeInOut((cyc - 8.0) / 1.5);
-          targetY = THREE.MathUtils.lerp(2.15, 0, p);
-          targetPitch = THREE.MathUtils.lerp(-0.08, 0, p);
+          const p = easeInOut((cyc - 4.4) / 1.2);
+          targetY = THREE.MathUtils.lerp(2.25, 0.25, p);
+          targetPitch = THREE.MathUtils.lerp(-0.09, 0, p);
           targetGear = p > 0.45 ? 0 : 1;
         }
       } else if (aeroManeuver === 'climb') {
-        targetY = 2.4 + Math.sin(t * 1.6) * 0.35;
-        targetPitch = -0.26;
+        targetY = 2.5 + Math.sin(t * 2.2) * 0.35;
+        targetPitch = -0.28;
         targetGear = 1;
       } else if (aeroManeuver === 'descend') {
-        targetY = 1.45 + Math.sin(t * 1.6) * 0.25;
-        targetPitch = 0.22;
+        targetY = 1.45 + Math.sin(t * 2.2) * 0.25;
+        targetPitch = 0.24;
         targetGear = 1;
       } else if (aeroManeuver === 'turnLeft') {
-        targetX = -1.15 + Math.sin(t * 1.2) * 0.35;
-        targetY = 2.0 + Math.cos(t * 1.4) * 0.12;
-        targetRoll = 0.44;
-        targetYawOffset = 0.22;
+        targetX = -1.25 + Math.sin(t * 1.8) * 0.35;
+        targetY = 2.05 + Math.cos(t * 1.8) * 0.12;
+        targetRoll = 0.48;
+        targetYawOffset = 0.24;
         targetPitch = -0.05;
         targetGear = 1;
       } else if (aeroManeuver === 'turnRight') {
-        targetX = 1.15 + Math.sin(t * 1.2) * 0.35;
-        targetY = 2.0 + Math.cos(t * 1.4) * 0.12;
-        targetRoll = -0.44;
-        targetYawOffset = -0.22;
+        targetX = 1.25 + Math.sin(t * 1.8) * 0.35;
+        targetY = 2.05 + Math.cos(t * 1.8) * 0.12;
+        targetRoll = -0.48;
+        targetYawOffset = -0.24;
         targetPitch = -0.05;
         targetGear = 1;
       } else {
-        targetY = 1.9 + Math.sin(t * 1.8) * 0.08;
+        targetY = 2.0 + Math.sin(t * 2.2) * 0.1;
         targetGear = 1;
       }
+      gearSpeed = 6.5;
     } else {
       targetX = 0;
       targetY = 0;
@@ -1437,8 +1434,9 @@ export function AircraftModel() {
       airframeRef.current.visible = !hideLeadForSolo;
     }
 
-    // Interpolasi halus posisi & rotasi pesawat
-    const posSpeed = flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
+    // Interpolasi posisi & rotasi pesawat (Aerodinamika sat-set cepat 8.5, Take Off/Landing 5.5, Manuver 2.8)
+    const posSpeed = aeroMode ? 8.5 : flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
+    const rotSpeed = aeroMode ? 7.5 : 3.2;
     currentX.current = THREE.MathUtils.lerp(currentX.current, targetX, Math.min(1, dt * posSpeed));
     currentY.current = THREE.MathUtils.lerp(currentY.current, targetY, Math.min(1, dt * posSpeed));
     currentZ.current = THREE.MathUtils.lerp(currentZ.current, targetZ, Math.min(1, dt * posSpeed));
@@ -1452,7 +1450,7 @@ export function AircraftModel() {
     } else {
       while (rootRef.current.rotation.x < -Math.PI) rootRef.current.rotation.x += Math.PI * 2;
       while (rootRef.current.rotation.x > Math.PI) rootRef.current.rotation.x -= Math.PI * 2;
-      rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * 3.2));
+      rootRef.current.rotation.x = THREE.MathUtils.lerp(rootRef.current.rotation.x, targetPitch, Math.min(1, dt * rotSpeed));
     }
     if (directRoll !== null) {
       rootRef.current.rotation.z = directRoll;
@@ -1460,7 +1458,7 @@ export function AircraftModel() {
       // Normalisasi penuh multi-putaran roll (-4*PI -> 0) agar selesai Roll tidak memutar balik seperti error!
       while (rootRef.current.rotation.z < -Math.PI) rootRef.current.rotation.z += Math.PI * 2;
       while (rootRef.current.rotation.z > Math.PI) rootRef.current.rotation.z -= Math.PI * 2;
-      rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * 3.2));
+      rootRef.current.rotation.z = THREE.MathUtils.lerp(rootRef.current.rotation.z, targetRoll, Math.min(1, dt * rotSpeed));
     }
 
     if (autoRotate) {
@@ -1469,7 +1467,7 @@ export function AircraftModel() {
       while (rootRef.current.rotation.y < -Math.PI) rootRef.current.rotation.y += Math.PI * 2;
       while (rootRef.current.rotation.y > Math.PI) rootRef.current.rotation.y -= Math.PI * 2;
       // Saat taxi Take Off / Landing, samakan kecepatan rotasi yaw dengan posSpeed (5.5) agar hidung selalu presisi searah lintasan belok (0% terseret)!
-      const yawSpeed = flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
+      const yawSpeed = aeroMode ? 7.5 : flightMode === 'takeoff' || flightMode === 'landing' ? 5.5 : 2.8;
       rootRef.current.rotation.y = THREE.MathUtils.lerp(rootRef.current.rotation.y, targetYawOffset, Math.min(1, dt * yawSpeed));
     }
 

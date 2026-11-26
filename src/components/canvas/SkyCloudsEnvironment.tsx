@@ -192,7 +192,7 @@ function makeSunHaloTexture(): THREE.CanvasTexture {
  *   3. Laut Berombak Realistis (Animated Bump Waves) + Pulau Tropis Organik + Kapal Patroli KRI
  */
 export function SkyCloudsEnvironment() {
-  const { scene } = useThree();
+  const { scene, gl, camera } = useThree();
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightNonce = useHangarStore((s) => s.flightNonce);
   const safetyMode = useHangarStore((s) => s.safetyMode);
@@ -219,6 +219,22 @@ export function SkyCloudsEnvironment() {
     city: RUNWAY_OFFSET + CHUNK_LEN * 3,
   });
   const prevFlightMode = useRef<string>('parked');
+  const shadersWarmedRef = useRef(false);
+
+  // Pre-compile seluruh shader & upload tekstur zona Laut/Gunung/Kota sekali saja di awal saat di darat,
+  // agar saat lepas landas -> mengudara -> landing TIDAK PERNAH freeze/lag!
+  useEffect(() => {
+    if (!isOutdoorSim || shadersWarmedRef.current) return;
+    const t = window.setTimeout(() => {
+      try {
+        gl.compile(scene, camera);
+        shadersWarmedRef.current = true;
+      } catch {
+        // ignore
+      }
+    }, 650);
+    return () => window.clearTimeout(t);
+  }, [isOutdoorSim, gl, scene, camera]);
 
   const skyMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const sunGroupRef = useRef<THREE.Group>(null);

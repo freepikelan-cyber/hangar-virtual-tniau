@@ -1,29 +1,39 @@
-import { Flame } from 'lucide-react';
 import { FIGHTER_MANEUVERS, type FighterManeuverId } from '../../data/fighterManeuvers';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 
+/**
+ * Subtitle ringkas di bagian bawah layar (tanpa panel besar di sebelah kanan!) untuk mode Manuver Pesawat Tempur,
+ * lengkap dengan tombol pil cepat pilihan manuver.
+ */
 export function FighterManeuverPanel() {
   const unit = useSelectedUnit();
   const flightMode = useHangarStore((s) => s.flightMode);
+  const flightLabel = useHangarStore((s) => s.flightLabel);
   const fighterManeuver = useHangarStore((s) => s.fighterManeuver);
   const setFighterManeuver = useHangarStore((s) => s.setFighterManeuver);
 
   if (unit.category !== 'Tempur' || flightMode !== 'maneuver') return null;
 
   const activeSpec =
-    fighterManeuver === 'auto' ? null : FIGHTER_MANEUVERS.find((m) => m.id === fighterManeuver) ?? null;
+    fighterManeuver === 'auto'
+      ? FIGHTER_MANEUVERS.find((m) => flightLabel?.toUpperCase().includes(m.name.toUpperCase())) ?? null
+      : FIGHTER_MANEUVERS.find((m) => m.id === fighterManeuver) ?? null;
 
-  const renderBtn = (id: FighterManeuverId, label: string) => {
+  const subtitleText = activeSpec
+    ? `${activeSpec.name} — ${activeSpec.desc}`
+    : flightLabel || 'Auto Manuver — Pesawat melakukan stabilisasi menuju manuver berikutnya';
+
+  const renderPill = (id: FighterManeuverId, label: string) => {
     const active = fighterManeuver === id;
     return (
       <button
         key={id}
         type="button"
         onClick={() => setFighterManeuver(id)}
-        className={`rounded-lg border px-2 py-1.5 text-left font-display text-[10px] font-bold tracking-wide uppercase transition-all cursor-pointer active:scale-95 ${
+        className={`rounded-full border px-2.5 py-0.5 font-display text-[10px] font-bold tracking-wide uppercase transition-all cursor-pointer active:scale-95 whitespace-nowrap ${
           active
-            ? 'border-[#ffb703] bg-[#ffb703]/20 text-[#ffb703] shadow-amber'
-            : 'border-slate-700/75 bg-[#0e2a54]/80 text-slate-200 hover:border-[#4da6ff]/60'
+            ? 'border-[#ffb703] bg-[#ffb703]/25 text-[#ffb703]'
+            : 'border-white/15 bg-slate-950/70 text-slate-200 hover:border-[#4da6ff]/60'
         }`}
       >
         {label}
@@ -32,50 +42,20 @@ export function FighterManeuverPanel() {
   };
 
   return (
-    <aside
-      aria-label="Manuver Sederhana Pesawat Tempur"
-      className="pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] right-2.5 sm:right-4 z-30 lg:z-20 flex items-start"
+    <div
+      aria-label="Subtitle Manuver Pesawat Tempur"
+      className="pointer-events-none fixed bottom-[132px] sm:bottom-[142px] left-1/2 z-30 flex w-[min(780px,calc(100vw-1.25rem))] -translate-x-1/2 flex-col items-center gap-1.5"
     >
-      <div className="hud-panel pointer-events-auto flex h-full w-[min(330px,calc(100vw-1.25rem))] lg:w-[310px] xl:w-[330px] flex-col rounded-xl border-[#4da6ff]/55 bg-[#081933]/92 overflow-hidden animate-slidein">
-        <div className="border-b border-[#4da6ff]/25 bg-gradient-to-r from-[#0e2d5c]/80 to-[#0b2349]/90 px-3.5 py-2.5">
-          <div className="flex items-center gap-1.5 text-[#ffb703] font-display text-[11px] font-bold tracking-[0.14em] uppercase">
-            <Flame className="h-4 w-4 text-[#4da6ff] shrink-0" />
-            MANUVER TEMPUR • {unit.name}
-          </div>
-          <p className="mt-0.5 text-[10px] text-slate-300">
-            {FIGHTER_MANEUVERS.length} Manuver Terbang &amp; Aerobatik Pesawat Tempur
-          </p>
-        </div>
-
-        <div className="border-b border-white/10 bg-[#0b2347]/75 px-3.5 py-2">
-          {activeSpec ? (
-            <>
-              <div className="font-display text-xs font-bold text-[#ffb703] uppercase">{activeSpec.name}</div>
-              <p className="text-[11px] text-slate-200 leading-snug mt-0.5">{activeSpec.desc}</p>
-            </>
-          ) : (
-            <>
-              <div className="font-display text-xs font-bold text-[#ffb703] uppercase">
-                AUTO MANUVER TEMPUR
-              </div>
-              <p className="text-[11px] text-slate-200 leading-snug mt-0.5">
-                Menjalankan {FIGHTER_MANEUVERS.length} manuver otomatis secara perlahan &amp; berjeda, atau pilih langsung di bawah.
-              </p>
-            </>
-          )}
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-2.5 space-y-3">
-          <div>{renderBtn('auto', '✦ Auto Demo (Otomatis)')}</div>
-
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1 font-display text-[10px] font-bold tracking-[0.14em] text-cyan-300 uppercase">
-              <Flame className="h-3 w-3" /> Pilihan Manuver ({FIGHTER_MANEUVERS.length})
-            </div>
-            <div className="grid grid-cols-2 gap-1.5">{FIGHTER_MANEUVERS.map((m) => renderBtn(m.id, m.name))}</div>
-          </div>
-        </div>
+      {/* Subtitle gaya film ringkas & jernih */}
+      <div className="rounded-lg bg-slate-950/82 px-3.5 py-1.5 text-center text-[11px] sm:text-xs font-medium text-slate-100 shadow-lg backdrop-blur-sm border border-white/10">
+        {subtitleText}
       </div>
-    </aside>
+
+      {/* Pilihan cepat manuver 1 baris ringkas */}
+      <div className="pointer-events-auto flex max-w-full items-center gap-1 overflow-x-auto rounded-full bg-slate-950/75 px-2 py-1 border border-white/10 backdrop-blur-sm">
+        {renderPill('auto', 'Auto')}
+        {FIGHTER_MANEUVERS.map((m) => renderPill(m.id, m.name.replace(/^Manuver\s+/i, '')))}
+      </div>
+    </div>
   );
 }
