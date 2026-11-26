@@ -500,42 +500,31 @@ export function makeAirbaseGrassTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Tekstur papan fascia Hanggar TNI AU (logo sayap emas + tulisan TNI AU seperti foto referensi #4). */
+/** Tekstur papan fascia Hanggar: tulisan tegas "SKADRON UDARA TNI AU" tanpa logo. */
 export function makeTniAuHangarSignTexture(): THREE.CanvasTexture {
   const c = document.createElement('canvas');
-  c.width = 512;
+  c.width = 1024;
   c.height = 160;
   const ctx = c.getContext('2d')!;
 
   ctx.fillStyle = '#3c4c63';
-  ctx.fillRect(0, 0, 512, 160);
+  ctx.fillRect(0, 0, 1024, 160);
   // Panel bergelombang halus
-  for (let x = 0; x < 512; x += 12) {
-    ctx.fillStyle = x % 24 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.09)';
-    ctx.fillRect(x, 0, 6, 160);
+  for (let x = 0; x < 1024; x += 16) {
+    ctx.fillStyle = x % 32 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.09)';
+    ctx.fillRect(x, 0, 8, 160);
   }
-  // Emblem sayap emas TNI AU di atas tulisan
+  // Lis emas tipis atas & bawah papan nama
   ctx.fillStyle = '#eab308';
-  ctx.beginPath();
-  ctx.moveTo(256, 24);
-  ctx.lineTo(298, 42);
-  ctx.lineTo(286, 56);
-  ctx.lineTo(256, 48);
-  ctx.lineTo(226, 56);
-  ctx.lineTo(214, 42);
-  ctx.closePath();
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(256, 44, 9, 0, Math.PI * 2);
-  ctx.fillStyle = '#fef08a';
-  ctx.fill();
+  ctx.fillRect(24, 14, 976, 5);
+  ctx.fillRect(24, 141, 976, 5);
 
-  // Tulisan TNI AU tegas putih bersih
+  // Tulisan "SKADRON UDARA TNI AU" tegas putih bersih
   ctx.fillStyle = '#f8fafc';
-  ctx.font = 'bold 54px sans-serif';
+  ctx.font = 'bold 62px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText('TNI AU', 256, 112);
+  ctx.fillText('SKADRON UDARA TNI AU', 512, 82);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
