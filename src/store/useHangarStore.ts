@@ -301,6 +301,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       return;
     }
     if (key === 'oxygenMode') {
+      // Oksigen OBOGS hanya aktif saat pesawat parkir di hanggar (tidak bisa diaktifkan saat mengudara)
+      if (get().flightMode !== 'parked') return;
       set({
         oxygenMode: next,
         safetyMode: next ? false : get().safetyMode,
@@ -326,6 +328,18 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const s = get();
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
+    aircraftAudio.stopVoiceRadio();
+    if (s.flightMode === 'aar') {
+      set({
+        flightMode: 'airborne',
+        flightNonce: s.flightNonce + 1,
+        flightLabel: 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING',
+        autoRotate: false,
+        activeHotspot: null,
+        camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+      });
+      return;
+    }
     set({
       flightMode: 'aar',
       flightNonce: s.flightNonce + 1,
@@ -353,6 +367,18 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const u = getUnit(s.selectedId);
     aircraftAudio.unlock();
     aircraftAudio.resetPhaseTriggers();
+    aircraftAudio.stopVoiceRadio();
+    if (s.flightMode === 'mission') {
+      set({
+        flightMode: 'airborne',
+        flightNonce: s.flightNonce + 1,
+        flightLabel: 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING',
+        autoRotate: false,
+        activeHotspot: null,
+        camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+      });
+      return;
+    }
     const label =
       u.category === 'Helikopter'
         ? 'MISI SAR LAUT • RESCUE HOIST EVAKUASI KORBAN'

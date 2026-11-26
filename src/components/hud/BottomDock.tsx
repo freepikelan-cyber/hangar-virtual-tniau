@@ -291,8 +291,14 @@ export function BottomDock() {
                     : 'border-slate-700/70 bg-slate-900/60 text-slate-500 opacity-60 cursor-not-allowed'
               }`}
             >
-              {isAirborneReady ? <Flame className="h-4 w-4" /> : <Lock className="h-3.5 w-3.5" />}
-              2. Manuver
+              {flightMode === 'maneuver' ? (
+                <Square className="h-3.5 w-3.5 fill-current" />
+              ) : isAirborneReady ? (
+                <Flame className="h-4 w-4" />
+              ) : (
+                <Lock className="h-3.5 w-3.5" />
+              )}
+              {flightMode === 'maneuver' ? 'Hentikan Manuver' : '2. Manuver'}
             </button>
 
             <button
@@ -345,14 +351,24 @@ export function BottomDock() {
                       : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
                 }`}
               >
-                {unit.category === 'Tempur' ? <Crosshair className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-                {missionBtnLabel}
+                {flightMode === 'mission' ? (
+                  <Square className="h-3.5 w-3.5 fill-current" />
+                ) : unit.category === 'Tempur' ? (
+                  <Crosshair className="h-4 w-4" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {flightMode === 'mission' ? `Hentikan ${missionBtnLabel}` : missionBtnLabel}
               </button>
             )}
 
             <button
               type="button"
-              title="Air-to-Air Refueling (Pengisian Bahan Bakar di Udara dengan Tanker KC-130B Skadron 32)"
+              title={
+                flightMode === 'aar'
+                  ? 'Klik untuk menghentikan AAR Refueling dan kembali terbang jelajah'
+                  : 'Air-to-Air Refueling (Pengisian Bahan Bakar di Udara dengan Tanker KC-130B Skadron 32)'
+              }
               onClick={() => {
                 triggerAar();
                 setSimMenuOpen(false);
@@ -363,22 +379,31 @@ export function BottomDock() {
                   : 'border-emerald-400/55 bg-[#0e2a54] text-emerald-300 hover:bg-emerald-400/20'
               }`}
             >
-              <Fuel className="h-4 w-4" />
-              AAR Refueling
+              {flightMode === 'aar' ? <Square className="h-3.5 w-3.5 fill-current" /> : <Fuel className="h-4 w-4" />}
+              {flightMode === 'aar' ? 'Hentikan AAR' : 'AAR Refueling'}
             </button>
 
             <button
               type="button"
+              disabled={isFlightActive}
+              title={
+                isFlightActive
+                  ? 'Oksigen OBOGS tidak aktif saat pesawat sedang mengudara'
+                  : 'Tampilkan simulasi sistem Oksigen OBOGS'
+              }
               onClick={() => {
+                if (isFlightActive) return;
                 toggle('oxygenMode');
               }}
-              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
-                oxygenMode
-                  ? 'border-cyan-400 bg-cyan-400 text-[#0a1e3c]'
-                  : 'border-cyan-400/45 bg-[#0e2a54] text-cyan-300 hover:bg-cyan-400/20'
+              className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all ${
+                isFlightActive
+                  ? 'border-slate-700/70 bg-slate-900/60 text-slate-500 opacity-60 cursor-not-allowed'
+                  : oxygenMode
+                    ? 'border-cyan-400 bg-cyan-400 text-[#0a1e3c] cursor-pointer active:scale-95'
+                    : 'border-cyan-400/45 bg-[#0e2a54] text-cyan-300 hover:bg-cyan-400/20 cursor-pointer active:scale-95'
               }`}
             >
-              <Waves className="h-4 w-4" />
+              {isFlightActive ? <Lock className="h-3.5 w-3.5" /> : <Waves className="h-4 w-4" />}
               Oksigen OBOGS
             </button>
 
