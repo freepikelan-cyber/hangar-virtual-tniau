@@ -49,15 +49,6 @@ const TIGHT_ARROW_SLOTS: [number, number, number][] = [
   [-28.0, 3.0, -26.0],
 ];
 
-// Formasi Left Echelon (J2–J6 berjajar rapi di sayap kiri Jupiter 1 dengan jarak aman ≥ 13 unit!)
-const LEFT_ECHELON_SLOTS: [number, number, number][] = [
-  [-13.0, 3.0, -12.0],
-  [-26.0, 2.9, -24.0],
-  [-39.0, 2.8, -36.0],
-  [-52.0, 2.7, -48.0],
-  [-65.0, 2.6, -60.0],
-];
-
 // Posisi menjauh jauh keluar arena saat hanya 1 atau 2 pesawat yang tampil (bebas tabrakan & menghilang mulus!)
 const STANDBY_FAR_SLOTS: [number, number, number][] = [
   [52.0, 22.0, -92.0],
@@ -249,7 +240,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     if (leaderSmokeRef.current) {
       const inHeartHide = flightMode === 'airborne' && pt >= 75.0 && pt < 89.5;
       const leaderSmokeOn =
-        (flightMode === 'airborne' && !inHeartHide && pt < 151.5) || (flightMode === 'takeoff' && pt >= 46.0);
+        (flightMode === 'airborne' && !inHeartHide && pt < 160.5) || (flightMode === 'takeoff' && pt >= 46.0);
       leaderSmokeRef.current.visible = leaderSmokeOn;
       if (leaderSmokeOn) {
         let lx = Math.sin(t * 0.45) * 0.22;
@@ -296,9 +287,9 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             ly = THREE.MathUtils.lerp(7.2, 3.0, p);
             lPitch = THREE.MathUtils.lerp(0.52, -0.025, p);
           }
-        } else if (flightMode === 'airborne' && pt >= 135.5 && pt < 147.5) {
-          const bp = Math.min(1, (pt - 135.5) / 12.0);
-          ly = 3.0 + Math.sin(bp * Math.PI) * 10.0;
+        } else if (flightMode === 'airborne' && pt >= 135.5 && pt < 154.5) {
+          const bp = Math.min(1, (pt - 135.5) / 19.0);
+          ly = 3.0 + Math.sin(bp * Math.PI) * 18.0;
         }
         leaderSmokeRef.current.position.set(lx, ly, lz);
         leaderSmokeRef.current.rotation.set(lPitch, 0, 0);
@@ -799,47 +790,79 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           ty = tightSlot[1];
           tz = tightSlot[2];
           tp = -0.025;
-        } else if (pt < 140.0) {
-          // 135.5..140.0s — ATRAKSI 7A: LOOP & BOMB BURST (6 pesawat menanjak bersama menjaga jarak aman!)
-          const p = easeInOut((pt - 135.5) / 4.5);
+        } else if (pt < 141.5) {
+          // 135.5..141.5s — ATRAKSI 7A: LOOP & BOMB BURST (6 pesawat menanjak bersama mulus selama 6 detik!)
+          const p = easeInOut((pt - 135.5) / 6.0);
           tx = tightSlot[0];
-          ty = tightSlot[1] + 8.5 * p;
-          tz = tightSlot[2];
-          tp = -0.82 * p;
-        } else if (pt < 147.5) {
-          // 140.0..147.5s — ATRAKSI 7B: BOMB BURST! Berpencar ke segala arah bak kembang api tanpa bersilangan!
-          const p = easeInOut((pt - 140.0) / 7.5);
+          ty = THREE.MathUtils.lerp(tightSlot[1], 14.0, p);
+          tz = THREE.MathUtils.lerp(tightSlot[2], tightSlot[2] + 7.0, p);
+          tp = THREE.MathUtils.lerp(-0.025, -0.88, Math.sin(p * Math.PI * 0.5));
+          tr = 0;
+        } else if (pt < 154.5) {
+          // 141.5..154.5s — ATRAKSI 7B: BOMB BURST MULUS & LAMA (13.0 detik: pecah lebar -> melayang tahan indah -> mulai merapat perlahan!)
+          const p = (pt - 141.5) / 13.0;
           const dirs: [number, number, number, number][] = [
-            [32, 5.0, -4, -0.85],   // J2 kanan (sesuai sisi aslinya +14 -> +46, 0% silang!)
-            [-32, 5.0, -4, 0.85],   // J3 kiri (sesuai sisi aslinya -14 -> -46, 0% silang!)
-            [0, 18.0, -8, 0.0],     // J4 atas tengah
-            [28, -4.0, -12, -0.7],  // J5 kanan bawah (+28 -> +56)
-            [-28, -4.0, -12, 0.7],  // J6 kiri bawah (-28 -> -56)
+            [36, 6.5, -2, -0.78],   // J2 kanan (+14 -> +50, 0% silang!)
+            [-36, 6.5, -2, 0.78],   // J3 kiri (-14 -> -50, 0% silang!)
+            [0, 17.5, -6, 0.0],     // J4 atas tengah
+            [32, -3.5, -10, -0.65], // J5 kanan bawah (+28 -> +60)
+            [-32, -3.5, -10, 0.65], // J6 kiri bawah (-28 -> -60)
           ];
           const d = dirs[i];
-          const burst = Math.sin(p * Math.PI);
-          tx = tightSlot[0] + d[0] * burst;
-          ty = 11.5 + d[1] * burst;
-          tz = tightSlot[2] + d[2] * burst;
-          tp = d[1] > 8 ? -0.68 * burst : 0.22 * burst;
-          tr = d[3] * burst;
-          tyaw = (d[0] < 0 ? 0.52 : d[0] > 0 ? -0.52 : 0) * burst;
+          let spread = 0;
+          let baseY = 14.0;
+          let baseZ = tightSlot[2] + 7.0;
+          if (p < 0.42) {
+            const q = easeInOut(p / 0.42);
+            spread = q;
+            baseY = THREE.MathUtils.lerp(14.0, 16.0, q);
+            baseZ = THREE.MathUtils.lerp(tightSlot[2] + 7.0, tightSlot[2] + 10.0, q);
+          } else if (p < 0.72) {
+            const q = easeInOut((p - 0.42) / 0.3);
+            spread = 1.0 + Math.sin(q * Math.PI) * 0.08;
+            baseY = THREE.MathUtils.lerp(16.0, 13.0, q);
+            baseZ = THREE.MathUtils.lerp(tightSlot[2] + 10.0, tightSlot[2] + 6.0, q);
+          } else {
+            const q = easeInOut((p - 0.72) / 0.28);
+            spread = THREE.MathUtils.lerp(1.0, 0.55, q);
+            baseY = THREE.MathUtils.lerp(13.0, 7.0, q);
+            baseZ = THREE.MathUtils.lerp(tightSlot[2] + 6.0, tightSlot[2] + 3.0, q);
+          }
+          tx = tightSlot[0] + d[0] * spread;
+          ty = baseY + d[1] * spread;
+          tz = baseZ + d[2] * spread;
+          tp = d[1] > 8 ? -0.58 * spread : 0.16 * spread;
+          tr = d[3] * spread;
+          tyaw = (d[0] < 0 ? 0.45 : d[0] > 0 ? -0.45 : 0) * spread;
           smokeOn = true;
-        } else if (pt < 152.5) {
-          // 147.5..152.5s: Rejoin Left Echelon perlahan (5.0 detik!)
-          const p = easeInOut((pt - 147.5) / 5.0);
-          const echSlot = LEFT_ECHELON_SLOTS[i];
-          tx = THREE.MathUtils.lerp(tightSlot[0], echSlot[0], p);
-          ty = THREE.MathUtils.lerp(8.0, echSlot[1], p);
-          tz = THREE.MathUtils.lerp(tightSlot[2], echSlot[2], p);
+        } else if (pt < 161.5) {
+          // 154.5..161.5s: Kembali ke Formasi Arrowhead secara PERLAHAN & STABIL (7.0 detik!)
+          const p = easeInOut((pt - 154.5) / 7.0);
+          const dirs: [number, number, number][] = [
+            [36, 6.5, -2],
+            [-36, 6.5, -2],
+            [0, 17.5, -6],
+            [32, -3.5, -10],
+            [-32, -3.5, -10],
+          ];
+          const d = dirs[i];
+          const fromX = tightSlot[0] + d[0] * 0.55;
+          const fromY = 7.0 + d[1] * 0.55;
+          const fromZ = tightSlot[2] + 3.0 + d[2] * 0.55;
+          const arrowSlot = ARROWHEAD_SLOTS[i];
+          tx = THREE.MathUtils.lerp(fromX, arrowSlot[0], p);
+          ty = THREE.MathUtils.lerp(fromY, arrowSlot[1], p);
+          tz = THREE.MathUtils.lerp(fromZ, arrowSlot[2], p);
           tp = -0.025;
-          smokeOn = p < 0.7;
+          tr = 0;
+          tyaw = 0;
+          smokeOn = p < 0.75;
         } else {
-          // 142.0s+: Formasi Left Echelon stabil siap 3. Landing
-          const echSlot = LEFT_ECHELON_SLOTS[i];
-          tx = echSlot[0] + Math.sin(t * 0.8 + i) * 0.14;
-          ty = echSlot[1] + Math.cos(t * 1.1 + i) * 0.1;
-          tz = echSlot[2] + Math.sin(t * 0.6 + i) * 0.12;
+          // 161.5s+: Formasi Arrowhead stabil & rapi siap 3. Landing
+          const arrowSlot = ARROWHEAD_SLOTS[i];
+          tx = arrowSlot[0] + Math.sin(t * 0.8 + i) * 0.14;
+          ty = arrowSlot[1] + Math.cos(t * 1.1 + i) * 0.1;
+          tz = arrowSlot[2] + Math.sin(t * 0.6 + i) * 0.12;
           tp = -0.025;
           tr = Math.cos(t * 0.9 + i * 0.4) * 0.025;
           smokeOn = false;
@@ -866,7 +889,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           (pt >= 68.0 && pt < 72.0) ||
           (pt >= 97.5 && pt < 101.5) ||
           (pt >= 127.5 && pt < 132.5) ||
-          (pt >= 147.5 && pt < 152.5));
+          (pt >= 154.5 && pt < 161.5));
       const lerpRate = useTangentQuat ? 7.5 : isScrewOrbit ? 9.5 : isRejoinPhase ? 1.9 : flightMode === 'airborne' ? 2.6 : 6.0;
       const rotRate = isRejoinPhase ? 1.9 : 2.6;
       grp.position.x = THREE.MathUtils.lerp(grp.position.x, tx, Math.min(1, dt * lerpRate));

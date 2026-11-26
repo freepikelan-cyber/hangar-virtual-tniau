@@ -790,31 +790,57 @@ export function AircraftModel() {
           // Jeda 3 detik
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan penutup Loop & Bomb Burst');
-        } else if (pt < 140.0) {
-          // Atraksi 7A: Menanjak bersama ke titik puncak
-          const p = easeInOut((pt - 135.5) / 4.5);
-          targetY = 3.0 + 8.5 * p;
-          targetPitch = -0.82 * p;
+        } else if (pt < 141.5) {
+          // Atraksi 7A: Loop & Bomb Burst — 6 pesawat menanjak bersama mulus ke puncak (6.0 detik)
+          const p = easeInOut((pt - 135.5) / 6.0);
+          targetX = 0;
+          targetY = THREE.MathUtils.lerp(3.0, 14.0, p);
+          targetZ = THREE.MathUtils.lerp(0, 7.0, p);
+          targetPitch = THREE.MathUtils.lerp(-0.025, -0.88, Math.sin(p * Math.PI * 0.5));
           targetRoll = 0;
-          setFlightLabel('Loop & Bomb Burst — 6 pesawat menanjak bersama menuju titik puncak');
-        } else if (pt < 147.5) {
-          // Atraksi 7B: Bomb Burst!
-          const p = easeInOut((pt - 140.0) / 7.5);
-          const arch = Math.sin(p * Math.PI);
-          targetY = 11.5 + 4.0 * arch - 8.5 * p;
-          targetZ = 8.0 * arch;
-          targetPitch = THREE.MathUtils.lerp(-0.82, 0.12, p);
-          targetRoll = 0.22 * arch;
-          setFlightLabel('Loop & Bomb Burst — 6 pesawat berpencar ke segala arah bak kembang api');
-        } else if (pt < 152.5) {
-          const p = easeInOut((pt - 147.5) / 5.0);
-          targetY = THREE.MathUtils.lerp(6.0, 3.0, p);
-          targetPitch = -0.025;
-          setFlightLabel('JAT — Kembali ke formasi Echelon perlahan');
+          setFlightLabel('Loop & Bomb Burst — 6 pesawat menanjak bersama mulus menuju titik puncak');
+        } else if (pt < 154.5) {
+          // Atraksi 7B: Bomb Burst panjang & mulus (13.0 detik) — pecah lebar, melayang tahan indah di langit, lalu mulai balik perlahan!
+          const p = (pt - 141.5) / 13.0;
+          if (p < 0.42) {
+            const q = easeInOut(p / 0.42);
+            targetX = 0;
+            targetY = THREE.MathUtils.lerp(14.0, 21.5, q);
+            targetZ = THREE.MathUtils.lerp(7.0, 16.0, q);
+            targetPitch = THREE.MathUtils.lerp(-0.88, -0.18, q);
+            targetRoll = 0;
+          } else if (p < 0.72) {
+            const q = easeInOut((p - 0.42) / 0.3);
+            targetX = 0;
+            targetY = 21.5 + Math.sin(q * Math.PI) * 1.4 - q * 3.5;
+            targetZ = THREE.MathUtils.lerp(16.0, 12.0, q);
+            targetPitch = THREE.MathUtils.lerp(-0.18, 0.14, q);
+            targetRoll = 0;
+          } else {
+            const q = easeInOut((p - 0.72) / 0.28);
+            targetX = 0;
+            targetY = THREE.MathUtils.lerp(18.0, 7.0, q);
+            targetZ = THREE.MathUtils.lerp(12.0, 5.0, q);
+            targetPitch = THREE.MathUtils.lerp(0.14, 0.04, q);
+            targetRoll = 0;
+          }
+          setFlightLabel('Loop & Bomb Burst — 6 pesawat berpencar lebar bak kembang api dengan asap merah putih');
+        } else if (pt < 161.5) {
+          // Atraksi 7C: Kembali ke Formasi Arrowhead secara perlahan & stabil (7.0 detik!)
+          const p = easeInOut((pt - 154.5) / 7.0);
+          targetX = 0;
+          targetY = THREE.MathUtils.lerp(7.0, 3.0, p);
+          targetZ = THREE.MathUtils.lerp(5.0, 0, p);
+          targetPitch = THREE.MathUtils.lerp(0.04, -0.025, p);
+          targetRoll = 0;
+          setFlightLabel('JAT — 6 pesawat kembali berkumpul ke formasi Arrowhead secara perlahan & stabil');
         } else {
+          targetX = Math.sin(t * 0.45) * 0.22;
+          targetY = 3.0 + Math.sin(t * 1.4) * 0.1;
+          targetZ = 0;
           targetPitch = -0.025 + Math.sin(t * 1.1) * 0.012;
           targetRoll = Math.cos(t * 0.9) * 0.025;
-          setFlightLabel('Jupiter Aerobatic Team — Atraksi selesai, formasi Echelon siap 3. Landing');
+          setFlightLabel('Jupiter Aerobatic Team — Atraksi selesai, formasi Arrowhead stabil siap 3. Landing');
         }
       } else {
         // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY
