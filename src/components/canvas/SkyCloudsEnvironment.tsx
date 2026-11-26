@@ -254,11 +254,11 @@ export function SkyCloudsEnvironment() {
       worldY.current = isHeli ? -0.02 : -28.0;
       scrollZ.current = isHeli ? RUNWAY_OFFSET + CHUNK_LEN * 2 : 260;
       if (!isHeli && prev !== 'airborne' && prev !== 'takeoff') {
-        chunkZ.current = { runway: CHUNK_LEN * 3, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
+        chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
       }
     } else if ((flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'aar') && prev === 'parked') {
-      // Langsung masuk udara dari parkir (misal AAR/Dogfight): melintasi Gunung -> Laut -> Kota -> Bandara!
-      chunkZ.current = { runway: CHUNK_LEN * 3, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
+      // Langsung masuk udara dari parkir (misal AAR/Dogfight): melintasi Gunung -> Laut -> Kota (tanpa bandara)!
+      chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
     }
   }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety, isHeli]);
 
@@ -749,7 +749,8 @@ export function SkyCloudsEnvironment() {
         if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
         if (cityChunkRef.current) cityChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 3);
       } else {
-        // Kontinu 4 Zona Penuh saat terbang: Bandara -> Pegunungan Gunung Sumbing -> Laut -> Kota Metropolitan 3D -> Bandara!
+        // Bandara HANYA tampil saat Take Off & Landing! Setelah Take Off selesai, hanya 3 zona yang terus berputar:
+        // Pegunungan (Gunung Sumbing) -> Laut (ocean-loop.glb & Karang) -> Perkotaan 3D -> Pegunungan!
         const cz = chunkZ.current;
         const step = smoothSpeed * dt;
         cz.runway -= step;
@@ -757,14 +758,13 @@ export function SkyCloudsEnvironment() {
         cz.ocean -= step;
         cz.city -= step;
 
-        const maxZ = () => Math.max(cz.runway, cz.mountain, cz.ocean, cz.city);
-        if (cz.runway < -CHUNK_LEN * 0.95) cz.runway = maxZ() + CHUNK_LEN;
-        if (cz.mountain < -CHUNK_LEN * 0.95) cz.mountain = maxZ() + CHUNK_LEN;
-        if (cz.ocean < -CHUNK_LEN * 0.95) cz.ocean = maxZ() + CHUNK_LEN;
-        if (cz.city < -CHUNK_LEN * 0.95) cz.city = maxZ() + CHUNK_LEN;
+        const maxScenicZ = () => Math.max(cz.mountain, cz.ocean, cz.city);
+        if (cz.mountain < -CHUNK_LEN * 0.95) cz.mountain = maxScenicZ() + CHUNK_LEN;
+        if (cz.ocean < -CHUNK_LEN * 0.95) cz.ocean = maxScenicZ() + CHUNK_LEN;
+        if (cz.city < -CHUNK_LEN * 0.95) cz.city = maxScenicZ() + CHUNK_LEN;
 
         if (runwayChunkRef.current) {
-          runwayChunkRef.current.visible = true;
+          runwayChunkRef.current.visible = cz.runway > -CHUNK_LEN * 0.95;
           runwayChunkRef.current.position.z = cz.runway;
         }
         if (mountainChunkRef.current) mountainChunkRef.current.position.z = cz.mountain;
