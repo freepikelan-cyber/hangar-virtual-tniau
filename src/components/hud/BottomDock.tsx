@@ -184,9 +184,15 @@ export function BottomDock() {
 
   return (
     <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
-      {/* Indikator Fase Penerbangan / Safety */}
+      {/* Subtitle Ringkas Atraksi / Fase Penerbangan di Bawah */}
       {flightLabel && (
-        <div className="hud-panel pointer-events-none rounded-full border-[#ffb703]/60 px-3.5 py-1 font-display text-[11px] sm:text-xs font-bold tracking-[0.16em] text-[#ffb703] uppercase shadow-amber animate-slidein">
+        <div
+          className={`pointer-events-none max-w-[92vw] text-center animate-slidein ${
+            selectedId === 'kt1b' && flightMode === 'airborne'
+              ? 'rounded-lg bg-slate-950/75 px-3.5 py-1 text-[11px] sm:text-xs font-medium tracking-wide text-slate-100 backdrop-blur-sm border border-white/10 shadow'
+              : 'hud-panel rounded-full border-[#ffb703]/60 px-3.5 py-1 font-display text-[11px] sm:text-xs font-bold tracking-[0.16em] text-[#ffb703] uppercase shadow-amber'
+          }`}
+        >
           {flightLabel}
         </div>
       )}

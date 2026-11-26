@@ -585,106 +585,117 @@ export function AircraftModel() {
       }
     } else if (flightMode === 'airborne') {
       if (unit.id === 'kt1b') {
-        // JUPITER AEROBATIC SHOW (Mengudara):
-        // 0..10s: Terbang jelajah jeda 10 detik
-        // 10..21s: Tighten up into Arrowhead formation
-        // 21..25.5s: Pull up 20 degrees
-        // 25.5..28.8s: JUPITER ROLL 360°!
-        // 29.5..46.5s: J5 & J6 Opposing Pass Crossing!
+        // 7 ATRAKSI IKONIK JUPITER AEROBATIC TEAM (JAT) + SUBTITLE RINGKAS DI BAWAH:
         targetX = Math.sin(t * 0.45) * 0.22;
         targetY = 2.95 + Math.sin(t * 1.4) * 0.1;
         targetZ = 0;
         targetGear = 1;
-        if (pt < 10.0) {
+
+        if (pt < 6.0) {
           targetPitch = -0.025;
           targetRoll = Math.cos(t * 0.9) * 0.03;
-          setFlightLabel('JUPITER AEROBATIC TEAM • MENUJU AEROBATIC BOX (5.000 FT)');
-        } else if (pt < 21.0) {
+          setFlightLabel('Jupiter Aerobatic Team — Formasi Arrowhead, asap merah putih aktif');
+        } else if (pt < 16.0) {
+          // Atraksi 1: Cross Over Break
+          targetPitch = -0.02;
+          targetRoll = 0;
+          setFlightLabel('Cross Over Break — 4 pesawat lurus, 2 pesawat terluar membelok bersilangan');
+        } else if (pt < 28.0) {
+          // Atraksi 2: Arrow Head Formation & Loop
+          if (pt < 19.0) {
+            targetPitch = -0.03;
+            targetRoll = 0;
+            setFlightLabel('Arrow Head Formation & Loop — 6 pesawat merapat membentuk ujung anak panah');
+          } else {
+            const p = easeInOut((pt - 19.0) / 9.0);
+            const a = p * Math.PI * 2;
+            const R = 7.5;
+            targetY = 2.95 + (1 - Math.cos(a)) * R;
+            targetZ = Math.sin(a) * R;
+            directPitch = -a;
+            directRoll = 0;
+            setFlightLabel('Arrow Head Formation & Loop — 6 pesawat menanjak membentuk lingkaran vertikal');
+          }
+        } else if (pt < 33.5) {
+          // Atraksi 3A: Jupiter Roll
+          const p = easeInOut((pt - 28.0) / 5.5);
+          targetPitch = -0.14 * Math.sin(p * Math.PI);
+          targetY = 3.6;
+          directRoll = -p * Math.PI * 2;
+          setFlightLabel('Jupiter Roll — 6 pesawat bergulung serempak pada sumbunya');
+        } else if (pt < 40.0) {
+          // Atraksi 3B: Screw Roll
+          targetPitch = -0.025;
+          targetRoll = 0;
+          setFlightLabel('Screw Roll — 1 pesawat berputar melingkari formasi utama yang terbang lurus');
+        } else if (pt < 51.0) {
+          // Atraksi 4: Mirror (J1 normal, J5 inverted sangat dekat di atasnya)
+          targetX = 0;
+          targetY = 2.95;
+          targetZ = 0;
+          targetPitch = -0.025;
+          targetRoll = 0;
+          setFlightLabel('Mirror — 2 pesawat terbang sangat dekat, 1 normal dan 1 terbalik seperti cermin');
+        } else if (pt < 60.5) {
+          // Atraksi 5A: Heart (Love) & Roll — J5 & J6 melukis hati asap putih, J1–J4 siap menusuk
+          targetZ = -115.0;
+          targetY = 18.0;
           targetPitch = -0.03;
           targetRoll = 0;
-          setFlightLabel('🎙️ JUPITERS, TIGHTEN UP INTO ARROWHEAD FORMATION • STEADY ON MY WING');
-        } else if (pt < 24.5) {
-          const p = easeInOut((pt - 21.0) / 3.5);
-          targetPitch = -0.03 - 0.3 * p;
-          targetY = 2.95 + 1.2 * p;
+          setFlightLabel('Heart (Love) & Roll — 2 pesawat melukis hati raksasa dengan asap putih');
+        } else if (pt < 67.0) {
+          // Atraksi 5B: 4 pesawat (J1–J4) menusuk tepat di tengah hati sambil melakukan putaran roll!
+          const p = easeInOut(Math.min(1, (pt - 60.5) / 6.0));
+          targetX = THREE.MathUtils.lerp(-18.0, 18.0, p);
+          targetY = THREE.MathUtils.lerp(2.0, 18.5, p);
+          targetZ = -3.0;
+          targetPitch = -0.38;
+          targetYawOffset = Math.PI * 0.32;
+          directRoll = -p * Math.PI * 4;
+          setFlightLabel('Heart (Love) & Roll — 4 pesawat menusuk tengah hati sambil melakukan roll');
+        } else if (pt < 77.0) {
+          // Atraksi 6: Solo Spin — 1 pesawat menanjak tinggi -> stall berputar vertikal jatuh ke bawah -> recovery!
+          const sp = (pt - 67.0) / 10.0;
+          targetX = 0;
+          targetZ = 0;
+          if (sp < 0.3) {
+            const p = easeInOut(sp / 0.3);
+            targetY = THREE.MathUtils.lerp(2.95, 14.95, p);
+            targetPitch = -0.92 * p;
+            targetRoll = 0;
+          } else if (sp < 0.8) {
+            const p = (sp - 0.3) / 0.5;
+            targetY = THREE.MathUtils.lerp(14.95, 3.45, easeInOut(p));
+            targetPitch = 1.12; // Hidung menukik vertikal stall
+            targetYawOffset = p * Math.PI * 6; // Berputar vertikal 3 putaran (Solo Spin!)
+            directRoll = p * Math.PI * 4;
+          } else {
+            const p = easeInOut((sp - 0.8) / 0.2);
+            targetY = THREE.MathUtils.lerp(3.45, 2.95, p);
+            targetPitch = THREE.MathUtils.lerp(0.45, -0.025, p);
+            targetRoll = 0;
+          }
+          setFlightLabel('Solo Spin — 1 pesawat menanjak, stall berputar vertikal lalu recovery stabil');
+        } else if (pt < 81.5) {
+          // Atraksi 7A: Loop & Bomb Burst — menanjak bersama ke puncak
+          const p = easeInOut((pt - 77.0) / 4.5);
+          targetY = 3.0 + 7.2 * p;
+          targetPitch = -0.85 * p;
           targetRoll = 0;
-          setFlightLabel('🎙️ STANDBY FOR JUPITER ROLL • PULLING UP 20 DEGREES... READY...');
-        } else if (pt < 29.5) {
-          // Putaran Jupiter Roll santai & anggun (5 detik penuh untuk 1 putaran 360°)
-          const p = easeInOut((pt - 24.5) / 5.0);
-          targetPitch = -0.18 * Math.sin(p * Math.PI);
-          targetY = 4.15 - 1.2 * p;
-          directRoll = -p * Math.PI * 2;
-          setFlightLabel('🔥 ROLL... NOW! • JUPITER ROLL 360° SANTAI & ANGGUN');
-        } else if (pt < 46.5) {
-          // 29.5..46.5: Opposing Pass HANYA 2 pesawat (J5 & J6) — J1 mundur & sembunyi jauh di belakang!
-          const pullBack = pt < 31.2 ? easeInOut((pt - 29.2) / 2.0) : pt > 44.5 ? 1 - easeInOut((pt - 44.5) / 2.0) : 1;
-          targetZ = -110.0 * pullBack;
-          targetY = 2.95 + 16.0 * pullBack;
-          targetPitch = -0.025;
-          targetRoll = 0;
-          setFlightLabel(
-            pt < 37.5
-              ? '🎙️ JUPITER 5 & 6 BREAKING OFF FOR OPPOSING PASS (500 FT)'
-              : pt < 44.5
-                ? '⚡ CLOSING SPEED 400 KNOTS... THREE, TWO, ONE... CROSSING!'
-                : '🔥 OPPOSING PASS CROSSING SUKSES! • REJOIN FORMASI',
-          );
-        } else if (pt < 54.0) {
-          // 47.0..54.0: Climbing vertical for the Heart Maneuver!
-          const p = easeInOut(Math.max(0, (pt - 47.0) / 7.0));
-          targetY = 2.95 + 5.2 * p;
-          targetPitch = -0.58 * Math.sin(p * Math.PI * 0.85);
-          targetRoll = 0;
-          setFlightLabel('🎙️ JUPITERS, CLIMBING VERTICAL FOR THE HEART MANEUVER! PULL... PULL...');
-        } else if (pt < 68.5) {
-          // 54.0..68.5: Heart Maneuver HANYA 2 pesawat (J5 & J6) lalu J4 menembus Hati — J1 mundur jauh di belakang!
-          const pullBack = pt < 55.8 ? easeInOut((pt - 54.0) / 1.8) : pt > 66.8 ? 1 - easeInOut((pt - 66.8) / 1.7) : 1;
-          targetZ = -115.0 * pullBack;
-          targetY = 3.2 + 16.0 * pullBack;
-          targetPitch = -0.04;
-          targetRoll = 0;
-          setFlightLabel(
-            pt < 64.0
-              ? '❤️ HEART MANEUVER • JUPITER 5 & 6 MELUKIS HATI DI LANGIT!'
-              : '💘 JUPITER 4 PIERCING THE HEART! • SMOKE OFF!',
-          );
-        } else if (pt < 74.5) {
-          // 68.5..74.5: All Jupiters pitch up vertical for Bomb Burst!
-          const p = easeInOut((pt - 68.5) / 6.0);
-          targetY = 3.2 + 5.6 * p;
-          targetPitch = -0.78 * p;
-          targetRoll = 0;
-          setFlightLabel('🔥 FINAL MANEUVER: BOMB BURST! • PITCH UP VERTICAL... READY...');
-        } else if (pt < 82.6) {
-          // 74.5..82.6: BREAK, BREAK, BREAK!
-          const p = easeInOut((pt - 74.5) / 8.1);
+          setFlightLabel('Loop & Bomb Burst — 6 pesawat menanjak bersama menuju titik puncak');
+        } else if (pt < 88.5) {
+          // Atraksi 7B: Bomb Burst — berpencar ke segala arah bak kembang api!
+          const p = easeInOut((pt - 81.5) / 7.0);
           const arch = Math.sin(p * Math.PI);
-          targetY = 8.8 + 3.2 * arch - 5.8 * p;
-          targetZ = 4.0 * arch;
-          targetPitch = THREE.MathUtils.lerp(-0.78, 0.12, p);
-          targetRoll = 0.25 * Math.sin(p * Math.PI);
-          setFlightLabel('💥 BREAK, BREAK, BREAK! • 6-SHIP BOMB BURST FINALE!');
-        } else if (pt < 85.0) {
-          const p = easeInOut((pt - 82.6) / 2.4);
-          targetY = THREE.MathUtils.lerp(6.2, 2.95, p);
-          targetPitch = -0.025;
-          targetRoll = 0;
-          setFlightLabel('🎙️ JUPITERS, REJOIN ON MY LEFT WING, ECHELON FORMATION • SMOKE OFF');
-        } else if (pt < 102.0) {
+          targetY = 10.2 + 3.6 * arch - 6.8 * p;
+          targetZ = 4.5 * arch;
+          targetPitch = THREE.MathUtils.lerp(-0.85, 0.12, p);
+          targetRoll = 0.25 * arch;
+          setFlightLabel('Loop & Bomb Burst — 6 pesawat berpencar ke segala arah bak kembang api');
+        } else {
           targetPitch = -0.025 + Math.sin(t * 1.1) * 0.012;
           targetRoll = Math.cos(t * 0.9) * 0.025;
-          setFlightLabel(
-            pt < 90.0
-              ? '🎙️ JUPITERS, REJOIN ON MY LEFT WING, ECHELON FORMATION • SMOKE OFF'
-              : pt < 96.5
-                ? '🎙️ ADISUTJIPTO TOWER, SHOW COMPLETE • INITIAL RUNWAY 09 FULL STOP LANDING'
-                : '📡 ADISUTJIPTO TOWER: WELCOME BACK • CLEARED TO LAND RUNWAY 09!',
-          );
-        } else {
-          targetPitch = -0.025 + Math.sin(t * 1.2) * 0.015;
-          targetRoll = Math.cos(t * 1.1) * 0.035;
-          setFlightLabel('JUPITER AEROBATIC TEAM (6-SHIP) • FORMASI ECHELON • SIAP 3. LANDING');
+          setFlightLabel('Jupiter Aerobatic Team — Atraksi selesai, formasi Echelon siap 3. Landing');
         }
       } else {
         // TERBANG JELAJAH STABIL DI ATAS PERKOTAAN, LAUT & RUNWAY

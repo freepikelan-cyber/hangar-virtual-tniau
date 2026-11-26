@@ -99,12 +99,23 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     }
   }, [flightMode, flightNonce, isActive]);
 
-  const smokeMat = useMemo(
+  const whiteSmokeMat = useMemo(
     () =>
       new THREE.MeshBasicMaterial({
         color: '#f8fafc',
         transparent: true,
-        opacity: 0.42,
+        opacity: 0.48,
+        depthWrite: false,
+      }),
+    [],
+  );
+
+  const redSmokeMat = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        color: '#ef4444',
+        transparent: true,
+        opacity: 0.46,
         depthWrite: false,
       }),
     [],
@@ -159,14 +170,15 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
 
   useEffect(() => {
     return () => {
-      smokeMat.dispose();
+      whiteSmokeMat.dispose();
+      redSmokeMat.dispose();
       smokeGeo.dispose();
       heartGeos.right.dispose();
       heartGeos.left.dispose();
       heartGeos.arrow.dispose();
       heartSmokeMat.dispose();
     };
-  }, [smokeMat, smokeGeo, heartGeos, heartSmokeMat]);
+  }, [whiteSmokeMat, redSmokeMat, smokeGeo, heartGeos, heartSmokeMat]);
 
   const wingClones = useMemo(() => {
     if (selectedId !== 'kt1b') return [];
@@ -191,40 +203,52 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     const pt = phaseTime.current;
     const t = state.clock.getElapsedTime();
 
-    // Update lukisan asap HATI di langit saat Heart Maneuver (54.0..70.5s di airborne)
-    const showHeartTrail = flightMode === 'airborne' && pt >= 54.0 && pt < 71.0;
+    // Update lukisan asap putih HATI di langit saat Atraksi 5: Heart (Love) & Roll (51.0..68.0s)
+    const showHeartTrail = flightMode === 'airborne' && pt >= 51.0 && pt < 68.5;
     if (heartRightRef.current && heartLeftRef.current) {
       heartRightRef.current.visible = showHeartTrail;
       heartLeftRef.current.visible = showHeartTrail;
       if (showHeartTrail) {
-        const drawP = Math.min(1, (pt - 54.0) / 10.0);
+        const drawP = Math.min(1, (pt - 51.0) / 9.5);
         const count = Math.floor(drawP * (HEART_SEGMENTS + 1));
         heartGeos.right.setDrawRange(0, count);
         heartGeos.left.setDrawRange(0, count);
-        const fade = pt > 68.5 ? Math.max(0, 1 - (pt - 68.5) / 2.5) : 1;
-        heartSmokeMat.opacity = 0.82 * fade;
+        const fade = pt > 66.5 ? Math.max(0, 1 - (pt - 66.5) / 2.0) : 1;
+        heartSmokeMat.opacity = 0.85 * fade;
       }
     }
     if (arrowTrailRef.current) {
-      const showArrow = flightMode === 'airborne' && pt >= 64.0 && pt < 71.0;
+      const showArrow = flightMode === 'airborne' && pt >= 60.5 && pt < 68.5;
       arrowTrailRef.current.visible = showArrow;
       if (showArrow) {
-        const drawP = Math.min(1, (pt - 64.0) / 2.8);
+        const drawP = Math.min(1, (pt - 60.5) / 4.2);
         heartGeos.arrow.setDrawRange(0, Math.floor(drawP * 36));
       }
     }
 
-    // Asap putih tebal untuk Jupiter 1 (Lead)
+    // Asap Merah-Putih untuk Jupiter 1 (Lead = Merah)
     if (leaderSmokeRef.current) {
-      const inForegroundAir = flightMode === 'airborne' && !(pt >= 29.2 && pt < 46.5) && !(pt >= 54.0 && pt < 68.5);
-      const leaderSmokeOn = (inForegroundAir && pt < 86.5) || (flightMode === 'takeoff' && pt >= 42.3);
+      const inHeartHide = flightMode === 'airborne' && pt >= 51.0 && pt < 60.5;
+      const leaderSmokeOn =
+        (flightMode === 'airborne' && !inHeartHide && pt < 89.5) || (flightMode === 'takeoff' && pt >= 42.3);
       leaderSmokeRef.current.visible = leaderSmokeOn;
       if (leaderSmokeOn) {
-        leaderSmokeRef.current.position.set(
-          Math.sin(t * 0.45) * 0.22,
-          flightMode === 'airborne' ? 2.95 + Math.sin(t * 1.4) * 0.1 : 2.95,
-          0,
-        );
+        // Sinkronkan ekor asap J1 dengan gerak Loop / Solo Spin / Bomb Burst
+        let ly = 2.95 + Math.sin(t * 1.4) * 0.1;
+        let lz = 0;
+        if (flightMode === 'airborne' && pt >= 19.0 && pt < 28.0) {
+          const lp = easeInOut((pt - 19.0) / 9.0);
+          const a = lp * Math.PI * 2;
+          ly = 2.95 + (1 - Math.cos(a)) * 7.5;
+          lz = Math.sin(a) * 7.5;
+        } else if (flightMode === 'airborne' && pt >= 67.0 && pt < 77.0) {
+          const sp = (pt - 67.0) / 10.0;
+          ly = sp < 0.3 ? 2.95 + (sp / 0.3) * 12.0 : sp < 0.8 ? 14.95 - ((sp - 0.3) / 0.5) * 11.5 : 3.45;
+        } else if (flightMode === 'airborne' && pt >= 77.0 && pt < 88.5) {
+          const bp = Math.min(1, (pt - 77.0) / 11.5);
+          ly = 2.95 + Math.sin(bp * Math.PI) * 8.5;
+        }
+        leaderSmokeRef.current.position.set(Math.sin(t * 0.45) * 0.22, ly, lz);
         const pulse = 1 + Math.sin(t * 14) * 0.06;
         leaderSmokeRef.current.scale.set(pulse, pulse, 1);
       }
@@ -391,111 +415,117 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           targetGear = 0;
         }
       } else {
-        // MODE AIRBORNE — 100% TERSINKRONISASI DENGAN ABA-ABA PILOT:
+        // MODE AIRBORNE — 7 ATRAKSI IKONIK JUPITER AEROBATIC TEAM (JAT) + ASAP MERAH & PUTIH:
         targetGear = 1;
         smokeOn = true;
 
         const baseSlot = ARROWHEAD_SLOTS[i];
         const tightSlot = TIGHT_ARROW_SLOTS[i];
 
-        if (pt < 10.0) {
-          // 0..10s: Jeda 10 detik jelajah formasi Arrowhead + asap putih tebal
+        if (pt < 6.0) {
+          // 0..6s: Jelajah awal formasi Arrowhead
           tx = baseSlot[0] + Math.sin(t * 0.9 + i) * 0.16;
           ty = baseSlot[1] + Math.cos(t * 1.3 + i) * 0.12;
           tz = baseSlot[2] + Math.sin(t * 0.7 + i) * 0.14;
           tp = -0.025;
           tr = Math.cos(t * 1.1 + i * 0.5) * 0.035;
-        } else if (pt < 21.0) {
-          // 10..21s: "Jupiters, tighten up into Arrowhead formation... Two, Three, Four!"
-          const p = easeInOut(Math.min(1, (pt - 10.0) / 5.0));
-          tx = THREE.MathUtils.lerp(baseSlot[0], tightSlot[0], p);
-          ty = THREE.MathUtils.lerp(baseSlot[1], tightSlot[1], p);
-          tz = THREE.MathUtils.lerp(baseSlot[2], tightSlot[2], p);
-          tp = -0.03;
-          tr = 0;
-        } else if (pt < 24.5) {
-          // 21..24.5s: "Standby for Jupiter Roll... Pulling up, 20 degrees... Ready..."
-          const p = easeInOut((pt - 21.0) / 3.5);
-          tx = tightSlot[0];
-          ty = tightSlot[1] + 1.2 * p;
-          tz = tightSlot[2];
-          tp = -0.03 - 0.3 * p;
-          tr = 0;
-        } else if (pt < 29.5) {
-          // 24.5..29.5s: "...NOW!" -> JUPITER ROLL 360° SANTAI & ANGGUN (5 detik penuh, jarak tetap terjaga!)
-          const p = easeInOut((pt - 24.5) / 5.0);
+        } else if (pt < 16.0) {
+          // 6..16s — ATRAKSI 1: CROSS OVER BREAK
+          // 4 pesawat utama (J1–J4) melaju lurus stabil, sementara 2 pesawat terluar (J5 & J6) membelok tajam bersilangan kiri & kanan!
+          const p = (pt - 6.0) / 10.0;
+          if (i === 3 || i === 4) {
+            const dir = i === 3 ? 1 : -1; // J5 mulai dari kanan (+27) menyeberang ke kiri (-34), J6 sebaliknya!
+            const cross = Math.sin(p * Math.PI);
+            tx = THREE.MathUtils.lerp(baseSlot[0], -dir * 34.0, easeInOut(Math.min(1, p * 1.25)));
+            if (p > 0.78) {
+              const r = easeInOut((p - 0.78) / 0.22);
+              tx = THREE.MathUtils.lerp(-dir * 34.0, tightSlot[0], r);
+            }
+            ty = baseSlot[1] + (i === 3 ? 2.2 : -1.2) * cross;
+            tz = baseSlot[2] + 10.0 * cross;
+            tyaw = -dir * 0.65 * cross;
+            tr = dir * 1.05 * cross;
+          } else {
+            tx = baseSlot[0];
+            ty = baseSlot[1];
+            tz = baseSlot[2];
+            tp = -0.02;
+            tr = 0;
+          }
+        } else if (pt < 28.0) {
+          // 16..28s — ATRAKSI 2: ARROW HEAD FORMATION & LOOP
+          // 6 pesawat rapat ujung anak panah (J1 terdepan) lalu menanjak membentuk lingkaran vertikal penuh 360° (Loop)!
+          if (pt < 19.0) {
+            const p = easeInOut((pt - 16.0) / 3.0);
+            tx = THREE.MathUtils.lerp(baseSlot[0], tightSlot[0], p);
+            ty = THREE.MathUtils.lerp(baseSlot[1], tightSlot[1], p);
+            tz = THREE.MathUtils.lerp(baseSlot[2], tightSlot[2], p);
+            tp = -0.03;
+          } else {
+            const p = easeInOut((pt - 19.0) / 9.0);
+            const a = p * Math.PI * 2;
+            const R = 7.5;
+            tx = tightSlot[0];
+            ty = tightSlot[1] + (1 - Math.cos(a)) * R;
+            tz = tightSlot[2] + Math.sin(a) * R;
+            tp = -a;
+            tr = 0;
+          }
+        } else if (pt < 33.5) {
+          // 28..33.5s — ATRAKSI 3A: JUPITER ROLL (6 pesawat bergulung serempak 360° pada sumbunya)
+          const p = easeInOut((pt - 28.0) / 5.5);
           const angle = p * Math.PI * 2;
           const rx = tightSlot[0];
           const ry = tightSlot[1] - 2.95;
           const cosA = Math.cos(angle);
           const sinA = Math.sin(angle);
           tx = rx * cosA + ry * sinA;
-          ty = 4.15 - 1.2 * p + (-rx * sinA + ry * cosA);
+          ty = 3.6 + (-rx * sinA + ry * cosA);
           tz = tightSlot[2];
-          tp = -0.18 * Math.sin(p * Math.PI);
+          tp = -0.14 * Math.sin(p * Math.PI);
           tr = -angle;
-        } else if (pt < 46.5 && (i === 3 || i === 4)) {
-          // 29.5..46.5s: HANYA J5 & J6 melakukan Opposing Pass Crossing!
-          // J5 & J6 menjauh keluar layar ke JAUH KANAN (+72) & JAUH KIRI (-72) dulu, lalu baru melesat CROSSING tepat di tengah!
-          const isJ5 = i === 3;
-          const dir = isJ5 ? 1 : -1;
-          if (pt < 35.5) {
-            // Break off keluar jauh ke kanan (+72) & kiri (-72) agar tidak terlihat di tengah layar!
-            const p = easeInOut((pt - 29.5) / 6.0);
-            tx = THREE.MathUtils.lerp(tightSlot[0], dir * 72.0, p);
-            ty = THREE.MathUtils.lerp(tightSlot[1], 3.0, p);
-            tz = THREE.MathUtils.lerp(tightSlot[2], -3.0 + (isJ5 ? 2.2 : -2.2), p);
-            tyaw = dir * -Math.PI * 0.5 * easeInOut(Math.min(1, p * 1.4));
-            tr = dir * 0.38 * Math.sin(p * Math.PI);
-          } else if (pt < 41.0) {
-            // Tahan posisi JAUH di kanan (+72) & kiri (-72) saat "Heading reciprocal... Visual contact? Six, visual!"
-            tx = dir * 72.0;
-            ty = 3.0 + (isJ5 ? 0.5 : -0.5);
-            tz = -3.0 + (isJ5 ? 2.2 : -2.2);
-            tyaw = dir * -Math.PI * 0.5;
+        } else if (pt < 40.0) {
+          // 33.5..40.0s — ATRAKSI 3B: SCREW ROLL
+          // 5 pesawat utama (J1–J5) terbang lurus stabil, sementara J6 (i === 4) berputar heliks melingkari formasi utama!
+          const p = (pt - 33.5) / 6.5;
+          if (i === 4) {
+            const a = p * Math.PI * 4; // 2 putaran penuh mengelilingi formasi utama!
+            const rad = 16.5;
+            tx = Math.cos(a) * rad;
+            ty = 4.2 + Math.sin(a) * rad * 0.55;
+            tz = -10.0 + Math.sin(p * Math.PI) * 6.0;
+            tr = -a;
+            tp = -0.08 * Math.cos(a);
+          } else {
+            tx = tightSlot[0];
+            ty = tightSlot[1];
+            tz = tightSlot[2];
+            tp = -0.025;
             tr = 0;
-          } else if (pt < 45.4) {
-            // "Closing speed 400 knots... Three, two, one... CROSSING!" -> Baru melesat masuk & berpapasan tepat di X=0 (pt = 43.2s)!
-            const p = (pt - 41.0) / 4.4;
-            tx = THREE.MathUtils.lerp(dir * 72.0, -dir * 72.0, p);
-            ty = 3.0 + (isJ5 ? 0.5 : -0.5);
-            tz = -3.0 + (isJ5 ? 2.2 : -2.2);
-            tyaw = dir * -Math.PI * 0.5;
-            tr = dir * 0.08 * Math.sin(p * Math.PI);
-          } else {
-            const p = easeInOut((pt - 45.4) / 1.1);
-            tx = THREE.MathUtils.lerp(-dir * 72.0, baseSlot[0], p);
-            ty = THREE.MathUtils.lerp(3.0, baseSlot[1], p);
-            tz = THREE.MathUtils.lerp(-3.0, baseSlot[2], p);
-            tyaw = THREE.MathUtils.lerp(dir * -Math.PI * 0.5, 0, p);
           }
-        } else if (pt < 46.5) {
-          // J2, J3, J4 mundur jauh & tidak mengganggu panggung Opposing Pass!
-          visible = pt < 30.8 || pt > 45.0;
-          tx = tightSlot[0];
-          ty = tightSlot[1] + 16.0;
-          tz = -110.0;
-          smokeOn = false;
-        } else if (pt < 54.0) {
-          // 47.0..54.0s: "Jupiters, climbing vertical for the Heart Maneuver! Pull... pull... ease off at the top."
-          const p = easeInOut(Math.max(0, (pt - 47.0) / 7.0));
-          if (i === 3 || i === 4) {
-            const s = i === 3 ? 1 : -1;
-            tx = THREE.MathUtils.lerp(baseSlot[0], s * 1.4, p);
-            ty = THREE.MathUtils.lerp(baseSlot[1], 13.2, p);
-            tz = THREE.MathUtils.lerp(baseSlot[2], -3.5, p);
-            tp = -0.62 * Math.sin(p * Math.PI * 0.85);
+        } else if (pt < 51.0) {
+          // 40..51s — ATRAKSI 4: MIRROR
+          // 2 pesawat (J1 normal + J5 terbalik/inverted sangat dekat di atasnya) bagaikan bayangan cermin!
+          if (i === 3) {
+            const enter = pt < 42.2 ? easeInOut((pt - 40.0) / 2.2) : pt > 49.0 ? 1 - easeInOut((pt - 49.0) / 2.0) : 1;
+            tx = THREE.MathUtils.lerp(tightSlot[0], 0.0, enter);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 6.45, enter); // Tepat dekat di atas J1 (y=2.95)
+            tz = THREE.MathUtils.lerp(tightSlot[2], 0.2, enter);
+            tp = 0.025;
+            tr = Math.PI * enter; // Terbalik 180° (Inverted Mirror!)
           } else {
-            tx = baseSlot[0];
-            ty = baseSlot[1] + 6.0 * p;
-            tz = baseSlot[2] - 20.0 * p;
-            tp = -0.52 * Math.sin(p * Math.PI * 0.85);
+            visible = false;
+            tx = tightSlot[0];
+            ty = 18.0;
+            tz = -115.0;
+            smokeOn = false;
           }
-        } else if (pt < 68.5) {
-          // 54.0..68.5s: HEART MANEUVER! HANYA 2 PESAWAT (J5 & J6) melukis kurva Hati parametrik mulus, lalu J4 menembus!
+        } else if (pt < 67.0) {
+          // 51..67s — ATRAKSI 5: HEART (LOVE) & ROLL
+          // J5 & J6 melukis hati raksasa asap putih (51..60.5s), lalu 4 pesawat lainnya (J1–J4) menusuk tepat di tengah hati sambil ROLL!
           if (i === 3 || i === 4) {
             const s: 1 | -1 = i === 3 ? 1 : -1;
-            const p = easeInOut(Math.min(1, (pt - 54.0) / 10.0));
+            const p = easeInOut(Math.min(1, (pt - 51.0) / 9.5));
             const u = p * Math.PI;
             const uNext = Math.min(Math.PI, u + 0.03);
             tmpPos.copy(heartPoint(u, s));
@@ -503,84 +533,79 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             tx = tmpPos.x;
             ty = tmpPos.y;
             tz = tmpPos.z;
-            // Arahkan hidung pesawat mengikuti garis singgung kurva Hati secara halus (tidak kaku!)
             if (tmpNext.distanceToSquared(tmpPos) > 1e-6) {
               tmpMat.lookAt(tmpNext, tmpPos, tmpUp);
               tmpQuat.setFromRotationMatrix(tmpMat);
               useTangentQuat = true;
             }
-            smokeOn = pt < 64.5;
-          } else if (i === 2) {
-            // J4 (Arrow / Slot): menembus lurus diagonal tengah Hati tepat di "Four, piercing the heart! Smoke off!" (64.0..68.0s)
-            if (pt < 63.8) {
+            smokeOn = pt < 61.5;
+          } else {
+            // J2, J3, J4 bersama J1 (4 pesawat!) menusuk tengah hati sambil melakukan putaran ROLL!
+            if (pt < 60.5) {
               visible = false;
-              tx = -20.0;
-              ty = 0.5;
+              tx = -22.0;
+              ty = 2.0;
               tz = -3.0;
               smokeOn = false;
             } else {
-              const p = easeInOut(Math.min(1, (pt - 63.8) / 3.8));
-              tmpPos.set(THREE.MathUtils.lerp(-18.0, 18.0, p), THREE.MathUtils.lerp(1.5, 19.5, p), -3.0);
-              tmpNext.set(tmpPos.x + 1.0, tmpPos.y + 0.5, -3.0);
-              tx = tmpPos.x;
-              ty = tmpPos.y;
-              tz = tmpPos.z;
-              tmpMat.lookAt(tmpNext, tmpPos, tmpUp);
-              tmpQuat.setFromRotationMatrix(tmpMat);
-              useTangentQuat = true;
-              smokeOn = pt < 66.8; // "Smoke off!"
+              const p = easeInOut(Math.min(1, (pt - 60.5) / 6.0));
+              const offsets: [number, number, number][] = [
+                [4.2, -1.2, -5.0],  // J2
+                [-4.2, -1.2, -5.0], // J3
+                [0.0, -2.4, -10.0], // J4
+              ];
+              const off = offsets[i];
+              tx = THREE.MathUtils.lerp(-18.0, 18.0, p) + off[0];
+              ty = THREE.MathUtils.lerp(2.0, 18.5, p) + off[1];
+              tz = -3.0 + off[2];
+              tp = -0.38;
+              tyaw = Math.PI * 0.32;
+              tr = -p * Math.PI * 4; // 2 putaran roll saat menusuk tengah hati!
+              smokeOn = true;
             }
-          } else {
-            // J2 & J3 mundur jauh & disembunyikan agar panggung Heart Maneuver murni 2 pesawat!
-            visible = false;
-            tx = baseSlot[0];
-            ty = 18.0;
-            tz = -115.0;
-            smokeOn = false;
           }
-        } else if (pt < 74.2) {
-          // 68.5..74.2s: "All Jupiters, final maneuver, Bomb Burst! Pitch up vertical... Ready..."
-          const p = easeInOut((pt - 68.5) / 5.7);
-          tx = THREE.MathUtils.lerp(tightSlot[0], tightSlot[0] * 0.75, p);
-          ty = 3.0 + 5.8 * p;
-          tz = tightSlot[2] * 0.85;
-          tp = -0.82 * p;
-        } else if (pt < 82.8) {
-          // 74.2..82.8s: "BREAK, BREAK, BREAK! Two breaking left! Three breaking right! Four pulling high!"
-          const p = easeInOut((pt - 74.2) / 8.6);
+        } else if (pt < 77.0) {
+          // 67..77s — ATRAKSI 6: SOLO SPIN (J1 menanjak -> stall spin vertikal -> recovery; J2–J6 menepi rapi)
+          visible = false;
+          tx = tightSlot[0];
+          ty = 18.0;
+          tz = -115.0;
+          smokeOn = false;
+        } else if (pt < 81.5) {
+          // 77..81.5s — ATRAKSI 7A: LOOP & BOMB BURST (6 pesawat menanjak bersama ke titik puncak!)
+          const p = easeInOut((pt - 77.0) / 4.5);
+          tx = THREE.MathUtils.lerp(tightSlot[0], tightSlot[0] * 0.68, p);
+          ty = 3.0 + 7.2 * p;
+          tz = tightSlot[2] * 0.8;
+          tp = -0.85 * p;
+        } else if (pt < 88.5) {
+          // 81.5..88.5s — ATRAKSI 7B: BOMB BURST! Seluruh 6 pesawat berpencar ke segala arah bak kembang api!
+          const p = easeInOut((pt - 81.5) / 7.0);
           const dirs: [number, number, number, number][] = [
-            [-30, 3.0, -4, 0.85],   // J2 breaking left!
-            [30, 3.0, -4, -0.85],   // J3 breaking right!
-            [0, 16.0, -6, 0.0],     // J4 pulling high!
-            [24, -4.5, -10, -0.65], // J5 breaking down-right!
-            [-24, -4.5, -10, 0.65], // J6 breaking down-left!
+            [-32, 4.0, -4, 0.9],   // J2 kiri
+            [32, 4.0, -4, -0.9],   // J3 kanan
+            [0, 17.0, -6, 0.0],    // J4 atas
+            [26, -5.0, -10, -0.7], // J5 kanan bawah
+            [-26, -5.0, -10, 0.7], // J6 kiri bawah
           ];
           const d = dirs[i];
           const burst = Math.sin(p * Math.PI);
-          tx = tightSlot[0] * 0.75 + d[0] * burst;
-          ty = 8.8 + d[1] * burst;
-          tz = tightSlot[2] * 0.85 + d[2] * burst;
-          tp = d[1] > 8 ? -0.65 * burst : 0.22 * burst;
+          tx = tightSlot[0] * 0.68 + d[0] * burst;
+          ty = 10.2 + d[1] * burst;
+          tz = tightSlot[2] * 0.8 + d[2] * burst;
+          tp = d[1] > 8 ? -0.68 * burst : 0.24 * burst;
           tr = d[3] * burst;
           tyaw = (d[0] < 0 ? 0.55 : d[0] > 0 ? -0.55 : 0) * burst;
           smokeOn = true;
-        } else if (pt < 85.2) {
-          const p = easeInOut((pt - 82.8) / 2.4);
-          const echSlot = LEFT_ECHELON_SLOTS[i];
-          tx = THREE.MathUtils.lerp(baseSlot[0], echSlot[0], p);
-          ty = THREE.MathUtils.lerp(6.0, echSlot[1], p);
-          tz = THREE.MathUtils.lerp(baseSlot[2], echSlot[2], p);
-          tp = -0.025;
-          smokeOn = true;
         } else {
-          // 85.2s+: Rejoin Left Echelon Formation & Smoke Off ("prepare for landing" -> Tower cleared to land)
+          // 88.5s+: Rejoin Left Echelon & Siap Landing
           const echSlot = LEFT_ECHELON_SLOTS[i];
           tx = echSlot[0] + Math.sin(t * 0.8 + i) * 0.14;
           ty = echSlot[1] + Math.cos(t * 1.1 + i) * 0.1;
           tz = echSlot[2] + Math.sin(t * 0.6 + i) * 0.12;
           tp = -0.025;
           tr = Math.cos(t * 0.9 + i * 0.4) * 0.025;
-          smokeOn = pt < 86.5;
+          smokeOn = pt < 89.5;
         }
       }
 
@@ -603,9 +628,13 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       if (useTangentQuat) {
         grp.quaternion.slerp(tmpQuat, Math.min(1, dt * 8));
       } else {
-        grp.rotation.x = THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 6));
+        const directLoopPitch = flightMode === 'airborne' && pt >= 19.0 && pt < 28.0;
+        const directRollPhase =
+          flightMode === 'airborne' &&
+          ((pt >= 28.0 && pt < 40.0) || (pt >= 60.5 && pt < 67.0 && i <= 2));
+        grp.rotation.x = directLoopPitch ? tp : THREE.MathUtils.lerp(grp.rotation.x, tp, Math.min(1, dt * 6));
         grp.rotation.y = THREE.MathUtils.lerp(grp.rotation.y, tyaw, Math.min(1, dt * 6));
-        if (flightMode === 'airborne' && pt >= 24.5 && pt < 29.5) {
+        if (directRollPhase) {
           grp.rotation.z = tr;
         } else {
           if (grp.rotation.z < -Math.PI) grp.rotation.z += Math.PI * 2;
@@ -638,8 +667,8 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
 
   return (
     <group>
-      {/* Asap putih tebal untuk Jupiter 1 (Lead) */}
-      <mesh ref={leaderSmokeRef} geometry={smokeGeo} material={smokeMat} visible={false} />
+      {/* Asap Merah-Putih JAT untuk Jupiter 1 (Lead = Merah) */}
+      <mesh ref={leaderSmokeRef} geometry={smokeGeo} material={redSmokeMat} visible={false} />
 
       {/* Lukisan Asap Putih Hati Raksasa & Panah di Langit (Heart Maneuver!) */}
       <points ref={heartRightRef} geometry={heartGeos.right} material={heartSmokeMat} visible={false} />
@@ -662,7 +691,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
               smokeRefs.current[i] = el;
             }}
             geometry={smokeGeo}
-            material={smokeMat}
+            material={i % 2 === 1 ? redSmokeMat : whiteSmokeMat}
             visible={false}
           />
           <Html position={[0, 2.35, 0]} center distanceFactor={28}>
