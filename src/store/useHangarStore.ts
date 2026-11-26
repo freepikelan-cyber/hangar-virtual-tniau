@@ -383,9 +383,10 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     const s = get();
     const u = getUnit(s.selectedId);
     aircraftAudio.unlock();
-    aircraftAudio.resetPhaseTriggers();
     aircraftAudio.stopVoiceRadio();
     if (s.flightMode === 'mission') {
+      // Saat menghentikan Misi / Drop Barang, JANGAN resetPhaseTriggers() agar frame React lama tidak memicu ulang suara 'transport-airdrop'!
+      flightSync.phaseTime = 0;
       set({
         flightMode: 'airborne',
         flightNonce: s.flightNonce + 1,
@@ -396,6 +397,8 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       });
       return;
     }
+    flightSync.phaseTime = 0;
+    aircraftAudio.resetPhaseTriggers();
     const label =
       u.category === 'Helikopter'
         ? 'MISI SAR LAUT • RESCUE HOIST EVAKUASI KORBAN'
