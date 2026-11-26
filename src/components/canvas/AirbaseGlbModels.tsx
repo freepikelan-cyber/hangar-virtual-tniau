@@ -242,14 +242,16 @@ export function CityGlbModels() {
 }
 
 /**
- * Pegunungan Nusantara 3D Asli di Zona 2 (Lembah Pegunungan):
- * - Gunung Sumbing Jawa Tengah (.GLB: mount-sumbing.glb, 739 KB)
- * - Perbukitan & Lembah Wotawati Gunungkidul (.GLB: wotawati.glb, terkompresi WebP+Quantized ~770 KB)
- * Seluruh mesh statis (matrixAutoUpdate = false, tanpa shadow pass) & jalur tengah X ∈ [-28..+28] 100% aman bebas tabrakan!
+ * 3 Lanskap Pegunungan Nusantara 3D Asli di Zona 2 (terpisah JAUH satu sama lain, masing-masing 1 draw call ringan!):
+ * 1. Gunung Sumbing Jawa Tengah (mount-sumbing.glb, 739 KB) — sisi Selatan-Kiri (Z = -112, X = -114)
+ * 2. Perbukitan & Lembah Wotawati Gunungkidul (wotawati.glb, 752 KB) — sisi Tengah-Kanan (Z = -18, X = +108)
+ * 3. Kaldera Gunung Bromo Jawa Timur (mount-bromo.glb, 629 KB) — sisi Utara-Kanan jauh (Z = +115, X = +112, >320m dari Sumbing!)
+ * Seluruh mesh statis (matrixAutoUpdate = false, tanpa shadow pass) & jalur tengah X ∈ [-30..+30] 100% aman bebas tabrakan!
  */
 export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | 'airbase' }) {
   const sumbingGltf = useGLTF('/models/env/mount-sumbing.glb');
   const wotawatiGltf = useGLTF('/models/env/wotawati.glb');
+  const bromoGltf = useGLTF('/models/env/mount-bromo.glb');
 
   const peaks = useMemo(() => {
     if (mode === 'airbase') {
@@ -259,15 +261,14 @@ export function MountSumbingGlbModels({ mode = 'valley' }: { mode?: 'valley' | '
       ];
     }
     return [
-      { obj: normalizeGlbPart(sumbingGltf.scene, 38.0), pos: [-112, -1.2, -55] as [number, number, number], rot: 0.2 },
-      { obj: normalizeGlbPart(sumbingGltf.scene, 42.0), pos: [116, -1.2, 24] as [number, number, number], rot: 1.8 },
-      { obj: normalizeGlbToFootprint(wotawatiGltf.scene, 145.0, 24.0), pos: [102, -1.5, -92] as [number, number, number], rot: 0.6 },
-      { obj: normalizeGlbToFootprint(wotawatiGltf.scene, 145.0, 24.0), pos: [-102, -1.5, 92] as [number, number, number], rot: 2.7 },
+      { obj: normalizeGlbPart(sumbingGltf.scene, 40.0), pos: [-114, -1.2, -112] as [number, number, number], rot: 0.25 },
+      { obj: normalizeGlbToFootprint(wotawatiGltf.scene, 145.0, 24.0), pos: [108, -1.5, -18] as [number, number, number], rot: 0.6 },
+      { obj: normalizeGlbToFootprint(bromoGltf.scene, 160.0, 28.0), pos: [112, -1.2, 115] as [number, number, number], rot: -0.45 },
     ];
-  }, [sumbingGltf.scene, wotawatiGltf.scene, mode]);
+  }, [sumbingGltf.scene, wotawatiGltf.scene, bromoGltf.scene, mode]);
 
   return (
-    <group name={`mount-sumbing-wotawati-${mode}`}>
+    <group name={`mount-sumbing-wotawati-bromo-${mode}`}>
       {peaks.map((pk, idx) => (
         <primitive key={idx} object={pk.obj} position={pk.pos} rotation={[0, pk.rot, 0]} />
       ))}
