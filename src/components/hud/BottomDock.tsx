@@ -39,6 +39,7 @@ export function BottomDock() {
   const oxygenMode = useHangarStore((s) => s.oxygenMode);
   const flightMode = useHangarStore((s) => s.flightMode);
   const flightLabel = useHangarStore((s) => s.flightLabel);
+  const showcaseMode = useHangarStore((s) => s.showcaseMode);
 
   const toggle = useHangarStore((s) => s.toggle);
   const toggleInfographic = useHangarStore((s) => s.toggleInfographic);
@@ -181,6 +182,8 @@ export function BottomDock() {
           onClick: () => toggle('autoRotate'),
         },
       ];
+
+  if (showcaseMode) return null;
 
   return (
     <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
