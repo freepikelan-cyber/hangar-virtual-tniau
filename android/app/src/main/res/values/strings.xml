@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Hangar Virtual TNI AU 3D</string>
+    <string name="title_activity_main">Hangar Virtual TNI AU 3D</string>
+    <string name="package_name">id.tniau.hangarvirtual</string>
+    <string name="custom_url_scheme">id.tniau.hangarvirtual</string>
+</resources>
