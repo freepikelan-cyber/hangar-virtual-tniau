@@ -809,8 +809,8 @@ export function SkyCloudsEnvironment() {
 
   return (
     <group name="sky-clouds-env">
-      {/* 1. Kubah Langit 3D Dinamis (Siang / Senja / Malam) */}
-      <mesh>
+      {/* 1. Kubah Langit 3D (khusus Mode Malam; Siang & Senja memakai HDRI 360° Fotorealistis Poly Haven!) */}
+      <mesh visible={timeOfDay === 'night'}>
         <sphereGeometry args={[260, 32, 24]} />
         <meshBasicMaterial
           ref={skyMatRef}

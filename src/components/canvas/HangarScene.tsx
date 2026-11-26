@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -83,6 +83,12 @@ function RadarPlatform() {
 
 function StudioLighting() {
   const timeOfDay = useHangarStore((s) => s.timeOfDay);
+  const flightMode = useHangarStore((s) => s.flightMode);
+  const safetyMode = useHangarStore((s) => s.safetyMode);
+  const selectedId = useHangarStore((s) => s.selectedId);
+  const isEquipment = selectedId === 'gsuit' || selectedId === 'pilot-helmet';
+  const isOutdoorSim = !isEquipment && (flightMode !== 'parked' || safetyMode);
+  const useOutdoorHdri = isOutdoorSim && (timeOfDay === 'day' || timeOfDay === 'sunset');
   const ambientColor = timeOfDay === 'sunset' ? '#ffd1a3' : timeOfDay === 'night' ? '#4a6ea8' : '#b8d4f0';
   const ambientInt = timeOfDay === 'sunset' ? 0.36 : timeOfDay === 'night' ? 0.22 : 0.42;
   const sunColor = timeOfDay === 'sunset' ? '#ffad66' : timeOfDay === 'night' ? '#7ea8e8' : '#ffffff';
@@ -107,17 +113,27 @@ function StudioLighting() {
       <directionalLight position={[-14, 10, -10]} intensity={timeOfDay === 'night' ? 0.55 : 0.85} color={rimColor} />
       <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={timeOfDay === 'night' ? 0.8 : 1.2} color="#e6f5ff" />
 
-      {/* Studio Hangar IBL ringan (128px baked 1x) untuk performa 60 FPS */}
-      <Environment resolution={128} frames={1}>
-        <group rotation={[-Math.PI / 3, 0, 1]}>
-          <Lightformer form="rect" intensity={3.2} position={[0, 10, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[20, 6, 1]} color="#eef8ff" />
-          <Lightformer form="rect" intensity={2.2} position={[0, 10, 8]} rotation={[Math.PI / 2, 0, 0]} scale={[18, 3, 1]} color="#cceeff" />
-          <Lightformer form="rect" intensity={2.2} position={[0, 10, -8]} rotation={[Math.PI / 2, 0, 0]} scale={[18, 3, 1]} color="#cceeff" />
-          <Lightformer form="rect" intensity={1.6} position={[14, 4, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[16, 4, 1]} color="#7cd8ff" />
-          <Lightformer form="rect" intensity={1.4} position={[-14, 4, 0]} rotation={[0, Math.PI / 2, 0]} scale={[16, 4, 1]} color="#ffe5b8" />
-          <Lightformer form="ring" intensity={1.1} position={[0, -6, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[22, 22, 1]} color="#0a2844" />
-        </group>
-      </Environment>
+      {/* Langit 360° HDRI Fotorealistis (Poly Haven CC0) saat Simulasi Udara & Bandara, atau Studio IBL saat di Hanggar */}
+      {useOutdoorHdri ? (
+        <Suspense fallback={null}>
+          <Environment
+            files={timeOfDay === 'sunset' ? '/textures/hdri/sky-sunset.hdr' : '/textures/hdri/sky-day.hdr'}
+            background
+            environmentIntensity={timeOfDay === 'sunset' ? 0.92 : 1.05}
+          />
+        </Suspense>
+      ) : (
+        <Environment resolution={128} frames={1}>
+          <group rotation={[-Math.PI / 3, 0, 1]}>
+            <Lightformer form="rect" intensity={3.2} position={[0, 10, 0]} rotation={[Math.PI / 2, 0, 0]} scale={[20, 6, 1]} color="#eef8ff" />
+            <Lightformer form="rect" intensity={2.2} position={[0, 10, 8]} rotation={[Math.PI / 2, 0, 0]} scale={[18, 3, 1]} color="#cceeff" />
+            <Lightformer form="rect" intensity={2.2} position={[0, 10, -8]} rotation={[Math.PI / 2, 0, 0]} scale={[18, 3, 1]} color="#cceeff" />
+            <Lightformer form="rect" intensity={1.6} position={[14, 4, 0]} rotation={[0, -Math.PI / 2, 0]} scale={[16, 4, 1]} color="#7cd8ff" />
+            <Lightformer form="rect" intensity={1.4} position={[-14, 4, 0]} rotation={[0, Math.PI / 2, 0]} scale={[16, 4, 1]} color="#ffe5b8" />
+            <Lightformer form="ring" intensity={1.1} position={[0, -6, 0]} rotation={[-Math.PI / 2, 0, 0]} scale={[22, 22, 1]} color="#0a2844" />
+          </group>
+        </Environment>
+      )}
     </>
   );
 }
