@@ -227,7 +227,7 @@ export function HangarScene() {
         )}
         <AircraftModel />
         {flightMode === 'aar' && <AirRefuelingLayer />}
-        {flightMode === 'maneuver' && <DogfightCombatLayer />}
+        {flightMode === 'mission' && <DogfightCombatLayer />}
         <CameraRig />
       </Canvas>
     </div>

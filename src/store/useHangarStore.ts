@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import * as THREE from 'three';
 import { FLEET, getUnit, type AircraftCategory } from '../data/fleetData';
-import { getFighterManeuverSpec, type FighterManeuverId } from '../data/fighterManeuvers';
+import type { FighterManeuverId } from '../data/fighterManeuvers';
 import { buildMixedQuiz, type QuizQuestion } from '../data/quizData';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
@@ -321,23 +321,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       trimAngle: aeroManeuver === 'climb' ? 8 : aeroManeuver === 'descend' ? -5 : aeroManeuver === 'level' ? 0 : s.trimAngle,
     })),
   setGForceLevel: (gForceLevel) => set({ gForceLevel }),
-  setFighterManeuver: (fighterManeuver) => {
-    const s = get();
-    const isCombat = fighterManeuver !== 'auto' && getFighterManeuverSpec(fighterManeuver).group === 'acm';
-    set({
-      fighterManeuver,
-      ...(s.flightMode === 'maneuver' && isCombat
-        ? { camRequest: { pos: [28.0, 14.0, 34.0] as Vec3, target: [0, 4.5, 0] as Vec3, nonce: nonce++ } }
-        : {}),
-    });
-    if (s.flightMode === 'maneuver') {
-      if (isCombat) {
-        aircraftAudio.playFighterCombatVoice(s.soundEnabled);
-      } else {
-        aircraftAudio.stopVoiceRadio();
-      }
-    }
-  },
+  setFighterManeuver: (fighterManeuver) => set({ fighterManeuver }),
   triggerAar: () => {
     const s = get();
     aircraftAudio.unlock();
@@ -374,7 +358,12 @@ export const useHangarStore = create<HangarState>((set, get) => ({
         ? 'MISI SAR LAUT • RESCUE HOIST EVAKUASI KORBAN'
         : u.category === 'Angkut & VIP'
           ? 'MISI ANGKUT • DROP BARANG LOGISTIK & TERJUN PAYUNG KOPASGAT'
-          : 'MISI TEMPUR • FLARE COUNTERMEASURE & SCRAMBLE INTERSEP';
+          : u.category === 'Tempur'
+            ? 'DOGFIGHT TEMPUR // SALING KEJAR, SALING TEMBAK, FLARE & JATUHKAN MUSUH'
+            : 'MISI LATIH • FLARE COUNTERMEASURE ANTI-RUDAL';
+    if (u.category === 'Tempur') {
+      aircraftAudio.playFighterCombatVoice(s.soundEnabled);
+    }
     set({
       flightMode: 'mission',
       flightNonce: s.flightNonce + 1,
@@ -389,7 +378,9 @@ export const useHangarStore = create<HangarState>((set, get) => ({
       camRequest:
         u.category === 'Helikopter'
           ? { pos: [14.5, 6.2, 16.5] as Vec3, target: [0, 1.8, 0] as Vec3, nonce: nonce++ }
-          : { pos: [17.5, 7.5, 21.0] as Vec3, target: [0, 2.2, -2.5] as Vec3, nonce: nonce++ },
+          : u.category === 'Tempur'
+            ? { pos: [28.0, 10.5, 32.0] as Vec3, target: [0, 4.2, 16.0] as Vec3, nonce: nonce++ }
+            : { pos: [17.5, 7.5, 21.0] as Vec3, target: [0, 2.2, -2.5] as Vec3, nonce: nonce++ },
     });
   },
   enterCockpitSim: () => {
@@ -469,16 +460,6 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     aircraftAudio.resetPhaseTriggers();
     aircraftAudio.stopVoiceRadio();
     const activating = s.flightMode !== 'maneuver';
-    if (activating) {
-      const u = getUnit(s.selectedId);
-      const isCombat =
-        u.category === 'Tempur' &&
-        s.fighterManeuver !== 'auto' &&
-        getFighterManeuverSpec(s.fighterManeuver).group === 'acm';
-      if (isCombat) {
-        aircraftAudio.playFighterCombatVoice(s.soundEnabled);
-      }
-    }
     set({
       flightMode: activating ? 'maneuver' : 'airborne',
       flightNonce: s.flightNonce + 1,

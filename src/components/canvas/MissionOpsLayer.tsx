@@ -44,7 +44,8 @@ export function MissionOpsLayer() {
   const isActive = flightMode === 'mission' && !isEquipment && !isVvip;
   const isHeli = unit.category === 'Helikopter';
   const isTransport = unit.category === 'Angkut & VIP' && !isVvip;
-  const isFighter = !isHeli && !isTransport;
+  const isFighter = unit.category === 'Latih';
+  const isMissionLayerActive = isActive && (isHeli || isTransport || isFighter);
 
   const flarePool = useMemo<FlareItem[]>(
     () =>
@@ -67,7 +68,7 @@ export function MissionOpsLayer() {
   }, [isActive, flightNonce, unit.id, flarePool]);
 
   useFrame((state, delta) => {
-    if (!isActive) return;
+    if (!isMissionLayerActive) return;
     const dt = Math.min(delta, 0.05);
     const t = state.clock.elapsedTime;
     timer.current += dt;
@@ -201,7 +202,7 @@ export function MissionOpsLayer() {
     }
   });
 
-  if (!isActive) return null;
+  if (!isMissionLayerActive) return null;
 
   return (
     <group name="mission-ops-3d">

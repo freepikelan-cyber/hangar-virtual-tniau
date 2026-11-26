@@ -63,7 +63,9 @@ export function BottomDock() {
       ? 'SAR Hoist Laut'
       : unit.category === 'Angkut & VIP'
         ? 'Drop Barang & Terjun Payung'
-        : 'Flare Tempur';
+        : unit.category === 'Tempur'
+          ? 'Dogfight'
+          : 'Flare Latih';
   const isFlightActive = !isEquipment && flightMode !== 'parked';
   const isSimPanelActive = !isEquipment && (simMenuOpen || isFlightActive);
   const isAeroPanelActive = !isEquipment && aeroMode;
@@ -324,18 +326,26 @@ export function BottomDock() {
             {!isVvip && (
               <button
                 type="button"
-                title="Jalankan Simulasi Misi Operasi TNI AU (Flare / Drop Barang & Terjun Payung / SAR Hoist Laut)"
+                title={
+                  unit.category === 'Tempur'
+                    ? 'Simulasi Pertempuran Udara (Dogfight): Saling Kejar, Saling Tembak, Flare & Jatuhkan Musuh'
+                    : 'Jalankan Simulasi Misi Operasi TNI AU (Flare Latih / Drop Barang & Terjun Payung / SAR Hoist Laut)'
+                }
                 onClick={() => {
                   triggerMission();
                   setSimMenuOpen(false);
                 }}
                 className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
                   flightMode === 'mission'
-                    ? 'border-amber-400 bg-amber-400 text-[#0a1e3c]'
-                    : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
+                    ? unit.category === 'Tempur'
+                      ? 'border-rose-400 bg-rose-500 text-white shadow-[0_0_16px_rgba(244,63,94,0.5)]'
+                      : 'border-amber-400 bg-amber-400 text-[#0a1e3c]'
+                    : unit.category === 'Tempur'
+                      ? 'border-rose-400/65 bg-[#0e2a54] text-rose-300 hover:bg-rose-500/20'
+                      : 'border-amber-400/55 bg-[#0e2a54] text-amber-300 hover:bg-amber-400/20'
                 }`}
               >
-                <Sparkles className="h-4 w-4" />
+                {unit.category === 'Tempur' ? <Crosshair className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                 {missionBtnLabel}
               </button>
             )}

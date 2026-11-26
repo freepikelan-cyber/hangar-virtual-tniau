@@ -657,8 +657,19 @@ export function AircraftModel() {
         targetPitch = -0.04;
         targetRoll = Math.cos(t * 0.85) * 0.03;
         targetGear = 1;
+      } else if (isFighter) {
+        // Dogfight Tempur: kejar-kejaran udara dinamis, belokan tajam mengunci ekor lawan & salvo flare + tembak rudal!
+        const s = Math.sin(pt * 0.72);
+        const c = Math.cos(pt * 0.55);
+        targetX = 3.6 * s;
+        targetY = 3.2 + 0.9 * Math.sin(pt * 0.65);
+        targetZ = 1.6 * c;
+        targetRoll = -0.92 * s;
+        targetYawOffset = 0.36 * s;
+        targetPitch = -0.14 * Math.cos(pt * 0.65);
+        targetGear = 1;
       } else {
-        // Flare Countermeasure Pesawat Tempur / Latih: Manuver menghindar rudal S-turn sambil melepaskan flare!
+        // Flare Countermeasure Pesawat Latih: Manuver menghindar rudal S-turn sambil melepaskan flare!
         targetX = Math.sin(t * 1.35) * 2.2;
         targetY = 3.0 + Math.cos(t * 1.15) * 0.45;
         targetZ = 0;
@@ -777,94 +788,6 @@ export function AircraftModel() {
             targetY = baseH + 1.2 + yPos;
             targetPitch = -Math.atan2(dy, Math.abs(dz) + 0.6) * 0.85;
             directRoll = Math.sin(a) * Math.PI;
-            break;
-          }
-          case 'dogfight': {
-            // Drama Pertempuran Udara 1-vs-1 (Dogfight): pengejaran dinamis, belokan tajam mengunci ekor lawan & victory pull-up!
-            const s = Math.sin(pt * 0.72);
-            const c = Math.cos(pt * 0.55);
-            targetX = 3.2 * s;
-            targetY = baseH + 0.75 + 0.85 * Math.sin(pt * 0.65);
-            targetZ = 1.4 * c;
-            targetRoll = -0.92 * s;
-            targetYawOffset = 0.36 * s;
-            targetPitch = -0.14 * Math.cos(pt * 0.65);
-            break;
-          }
-          case 'cobra': {
-            // Pugachev's Cobra sejati: Mendongak cepat melewati 90° hingga ~106° (-1.85 rad), jeda singkat, lalu kembali rata & akselerasi!
-            let cobraPitch = 0;
-            let zDrift = 0;
-            let yLift = 0;
-            if (p < 0.35) {
-              const q = easeInOut(p / 0.35);
-              cobraPitch = -1.85 * q;
-              yLift = 0.75 * q;
-              zDrift = -1.4 * q;
-            } else if (p < 0.58) {
-              cobraPitch = -1.85;
-              yLift = 0.75;
-              zDrift = -1.4 - ((p - 0.35) / 0.23) * 0.45;
-            } else {
-              const q = easeInOut((p - 0.58) / 0.42);
-              cobraPitch = -1.85 * (1 - q);
-              yLift = 0.75 * (1 - q);
-              zDrift = THREE.MathUtils.lerp(-1.85, 0.5, q);
-            }
-            targetX = 0;
-            targetY = baseH + yLift;
-            targetZ = zDrift;
-            directPitch = cobraPitch;
-            targetRoll = Math.sin(t * 2.0) * 0.02;
-            break;
-          }
-          case 'kulbit': {
-            // Kulbit / Frolov's Chakra: Salto vertikal 360° super ketat di poros ekor (radius kecil!)
-            const a = e * Math.PI * 2;
-            directPitch = -a;
-            targetY = baseH + (1 - Math.cos(a)) * 0.75;
-            targetZ = Math.sin(a) * 0.75 - 0.6 * Math.sin(e * Math.PI);
-            break;
-          }
-          case 'herbst': {
-            // Herbst J-Turn: Mendongak tinggi melewati stall (~72°) -> Pivot yaw/roll cepat 180° -> Akselerasi rata!
-            const s = Math.sin(p * Math.PI);
-            targetPitch = -1.25 * Math.pow(s, 0.72);
-            targetYawOffset = e * Math.PI;
-            targetRoll = -0.88 * s;
-            targetY = baseH + 1.25 * s;
-            break;
-          }
-          case 'fallingLeaf': {
-            // Falling Leaf: Pesawat stall melayang turun berayun seperti daun jatuh dari kiri ke kanan
-            const sway = Math.sin(p * Math.PI * 4);
-            targetX = sway * 2.5;
-            targetY = baseH + 1.9 - p * 2.5;
-            targetRoll = -sway * 0.82;
-            targetPitch = 0.14 + Math.cos(p * Math.PI * 4) * 0.2;
-            targetYawOffset = sway * 0.38;
-            break;
-          }
-          case 'tailslide': {
-            // Tailslide (Bell Maneuver) halus tanpa lompatan sudut:
-            // Menanjak vertikal -90° -> Berhenti & meluncur mundur ekor dulu -> Hidung jatuh menukik mulus -> Pull-out rata!
-            if (p < 0.38) {
-              const q = easeInOut(p / 0.38);
-              targetY = THREE.MathUtils.lerp(baseH - 0.4, baseH + 3.2, q);
-              directPitch = -q * (Math.PI / 2);
-            } else if (p < 0.58) {
-              const q = (p - 0.38) / 0.2;
-              targetY = THREE.MathUtils.lerp(baseH + 3.2, baseH + 1.9, q);
-              directPitch = -(Math.PI / 2);
-            } else if (p < 0.8) {
-              const q = easeInOut((p - 0.58) / 0.22);
-              targetY = THREE.MathUtils.lerp(baseH + 1.9, baseH + 0.3, q);
-              directPitch = THREE.MathUtils.lerp(-(Math.PI / 2), 0.78, q);
-            } else {
-              const q = easeInOut((p - 0.8) / 0.2);
-              targetY = THREE.MathUtils.lerp(baseH + 0.3, baseH - 0.4, q);
-              directPitch = THREE.MathUtils.lerp(0.78, 0, q);
-            }
             break;
           }
         }
