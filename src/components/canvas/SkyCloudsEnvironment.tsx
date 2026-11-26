@@ -1323,16 +1323,14 @@ export function SkyCloudsEnvironment() {
               metalness={0.04}
             />
           </mesh>
-          {/* Permukaan sungai biru berkilau mengalir di dasar lembah */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]}>
-            <planeGeometry args={[48, CHUNK_LEN]} />
+          {/* Dasar lembah pegunungan hijau alami & subur (tanpa laut/aliran air di tengah lembah Sumbing!) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+            <planeGeometry args={[68, CHUNK_LEN]} />
             <meshStandardMaterial
-              map={oceanTextures.map}
-              bumpMap={oceanTextures.bumpMap}
-              bumpScale={0.32}
-              color="#38bdf8"
-              roughness={0.14}
-              metalness={0.55}
+              map={airbaseGrassTex}
+              color="#7a9e6a"
+              roughness={0.95}
+              metalness={0.0}
             />
           </mesh>
         </group>
@@ -1490,21 +1488,12 @@ export function SkyCloudsEnvironment() {
           ))}
         </group>
 
-        {/* === ZONA 4: KOTA METROPOLITAN 3D (.GLB: beautiful_city, city_pack_3, & city-scan) TEPAT DI BAWAH JALUR TERBANG! === */}
+        {/* === ZONA 4: KOTA METROPOLITAN 3D PENUH 1 LAPANGAN PANDANG (beautiful_city & city_pack_3) === */}
         <group ref={cityChunkRef} name="biome-city">
-          {/* Lahan daratan hijau & jaringan jalan raya utama membelah pusat kota */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
-            <planeGeometry args={[280, CHUNK_LEN]} />
-            <meshStandardMaterial map={airbaseGrassTex} color="#c5d9c2" roughness={0.94} />
-          </mesh>
-          {/* Jalan tol / boulevard utama membelah tengah kota */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-            <planeGeometry args={[10.5, CHUNK_LEN]} />
-            <meshStandardMaterial color="#2b313a" roughness={0.88} />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]}>
-            <planeGeometry args={[0.35, CHUNK_LEN]} />
-            <meshBasicMaterial color="#fbbf24" />
+          {/* Alas daratan perkotaan luas seluas 1 lapangan pandang (tanpa garis jalan palsu memotong gedung) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
+            <planeGeometry args={[300, CHUNK_LEN]} />
+            <meshStandardMaterial color="#3c4652" roughness={0.95} metalness={0.02} />
           </mesh>
           <Suspense fallback={null}>
             <CityGlbModels />

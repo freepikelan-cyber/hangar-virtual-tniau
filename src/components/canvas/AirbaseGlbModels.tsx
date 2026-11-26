@@ -219,24 +219,24 @@ export function AirbaseGlbModels() {
 }
 
 /**
- * Zona 4: Kota Metropolitan 3D (.GLB) — 1 GLB mengisi 1 area pandang utuh & rapi (TIDAK bertumpuk!):
- * - Area Selatan (Z = -85): 1 hamparan penuh `beautiful_city.glb` (lebar 165m)
- * - Area Utara (Z = +85): 1 hamparan penuh `city_pack_3.glb` (lebar 165m)
+ * Zona 4: Kota Metropolitan 3D (.GLB) — memenuhi 1 lapangan pandang utuh penuh dari kiri ke kanan (horizon ke horizon, seperti pegunungan!):
+ * - Area Selatan (Z = -88): 1 hamparan penuh `beautiful_city.glb` (lebar 255m)
+ * - Area Utara (Z = +88): 1 hamparan penuh `city_pack_3.glb` (lebar 255m)
  */
 export function CityGlbModels() {
   const mainCityGltf = useGLTF('/models/env/city-main.glb');
   const districtGltf = useGLTF('/models/env/city-district.glb');
 
   const cities = useMemo(() => {
-    const areaSouth = normalizeGlbToFootprint(mainCityGltf.scene, 165.0, 22.0);
-    const areaNorth = normalizeGlbToFootprint(districtGltf.scene, 165.0, 22.0);
+    const areaSouth = normalizeGlbToFootprint(mainCityGltf.scene, 255.0, 26.0);
+    const areaNorth = normalizeGlbToFootprint(districtGltf.scene, 255.0, 26.0);
     return { areaSouth, areaNorth };
   }, [mainCityGltf.scene, districtGltf.scene]);
 
   return (
     <group name="city-glb-models">
-      <primitive object={cities.areaSouth} position={[0, 0, -85.0]} rotation={[0, 0, 0]} />
-      <primitive object={cities.areaNorth} position={[0, 0, 85.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={cities.areaSouth} position={[0, 0, -88.0]} rotation={[0, 0, 0]} />
+      <primitive object={cities.areaNorth} position={[0, 0, 88.0]} rotation={[0, Math.PI * 0.5, 0]} />
     </group>
   );
 }
