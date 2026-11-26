@@ -287,22 +287,6 @@ export function SkyCloudsEnvironment() {
   const tniAuSignTex = useMemo(() => makeTniAuHangarSignTexture(), []);
   const taxiSignTex = useMemo(() => makeTaxiwaySignTexture(), []);
   const houseWallTex = useMemo(() => makeHouseWallTexture(), []);
-
-  // Muat langsung foto bandara & Lanud TNI AU fotorealistis (dari 4 foto referensi pengguna) sebagai Panorama Cyclorama 3D!
-  const airportPhotoTextures = useMemo(() => {
-    const loader = new THREE.TextureLoader();
-    const load = (url: string) => {
-      const tex = loader.load(url);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 8;
-      return tex;
-    };
-    return {
-      frontRunway: load('/textures/airport/airport-2.jpg'),
-      leftTerminal: load('/textures/airport/airport-4.jpg'),
-      sideAtc: load('/textures/airport/airport-3.jpg'),
-    };
-  }, []);
   const roofTileTex = useMemo(() => makeRoofTileTexture(), []);
   const oceanTextures = useMemo(() => makeOceanTextures(), []);
   const sunHaloTex = useMemo(() => makeSunHaloTexture(), []);
@@ -383,9 +367,6 @@ export function SkyCloudsEnvironment() {
       tniAuSignTex.dispose();
       taxiSignTex.dispose();
       houseWallTex.dispose();
-      airportPhotoTextures.frontRunway.dispose();
-      airportPhotoTextures.leftTerminal.dispose();
-      airportPhotoTextures.sideAtc.dispose();
       roofTileTex.dispose();
       oceanTextures.map.dispose();
       oceanTextures.bumpMap.dispose();
@@ -411,7 +392,6 @@ export function SkyCloudsEnvironment() {
     tniAuSignTex,
     taxiSignTex,
     houseWallTex,
-    airportPhotoTextures,
     roofTileTex,
     oceanTextures,
     sunHaloTex,
@@ -1212,40 +1192,6 @@ export function SkyCloudsEnvironment() {
             <mesh position={[0, 23.15, 0]}>
               <sphereGeometry args={[0.26, 8, 8]} />
               <meshBasicMaterial color="#ef4444" />
-            </mesh>
-          </group>
-
-          {/* Panorama Fotorealistis Bandara & Lanud TNI AU 360° (menggunakan foto asli bandara, terminal, menara ATC, & pegunungan!) */}
-          <group name="photoreal-airport-cyclorama" position={[0, -3.0, 0]}>
-            {/* Dinding lengkung depan (+Z): Panorama Runway 23 + Gunung Vulkanik Berkabut (airport-2.jpg) */}
-            <mesh position={[0, 38, 0]} rotation={[0, Math.PI, 0]}>
-              <cylinderGeometry args={[196, 196, 84, 48, 1, true, -Math.PI * 0.36, Math.PI * 0.72]} />
-              <meshBasicMaterial
-                map={airportPhotoTextures.frontRunway}
-                color={timeOfDay === 'sunset' ? '#ffc499' : timeOfDay === 'night' ? '#243656' : '#ffffff'}
-                side={THREE.BackSide}
-                fog={false}
-              />
-            </mesh>
-            {/* Dinding lengkung sisi kiri (-X): Panorama Terminal Modern, Menara ATC, Hanggar TNI AU & Pegunungan (airport-4.jpg) */}
-            <mesh position={[0, 38, 0]} rotation={[0, Math.PI, 0]}>
-              <cylinderGeometry args={[195, 195, 84, 48, 1, true, Math.PI * 0.35, Math.PI * 0.65]} />
-              <meshBasicMaterial
-                map={airportPhotoTextures.leftTerminal}
-                color={timeOfDay === 'sunset' ? '#ffc499' : timeOfDay === 'night' ? '#243656' : '#ffffff'}
-                side={THREE.BackSide}
-                fog={false}
-              />
-            </mesh>
-            {/* Dinding lengkung sisi kanan (+X): Panorama Bandara & Cakrawala Hijau Pegunungan (airport-3.jpg) */}
-            <mesh position={[0, 38, 0]} rotation={[0, Math.PI, 0]}>
-              <cylinderGeometry args={[195, 195, 84, 48, 1, true, -Math.PI * 1.0, Math.PI * 0.65]} />
-              <meshBasicMaterial
-                map={airportPhotoTextures.sideAtc}
-                color={timeOfDay === 'sunset' ? '#ffc499' : timeOfDay === 'night' ? '#243656' : '#ffffff'}
-                side={THREE.BackSide}
-                fog={false}
-              />
             </mesh>
           </group>
 
