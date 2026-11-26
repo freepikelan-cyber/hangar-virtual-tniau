@@ -1352,22 +1352,24 @@ export function SkyCloudsEnvironment() {
             />
           </mesh>
 
-          {/* 4 Pulau Tropis Organik + Formasi Batu Karang Pantai 3D Realistis (sea-rock.glb) */}
-          {islandGeos.map((isl, idx) => (
-            <mesh key={idx} geometry={isl.geo} position={[isl.x, -0.05, isl.z]}>
-              <meshStandardMaterial
-                vertexColors
-                map={mountainDetailTex.map}
-                bumpMap={mountainDetailTex.bumpMap}
-                bumpScale={0.45}
-                roughness={0.9}
-                metalness={0.04}
-              />
-            </mesh>
-          ))}
-          <Suspense fallback={null}>
-            <OceanRocksGlbModels />
-          </Suspense>
+          {/* 4 Pulau Tropis Organik + Formasi Batu Karang Pantai 3D (disembunyikan saat Landing agar pendekatan murni di atas laut lepas!) */}
+          <group visible={flightMode !== 'landing'}>
+            {islandGeos.map((isl, idx) => (
+              <mesh key={idx} geometry={isl.geo} position={[isl.x, -0.05, isl.z]}>
+                <meshStandardMaterial
+                  vertexColors
+                  map={mountainDetailTex.map}
+                  bumpMap={mountainDetailTex.bumpMap}
+                  bumpScale={0.45}
+                  roughness={0.9}
+                  metalness={0.04}
+                />
+              </mesh>
+            ))}
+            <Suspense fallback={null}>
+              <OceanRocksGlbModels />
+            </Suspense>
+          </group>
 
           {/* Kapal Perang KRI TNI AL (Fregat & Korvet lengkap dengan meriam haluan, helideck H, radar & V-wake) */}
           {[
