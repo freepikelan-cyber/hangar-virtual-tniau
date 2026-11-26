@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
-import { AirbaseGlbModels } from './AirbaseGlbModels';
+import { AirbaseGlbModels, CityGlbModels, OceanRocksGlbModels } from './AirbaseGlbModels';
 import { useHangarStore } from '../../store/useHangarStore';
 import { getUnit } from '../../data/fleetData';
 import { getLandingTiming, getTakeOffTiming } from '../../utils/aircraftAudio';
@@ -1119,6 +1119,7 @@ export function SkyCloudsEnvironment() {
           </mesh>
           <Suspense fallback={null}>
             <AirbaseGlbModels />
+            <CityGlbModels />
           </Suspense>
 
           {/* Daratan hijau pemukiman bertekstur satelit nyata & jaringan jalan raya kota */}
@@ -1136,6 +1137,8 @@ export function SkyCloudsEnvironment() {
             <meshStandardMaterial color="#2b313a" roughness={0.9} />
           </mesh>
 
+          {/* Gedung & rumah prosedural lama disembunyikan agar Kota 3D .GLB (city-main & city-district) tampil bersih tanpa tumpang tindih */}
+          <group visible={false}>
           {/* Rumah-rumah penduduk realistis (Dinding berjendela/pintu + Atap Genteng Terakota menjorok keluar) */}
           {houses.map((h, idx) => (
             <group key={idx} position={[h.x, -0.1, h.z]} rotation={[0, h.rotY, 0]}>
@@ -1200,6 +1203,7 @@ export function SkyCloudsEnvironment() {
               </mesh>
             </group>
           ))}
+          </group>
 
           {/* Pesisir pantai realistis (pasir kering -> basah -> buih ombak pecah -> toska) & laut berombak */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[20.5, -0.08, 0]}>
@@ -1259,7 +1263,7 @@ export function SkyCloudsEnvironment() {
             />
           </mesh>
 
-          {/* 4 Pulau Tropis Organik (heightmap pantai pasir + perbukitan hijau bertekstur kanopi) */}
+          {/* 4 Pulau Tropis Organik + Formasi Batu Karang Pantai 3D Realistis (sea-rock.glb) */}
           {islandGeos.map((isl, idx) => (
             <mesh key={idx} geometry={isl.geo} position={[isl.x, -0.05, isl.z]}>
               <meshStandardMaterial
@@ -1272,6 +1276,9 @@ export function SkyCloudsEnvironment() {
               />
             </mesh>
           ))}
+          <Suspense fallback={null}>
+            <OceanRocksGlbModels />
+          </Suspense>
 
           {/* Kapal Perang KRI TNI AL (Fregat & Korvet lengkap dengan meriam haluan, helideck H, radar & V-wake) */}
           {[

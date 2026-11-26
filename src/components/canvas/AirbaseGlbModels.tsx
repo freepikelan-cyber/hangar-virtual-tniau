@@ -149,3 +149,52 @@ export function AirbaseGlbModels() {
     </group>
   );
 }
+
+/**
+ * Kota 3D Realistis (.GLB) dari folder footage (beautiful_city.glb & city_pack_3.glb)
+ * ditempatkan di sisi kota pangkalan udara (X = -98) menggantikan gedung kotak lama!
+ */
+export function CityGlbModels() {
+  const mainCityGltf = useGLTF('/models/env/city-main.glb');
+  const districtGltf = useGLTF('/models/env/city-district.glb');
+
+  const cities = useMemo(() => {
+    const mainCenter = normalizeGlbPart(mainCityGltf.scene, 30.0);
+    const districtNorth = normalizeGlbPart(districtGltf.scene, 20.0);
+    const districtSouth = normalizeGlbPart(districtGltf.scene, 22.0);
+    return { mainCenter, districtNorth, districtSouth };
+  }, [mainCityGltf.scene, districtGltf.scene]);
+
+  return (
+    <group name="city-glb-models">
+      <primitive object={cities.mainCenter} position={[-106.0, -0.1, -6.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={cities.districtNorth} position={[-104.0, -0.1, -112.0]} rotation={[0, 0, 0]} />
+      <primitive object={cities.districtSouth} position={[-104.0, -0.1, 106.0]} rotation={[0, Math.PI, 0]} />
+    </group>
+  );
+}
+
+/**
+ * Formasi Batu Karang Pantai 3D Fotorealistis (.GLB: rock_by_the_sea.glb)
+ * menjulang di tengah samudra Zona 3 (Lautan) & pesisir pantai!
+ */
+export function OceanRocksGlbModels() {
+  const rockGltf = useGLTF('/models/env/sea-rock.glb');
+
+  const rocks = useMemo(() => {
+    return [
+      { obj: normalizeGlbPart(rockGltf.scene, 14.5), pos: [-62, -0.6, -78] as [number, number, number], rot: 0.4 },
+      { obj: normalizeGlbPart(rockGltf.scene, 18.0), pos: [66, -0.7, -26] as [number, number, number], rot: 1.9 },
+      { obj: normalizeGlbPart(rockGltf.scene, 12.5), pos: [-48, -0.5, 86] as [number, number, number], rot: 3.1 },
+      { obj: normalizeGlbPart(rockGltf.scene, 15.5), pos: [58, -0.6, 74] as [number, number, number], rot: 4.6 },
+    ];
+  }, [rockGltf.scene]);
+
+  return (
+    <group name="ocean-rocks-glb-models">
+      {rocks.map((r, idx) => (
+        <primitive key={idx} object={r.obj} position={r.pos} rotation={[0, r.rot, 0]} />
+      ))}
+    </group>
+  );
+}
