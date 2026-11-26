@@ -103,12 +103,12 @@ function StudioLighting() {
         intensity={sunInt}
         color={sunColor}
         castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-camera-left={-48}
-        shadow-camera-right={48}
-        shadow-camera-top={48}
-        shadow-camera-bottom={-48}
-        shadow-camera-far={140}
+        shadow-mapSize={[512, 512]}
+        shadow-camera-left={-36}
+        shadow-camera-right={36}
+        shadow-camera-top={36}
+        shadow-camera-bottom={-36}
+        shadow-camera-far={120}
       />
       <directionalLight position={[-14, 10, -10]} intensity={timeOfDay === 'night' ? 0.55 : 0.85} color={rimColor} />
       <spotLight position={[0, 18, 0]} angle={0.65} penumbra={0.7} intensity={timeOfDay === 'night' ? 0.8 : 1.2} color="#e6f5ff" />
@@ -213,7 +213,7 @@ export function HangarScene() {
     <div className="absolute inset-0 bg-[#07152c] touch-none">
       <Canvas
         shadows
-        dpr={[1, 1.5]}
+        dpr={[1, 1.25]}
         camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
         gl={{
           antialias: true,

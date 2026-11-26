@@ -742,12 +742,25 @@ export function SkyCloudsEnvironment() {
           return z;
         };
         if (runwayChunkRef.current) {
-          runwayChunkRef.current.visible = flightMode === 'landing';
-          runwayChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET);
+          const rz = wrapZ(RUNWAY_OFFSET);
+          runwayChunkRef.current.visible = flightMode === 'landing' && rz > -340 && rz < 420;
+          runwayChunkRef.current.position.z = rz;
         }
-        if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
-        if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
-        if (cityChunkRef.current) cityChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 3);
+        if (mountainChunkRef.current) {
+          const mz = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
+          mountainChunkRef.current.visible = mz > -340 && mz < 420;
+          mountainChunkRef.current.position.z = mz;
+        }
+        if (oceanChunkRef.current) {
+          const oz = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
+          oceanChunkRef.current.visible = oz > -340 && oz < 420;
+          oceanChunkRef.current.position.z = oz;
+        }
+        if (cityChunkRef.current) {
+          const ctz = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 3);
+          cityChunkRef.current.visible = ctz > -340 && ctz < 420;
+          cityChunkRef.current.position.z = ctz;
+        }
       } else {
         // Bandara HANYA tampil saat Take Off & Landing! Setelah Take Off selesai, hanya 3 zona yang terus berputar:
         // Pegunungan (Gunung Sumbing) -> Laut (ocean-loop.glb & Karang) -> Perkotaan 3D -> Pegunungan!
@@ -763,13 +776,23 @@ export function SkyCloudsEnvironment() {
         if (cz.ocean < -CHUNK_LEN * 0.95) cz.ocean = maxScenicZ() + CHUNK_LEN;
         if (cz.city < -CHUNK_LEN * 0.95) cz.city = maxScenicZ() + CHUNK_LEN;
 
+        // Smart Distance Culling: hanya render zona yang masuk jarak pandang (-340..+420) agar GPU super enteng 60 FPS!
         if (runwayChunkRef.current) {
-          runwayChunkRef.current.visible = cz.runway > -CHUNK_LEN * 0.95;
+          runwayChunkRef.current.visible = cz.runway > -CHUNK_LEN * 0.95 && cz.runway < 420;
           runwayChunkRef.current.position.z = cz.runway;
         }
-        if (mountainChunkRef.current) mountainChunkRef.current.position.z = cz.mountain;
-        if (oceanChunkRef.current) oceanChunkRef.current.position.z = cz.ocean;
-        if (cityChunkRef.current) cityChunkRef.current.position.z = cz.city;
+        if (mountainChunkRef.current) {
+          mountainChunkRef.current.visible = cz.mountain > -340 && cz.mountain < 420;
+          mountainChunkRef.current.position.z = cz.mountain;
+        }
+        if (oceanChunkRef.current) {
+          oceanChunkRef.current.visible = cz.ocean > -340 && cz.ocean < 420;
+          oceanChunkRef.current.position.z = cz.ocean;
+        }
+        if (cityChunkRef.current) {
+          cityChunkRef.current.visible = cz.city > -340 && cz.city < 420;
+          cityChunkRef.current.position.z = cz.city;
+        }
       }
 
       // Animasi perahu nelayan mengayun lembut & kawanan ikan/lumba-lumba melompat di atas laut!

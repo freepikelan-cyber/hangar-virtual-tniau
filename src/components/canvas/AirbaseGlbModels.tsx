@@ -19,8 +19,9 @@ function normalizeGlbToFootprint(source: THREE.Object3D, targetSpan: number, max
     }
     if ((obj as THREE.Mesh).isMesh) {
       const mesh = obj as THREE.Mesh;
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      // Matikan shadow pass untuk gedung/lingkungan jauh agar GPU 60 FPS tanpa lag di HP & laptop!
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
     }
   });
 
@@ -44,6 +45,11 @@ function normalizeGlbToFootprint(source: THREE.Object3D, targetSpan: number, max
     clone.scale.multiplyScalar(scale);
     clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
   }
+  clone.updateMatrixWorld(true);
+  clone.traverse((obj) => {
+    obj.matrixAutoUpdate = false;
+    obj.updateMatrix();
+  });
   return wrapper;
 }
 
@@ -71,8 +77,8 @@ function normalizeGlbPart(source: THREE.Object3D, targetHeight: number): THREE.G
         mesh.visible = false;
         return;
       }
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
+      mesh.castShadow = false;
+      mesh.receiveShadow = false;
     }
   });
 
@@ -96,6 +102,11 @@ function normalizeGlbPart(source: THREE.Object3D, targetHeight: number): THREE.G
     clone.scale.multiplyScalar(scale);
     clone.position.set(-center.x * scale, -box.min.y * scale, -center.z * scale);
   }
+  clone.updateMatrixWorld(true);
+  clone.traverse((obj) => {
+    obj.matrixAutoUpdate = false;
+    obj.updateMatrix();
+  });
 
   return wrapper;
 }
