@@ -734,7 +734,26 @@ export function SkyCloudsEnvironment() {
     }
 
     if (isOutdoorSim) {
-      if (flightMode === 'landing' || safetyMode || (flightMode === 'mission' && isHeli)) {
+      if (flightMode === 'landing') {
+        const wrapZ = (offset: number) => {
+          let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
+          if (z > LOOP_LEN - CHUNK_LEN) z -= LOOP_LEN;
+          return z;
+        };
+        const rz = wrapZ(RUNWAY_OFFSET);
+        // Pendekatan Final Landing 100% bebas gedung & gunung: pendekatan bersih di atas laut terbuka -> langsung masuk Runway 09!
+        if (runwayChunkRef.current) {
+          runwayChunkRef.current.visible = rz > -340 && rz < 460;
+          runwayChunkRef.current.position.z = rz;
+        }
+        if (oceanChunkRef.current) {
+          const oz = rz - CHUNK_LEN;
+          oceanChunkRef.current.visible = oz > -340 && oz < 420;
+          oceanChunkRef.current.position.z = oz;
+        }
+        if (mountainChunkRef.current) mountainChunkRef.current.visible = false;
+        if (cityChunkRef.current) cityChunkRef.current.visible = false;
+      } else if (safetyMode || (flightMode === 'mission' && isHeli)) {
         scrollZ.current = (scrollZ.current + smoothSpeed * dt) % LOOP_LEN;
         const wrapZ = (offset: number) => {
           let z = ((offset - scrollZ.current) % LOOP_LEN + LOOP_LEN) % LOOP_LEN;
@@ -742,9 +761,7 @@ export function SkyCloudsEnvironment() {
           return z;
         };
         if (runwayChunkRef.current) {
-          const rz = wrapZ(RUNWAY_OFFSET);
-          runwayChunkRef.current.visible = flightMode === 'landing' && rz > -340 && rz < 420;
-          runwayChunkRef.current.position.z = rz;
+          runwayChunkRef.current.visible = false;
         }
         if (mountainChunkRef.current) {
           const mz = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
