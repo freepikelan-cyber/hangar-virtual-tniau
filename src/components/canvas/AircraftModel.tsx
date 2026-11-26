@@ -17,6 +17,7 @@ import { SafetySystemLayer } from './SafetySystemLayer';
 import { VvipEscortLayer } from './VvipEscortLayer';
 import { MissionOpsLayer } from './MissionOpsLayer';
 import { OxygenSystemLayer } from './OxygenSystemLayer';
+import { sampleDogfightHeroPose } from './DogfightCombatLayer';
 
 interface SavedMatProps {
   transparent: boolean;
@@ -658,15 +659,14 @@ export function AircraftModel() {
         targetRoll = Math.cos(t * 0.85) * 0.03;
         targetGear = 1;
       } else if (isFighter) {
-        // Dogfight Tempur: kejar-kejaran udara dinamis, belokan tajam mengunci ekor lawan & salvo flare + tembak rudal!
-        const s = Math.sin(pt * 0.72);
-        const c = Math.cos(pt * 0.55);
-        targetX = 3.6 * s;
-        targetY = 3.2 + 0.9 * Math.sin(pt * 0.65);
-        targetZ = 1.6 * c;
-        targetRoll = -0.92 * s;
-        targetYawOffset = 0.36 * s;
-        targetPitch = -0.14 * Math.cos(pt * 0.65);
+        // Dogfight Tempur: pose sinkron 100% dengan DogfightCombatLayer agar hidung membidik tepat ke ekor BANDIT-01!
+        const pose = sampleDogfightHeroPose(pt);
+        targetX = pose.x;
+        targetY = pose.y;
+        targetZ = pose.z;
+        targetRoll = pose.roll;
+        targetYawOffset = pose.yawOffset;
+        targetPitch = pose.pitch;
         targetGear = 1;
       } else {
         // Flare Countermeasure Pesawat Latih: Manuver menghindar rudal S-turn sambil melepaskan flare!

@@ -939,30 +939,197 @@ class AircraftAudioEngine {
     }
   }
 
-  /** Efek ledakan udara dahsyat saat pesawat musuh tertembak rudal/kanon di mode Dogfight. */
+  /**
+   * Efek tembakan kanon pesawat tempur (GSh-30-1 / M61 Vulcan 20mm-30mm):
+   * Rentetan ledakan propelan ritmis + hentakan sub-bass mekanis + desis supersonik yang tegas & nyata!
+   */
+  playCannonBurstSfx(soundEnabled: boolean, durationSec = 0.72) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    const rounds = Math.max(4, Math.round(durationSec / 0.085));
+    const step = durationSec / rounds;
+
+    for (let i = 0; i < rounds; i++) {
+      const t0 = now + i * step;
+
+      // 1. Hentakan muzzle thump (sub-low punch 160 Hz -> 48 Hz)
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(165 + (i % 2) * 14, t0);
+      osc.frequency.exponentialRampToValueAtTime(46, t0 + 0.068);
+      const oscGain = ctx.createGain();
+      oscGain.gain.setValueAtTime(0.001, t0);
+      oscGain.gain.linearRampToValueAtTime(0.55, t0 + 0.005);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.072);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.078);
+
+      // 2. Ledakan propelan kanon & crack mekanis (bandpass noise tegas)
+      const shotNoise = this.createNoiseSource(0.085);
+      if (shotNoise) {
+        const bp = ctx.createBiquadFilter();
+        bp.type = 'bandpass';
+        bp.frequency.setValueAtTime(1150 + (i % 3) * 140, t0);
+        bp.Q.value = 0.85;
+        const ng = ctx.createGain();
+        ng.gain.setValueAtTime(0.001, t0);
+        ng.gain.linearRampToValueAtTime(0.48, t0 + 0.004);
+        ng.gain.exponentialRampToValueAtTime(0.001, t0 + 0.078);
+        shotNoise.connect(bp);
+        bp.connect(ng);
+        ng.connect(ctx.destination);
+        shotNoise.start(t0);
+        shotNoise.stop(t0 + 0.082);
+      }
+    }
+  }
+
+  /** Efek peluncuran rudal udara-ke-udara (FOX-2): ignition pop + deru roket motor kencang! */
+  playMissileLaunchSfx(soundEnabled: boolean) {
+    if (!soundEnabled) return;
+    this.unlock();
+    if (!this.ctx) return;
+    const ctx = this.ctx;
+    const now = ctx.currentTime;
+
+    // 1. Ignition pop awal dari rel sayap
+    const popOsc = ctx.createOscillator();
+    popOsc.type = 'sine';
+    popOsc.frequency.setValueAtTime(190, now);
+    popOsc.frequency.exponentialRampToValueAtTime(48, now + 0.14);
+    const popGain = ctx.createGain();
+    popGain.gain.setValueAtTime(0.001, now);
+    popGain.gain.linearRampToValueAtTime(0.45, now + 0.01);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+    popOsc.connect(popGain);
+    popGain.connect(ctx.destination);
+    popOsc.start(now);
+    popOsc.stop(now + 0.16);
+
+    // 2. Deru roket padat melesat (high-pressure whoosh sweep)
+    const whooshSrc = this.createNoiseSource(1.75);
+    if (whooshSrc) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(720, now);
+      bp.frequency.exponentialRampToValueAtTime(2200, now + 0.35);
+      bp.frequency.exponentialRampToValueAtTime(420, now + 1.7);
+      bp.Q.value = 0.75;
+      const wg = ctx.createGain();
+      wg.gain.setValueAtTime(0.001, now);
+      wg.gain.linearRampToValueAtTime(0.58, now + 0.05);
+      wg.gain.setValueAtTime(0.46, now + 0.55);
+      wg.gain.exponentialRampToValueAtTime(0.001, now + 1.72);
+      whooshSrc.connect(bp);
+      bp.connect(wg);
+      wg.connect(ctx.destination);
+      whooshSrc.start(now);
+      whooshSrc.stop(now + 1.74);
+    }
+  }
+
+  /**
+   * Efek ledakan udara dahsyat + kobaran api terbakar (sustained fire roar & crackle)
+   * saat pesawat musuh BANDIT-01 tertembak jatuh di mode Dogfight!
+   */
   playExplosionSfx(soundEnabled: boolean) {
     if (!soundEnabled) return;
     this.unlock();
     if (!this.ctx) return;
     const ctx = this.ctx;
     const now = ctx.currentTime;
-    const src = this.createNoiseSource(1.65);
-    if (src) {
+
+    // 1. Sub-bass shockwave impact (dentuman berat yang langsung terasa!)
+    const subOsc = ctx.createOscillator();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(115, now);
+    subOsc.frequency.exponentialRampToValueAtTime(26, now + 0.65);
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(0.001, now);
+    subGain.gain.linearRampToValueAtTime(0.85, now + 0.014);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 0.72);
+    subOsc.connect(subGain);
+    subGain.connect(ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + 0.75);
+
+    // 2. Ledakan utama broadband lowpass (BOOM panjang)
+    const boomSrc = this.createNoiseSource(2.2);
+    if (boomSrc) {
       const lp = ctx.createBiquadFilter();
       lp.type = 'lowpass';
-      lp.frequency.setValueAtTime(620, now);
-      lp.frequency.exponentialRampToValueAtTime(55, now + 1.5);
+      lp.frequency.setValueAtTime(980, now);
+      lp.frequency.exponentialRampToValueAtTime(62, now + 1.9);
       lp.Q.value = 1.1;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.001, now);
-      g.gain.linearRampToValueAtTime(0.65, now + 0.03);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 1.6);
-      src.connect(lp);
+      g.gain.linearRampToValueAtTime(0.88, now + 0.02);
+      g.gain.setValueAtTime(0.68, now + 0.16);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 2.15);
+      boomSrc.connect(lp);
       lp.connect(g);
       g.connect(ctx.destination);
-      src.start(now);
-      src.stop(now + 1.62);
+      boomSrc.start(now);
+      boomSrc.stop(now + 2.18);
     }
+
+    // 3. Ledakan susulan tangki bahan bakar (secondary blast +0.26s)
+    const secSrc = this.createNoiseSource(1.1);
+    if (secSrc) {
+      const bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass';
+      bp.frequency.setValueAtTime(520, now + 0.24);
+      bp.frequency.exponentialRampToValueAtTime(110, now + 1.2);
+      bp.Q.value = 0.9;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.001, now + 0.24);
+      g.gain.linearRampToValueAtTime(0.56, now + 0.28);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+      secSrc.connect(bp);
+      bp.connect(g);
+      g.connect(ctx.destination);
+      secSrc.start(now + 0.24);
+      secSrc.stop(now + 1.32);
+    }
+
+    // 4. Suara api berkobar & gemuruh terbakar (fire roar + crackle selama 4.2 detik saat musuh jatuh terbakar)
+    const fireDur = 4.2;
+    const fireLen = Math.floor(ctx.sampleRate * fireDur);
+    const fireBuf = ctx.createBuffer(1, fireLen, ctx.sampleRate);
+    const ch = fireBuf.getChannelData(0);
+    let smooth = 0;
+    for (let i = 0; i < fireLen; i++) {
+      const w = Math.random() * 2 - 1;
+      smooth = (smooth + 0.08 * w) / 1.08;
+      // Campuran gemuruh api rendah + letupan percikan api (crackle)
+      const crackle = Math.random() > 0.994 ? (Math.random() * 2 - 1) * 1.45 : 0;
+      ch[i] = Math.max(-1, Math.min(1, smooth * 2.2 + w * 0.22 + crackle));
+    }
+    const fireSrc = ctx.createBufferSource();
+    fireSrc.buffer = fireBuf;
+    const fireFilter = ctx.createBiquadFilter();
+    fireFilter.type = 'bandpass';
+    fireFilter.frequency.setValueAtTime(480, now + 0.15);
+    fireFilter.frequency.linearRampToValueAtTime(260, now + fireDur);
+    fireFilter.Q.value = 0.65;
+
+    const fireGain = ctx.createGain();
+    fireGain.gain.setValueAtTime(0.001, now + 0.12);
+    fireGain.gain.linearRampToValueAtTime(0.46, now + 0.35);
+    fireGain.gain.setValueAtTime(0.38, now + 2.4);
+    fireGain.gain.exponentialRampToValueAtTime(0.001, now + fireDur + 0.1);
+
+    fireSrc.connect(fireFilter);
+    fireFilter.connect(fireGain);
+    fireGain.connect(ctx.destination);
+    fireSrc.start(now + 0.12);
+    fireSrc.stop(now + fireDur + 0.12);
   }
 
   /** Efek letupan suar Flare Countermeasure yang tegas & singkat. */
@@ -1477,9 +1644,9 @@ class AircraftAudioEngine {
           sampleRate = Math.max(0.45, 0.9 - idleP * 0.45);
         }
       } else {
-        // airborne, maneuver, aar, engineSim
+        // airborne, maneuver, mission (Dogfight), aar, engineSim
         desiredTrack = 'fly';
-        sampleVol = flightMode === 'maneuver' ? 0.7 : 0.56;
+        sampleVol = flightMode === 'maneuver' ? 0.68 : flightMode === 'mission' ? 0.44 : 0.56;
         sampleRate = 1.0 + speedMod * 0.32;
       }
 
