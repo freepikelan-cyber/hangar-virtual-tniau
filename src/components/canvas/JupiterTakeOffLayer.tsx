@@ -391,52 +391,58 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           smokeOn = true;
         }
       } else if (flightMode === 'landing') {
-        // MODE LANDING: Seluruh 6 pesawat turun bersama berjarak lega, roda keluar saat "gears down" (3.2s), flare & touchdown di 8.6s!
+        // MODE LANDING JAT (3-Jalur Runway Lega):
+        // Jarak antar pesawat sangat lega (±16m kiri-kanan & 22m depan-belakang -> 0% menempel!),
+        // setelah pengereman langsung BERHENTI RAPI DI RUNWAY (tidak masuk hanggar)!
         smokeOn = false;
-        const ech = LEFT_ECHELON_SLOTS[i];
-        const landX = RUNWAY_FORM_SPOTS[i][0];
-        const landZOff = RUNWAY_FORM_SPOTS[i][1] - 16.0;
+        const LAND_SLOTS: [number, number][] = [
+          [16.0, -12.0],  // Jupiter 2 (Kanan depan, 16m kanan & 12m belakang J1)
+          [-16.0, -12.0], // Jupiter 3 (Kiri depan, 16m kiri & 12m belakang J1)
+          [0.0, -22.0],   // Jupiter 4 (Tengah belakang, 22m penuh di belakang J1!)
+          [16.0, -34.0],  // Jupiter 5 (Kanan belakang, 22m penuh di belakang J2!)
+          [-16.0, -34.0], // Jupiter 6 (Kiri belakang, 22m penuh di belakang J3!)
+        ];
+        const [landX, landZOff] = LAND_SLOTS[i];
 
-        if (pt < 6.8) {
-          const p = pt / 6.8;
-          tx = THREE.MathUtils.lerp(ech[0] * 0.65, landX, p);
+        if (pt < 6.6) {
+          // Fase 1: Final Approach turun halus berjarak lega (roda turun di 3.2s)
+          const p = pt / 6.6;
+          tx = landX;
           ty = THREE.MathUtils.lerp(8.2, 1.75, p);
-          tz = THREE.MathUtils.lerp(-18.5, -4.0, p) + landZOff * 0.45;
+          tz = THREE.MathUtils.lerp(-12.0, 4.0, p) + landZOff;
           tp = 0.06;
           targetGear = pt < 3.2 ? 1 : 0;
         } else if (pt < 8.6) {
-          const p = easeInOut((pt - 6.8) / 1.8);
+          // Fase 2: Flare halus sebelum Touchdown (8.6s)
+          const p = easeInOut((pt - 6.6) / 2.0);
           tx = landX;
           ty = THREE.MathUtils.lerp(1.75, 0.05, p);
-          tz = THREE.MathUtils.lerp(-4.0, -1.5, p) + landZOff * 0.45;
+          tz = THREE.MathUtils.lerp(4.0, 8.0, p) + landZOff;
           tp = THREE.MathUtils.lerp(0.06, -0.16, p);
           targetGear = 0;
         } else if (pt < 13.0) {
+          // Fase 3: Touchdown & Rollout lurus rapi di jalur masing-masing
           const p = (pt - 8.6) / 4.4;
           tx = landX;
           ty = p < 0.14 ? Math.sin((p / 0.14) * Math.PI) * 0.04 : 0;
-          tz = THREE.MathUtils.lerp(-1.5, 1.4, easeInOut(p)) + landZOff * 0.45;
+          tz = THREE.MathUtils.lerp(8.0, 14.0, easeInOut(p)) + landZOff;
           tp = THREE.MathUtils.lerp(-0.16, 0, Math.min(1, p * 1.65));
           targetGear = 0;
-        } else if (pt < 20.3) {
+        } else if (pt < 18.8) {
+          // Fase 4: Pengereman halus sampai berhenti penuh di Runway
           const p = Math.min(1, (pt - 13.0) / 5.8);
           tx = landX;
           ty = 0;
-          tz = THREE.MathUtils.lerp(1.4, 2.2, easeInOut(p)) + landZOff * 0.45;
-          targetGear = 0;
-        } else if (pt < 23.3) {
-          const p = easeInOut((pt - 20.3) / 3.0);
-          tx = THREE.MathUtils.lerp(landX, -8.0 - i * 3.5, p);
-          tz = THREE.MathUtils.lerp(2.2 + landZOff * 0.45, 3.5, p);
-          ty = 0;
-          tyaw = THREE.MathUtils.lerp(0, -Math.PI / 2, p);
+          tz = THREE.MathUtils.lerp(14.0, 16.0, easeInOut(p)) + landZOff;
+          tp = 0;
           targetGear = 0;
         } else {
-          const p = easeInOut(Math.min(1, (pt - 23.3) / 6.0));
-          tx = THREE.MathUtils.lerp(-8.0 - i * 3.5, -31.5 - i * 3.8, p);
-          tz = 3.5;
+          // Berhenti mantap & lega di Runway 09 (tidak perlu taxi masuk hanggar!)
+          tx = landX;
           ty = 0;
-          tyaw = -Math.PI / 2;
+          tz = 16.0 + landZOff;
+          tp = 0;
+          tyaw = 0;
           targetGear = 0;
         }
       } else {
@@ -803,10 +809,10 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       if (lbl) {
         lbl.style.display = visible ? 'block' : 'none';
       }
-      if (!visible) {
+      if (!visible || (flightMode === 'landing' && pt < 0.12)) {
         grp.position.set(tx, ty, tz);
-        grp.rotation.set(0, tyaw, 0);
-        continue;
+        grp.rotation.set(tp, tyaw, tr);
+        if (!visible) continue;
       }
 
       // Gerakan halus & perlahan (khusus Screw Roll J6 mengikuti lintasan elips presisi agar tidak memotong tengah formasi!)

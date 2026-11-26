@@ -1054,6 +1054,61 @@ export function AircraftModel() {
         } else {
           setFlightState('parked', null);
         }
+      } else if (unit.id === 'kt1b') {
+        // LANDING KHUSUS JUPITER AEROBATIC TEAM (6-SHIP):
+        // Mendarat berjarak lega di Runway 09 lalu BERHENTI RAPI DI RUNWAY (tidak masuk hanggar!)
+        const ld = getLandingTiming(unit.id);
+        if (pt < ld.approachEnd) {
+          const p = pt / Math.max(0.5, ld.approachEnd);
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(-12.0, 4.0, p);
+          targetY = THREE.MathUtils.lerp(8.2, 1.75, p);
+          targetPitch = 0.06;
+          targetGear = pt < 3.2 ? 1 : 0;
+          gearSpeed = 1.8;
+          setFlightLabel(
+            pt < 3.2
+              ? 'Cleared to land Runway 09 — Jupiter Flight pendekatan final'
+              : 'Jupiters, gears down, flaps full — 6 pesawat turun berjarak aman',
+          );
+        } else if (pt < ld.touchTime) {
+          const p = (pt - ld.approachEnd) / Math.max(0.5, ld.touchTime - ld.approachEnd);
+          const ease = easeInOut(p);
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(4.0, 8.0, p);
+          targetY = THREE.MathUtils.lerp(1.75, 0.05, ease);
+          targetPitch = THREE.MathUtils.lerp(0.06, -0.16, ease);
+          targetGear = 0;
+          setFlightLabel('Jupiter Flight — Flare, bersiap touchdown di Runway 09');
+        } else if (pt < ld.rolloutEnd) {
+          const p = (pt - ld.touchTime) / Math.max(0.5, ld.rolloutEnd - ld.touchTime);
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(8.0, 14.0, easeInOut(p));
+          targetY = p < 0.14 ? Math.sin((p / 0.14) * Math.PI) * 0.04 : 0;
+          targetPitch = THREE.MathUtils.lerp(-0.16, 0, Math.min(1, p * 1.65));
+          targetYawOffset = 0;
+          targetGear = 0;
+          setFlightLabel('Touchdown! — 6 pesawat Jupiter rollout lurus di Runway 09');
+        } else if (pt < ld.brakeEnd) {
+          const p = (pt - ld.rolloutEnd) / Math.max(0.5, ld.brakeEnd - ld.rolloutEnd);
+          targetX = 0;
+          targetZ = THREE.MathUtils.lerp(14.0, 16.0, easeInOut(p));
+          targetY = 0;
+          targetPitch = Math.sin(p * Math.PI) * 0.015;
+          targetYawOffset = 0;
+          targetGear = 0;
+          setFlightLabel('Pengereman aktif — 6 pesawat melambat hingga berhenti di Runway 09');
+        } else if (pt < ld.brakeEnd + 3.8) {
+          targetX = 0;
+          targetZ = 16.0;
+          targetY = 0;
+          targetPitch = 0;
+          targetYawOffset = 0;
+          targetGear = 0;
+          setFlightLabel('Jupiter Aerobatic Team — 6 pesawat berhenti aman di Runway 09');
+        } else {
+          setFlightState('parked', null);
+        }
       } else {
         // LANDING PESAWAT SAYAP TETAP (Sinkron penuh dengan aba-aba "Touchdown!" & pengereman di suara kokpit!):
         const ld = getLandingTiming(unit.id);
