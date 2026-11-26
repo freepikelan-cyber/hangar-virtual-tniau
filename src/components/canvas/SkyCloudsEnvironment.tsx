@@ -64,7 +64,7 @@ interface HouseData {
 }
 
 const CHUNK_LEN = 340;
-const LOOP_LEN = CHUNK_LEN * 3; // 3 zona dinamis: Runway/Kota -> Pegunungan -> Laut & Kepulauan
+const LOOP_LEN = CHUNK_LEN * 4; // 4 zona dinamis berputar penuh: Bandara -> Pegunungan -> Laut -> Kota Metropolitan!
 const RUNWAY_OFFSET = 141.5;
 
 function makeSkyTexture(mode: 'day' | 'sunset' | 'night'): THREE.CanvasTexture {
@@ -205,7 +205,12 @@ export function SkyCloudsEnvironment() {
   const worldY = useRef(-0.02);
   const scrollZ = useRef(0);
   const currentSpeed = useRef(0);
-  const chunkZ = useRef({ runway: RUNWAY_OFFSET, mountain: RUNWAY_OFFSET + CHUNK_LEN, ocean: RUNWAY_OFFSET + CHUNK_LEN * 2 });
+  const chunkZ = useRef({
+    runway: RUNWAY_OFFSET,
+    mountain: RUNWAY_OFFSET + CHUNK_LEN,
+    ocean: RUNWAY_OFFSET + CHUNK_LEN * 2,
+    city: RUNWAY_OFFSET + CHUNK_LEN * 3,
+  });
   const prevFlightMode = useRef<string>('parked');
 
   const skyMatRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -214,6 +219,7 @@ export function SkyCloudsEnvironment() {
   const runwayChunkRef = useRef<THREE.Group>(null);
   const mountainChunkRef = useRef<THREE.Group>(null);
   const oceanChunkRef = useRef<THREE.Group>(null);
+  const cityChunkRef = useRef<THREE.Group>(null);
   const cloudGroupRefs = useRef<(THREE.Group | null)[]>([]);
 
   useEffect(() => {
@@ -232,6 +238,7 @@ export function SkyCloudsEnvironment() {
         runway: RUNWAY_OFFSET,
         mountain: RUNWAY_OFFSET + CHUNK_LEN,
         ocean: RUNWAY_OFFSET + CHUNK_LEN * 2,
+        city: RUNWAY_OFFSET + CHUNK_LEN * 3,
       };
     } else if (flightMode === 'landing') {
       worldY.current = -12.5;
@@ -240,11 +247,11 @@ export function SkyCloudsEnvironment() {
       worldY.current = isHeli ? -0.02 : -28.0;
       scrollZ.current = isHeli ? RUNWAY_OFFSET + CHUNK_LEN * 2 : 260;
       if (!isHeli && prev !== 'airborne' && prev !== 'takeoff') {
-        chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN };
+        chunkZ.current = { runway: CHUNK_LEN * 3, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
       }
     } else if ((flightMode === 'airborne' || flightMode === 'maneuver' || flightMode === 'aar') && prev === 'parked') {
-      // Langsung masuk udara dari parkir (misal AAR/Jupiter Show): mulai langsung di atas Pegunungan & Laut!
-      chunkZ.current = { runway: -CHUNK_LEN * 2, mountain: 0, ocean: CHUNK_LEN };
+      // Langsung masuk udara dari parkir (misal AAR/Dogfight): melintasi Gunung -> Laut -> Kota -> Bandara!
+      chunkZ.current = { runway: CHUNK_LEN * 3, mountain: 0, ocean: CHUNK_LEN, city: CHUNK_LEN * 2 };
     }
   }, [flightMode, flightNonce, safetyMode, safetyNonce, isEjectionSafety, isHeli]);
 
@@ -686,20 +693,20 @@ export function SkyCloudsEnvironment() {
         // Long Final Approach & Flare: mendekati awal Runway tepat hingga detik Touchdown!
         const p = Math.min(1, pt / Math.max(0.5, ld.touchTime));
         targetWorldY = THREE.MathUtils.lerp(-13.5, -0.02, p);
-        scrollZ.current = 740.0 + 273.5 * p;
+        scrollZ.current = stopScroll - 563.0 + 273.5 * p;
         groundSpeed = 0;
       } else if (pt < ld.rolloutEnd) {
         // Touchdown & High-Speed Runway Rollout
         const p = (pt - ld.touchTime) / Math.max(0.5, ld.rolloutEnd - ld.touchTime);
         targetWorldY = -0.02;
-        scrollZ.current = 1013.5 + 186.0 * (1.14 * p - 0.14 * p * p);
+        scrollZ.current = stopScroll - 289.5 + 186.0 * (1.14 * p - 0.14 * p * p);
         groundSpeed = 0;
       } else if (pt < ld.brakeEnd) {
         // Pengereman panjang & halus di runway sampai berhenti total!
         const p = Math.min(1, (pt - ld.rolloutEnd) / Math.max(0.5, ld.brakeEnd - ld.rolloutEnd));
         const decel = 1 - (1 - p) * (1 - p);
         targetWorldY = -0.02;
-        scrollZ.current = 1199.5 + 103.5 * decel;
+        scrollZ.current = stopScroll - 103.5 + 103.5 * decel;
         groundSpeed = 0;
       } else {
         targetWorldY = -0.02;
@@ -720,8 +727,6 @@ export function SkyCloudsEnvironment() {
     }
 
     if (isOutdoorSim) {
-      // Runway HANYA tampil saat Take Off & Landing! Saat transisi Take Off -> Airborne, Runway meluncur pergi
-      // mulus ke belakang tanpa lompatan/jeda, lalu hilang & hanya Pegunungan <-> Laut Hidup yang berputar!
       if (flightMode === 'landing' || safetyMode || (flightMode === 'mission' && isHeli)) {
         scrollZ.current = (scrollZ.current + smoothSpeed * dt) % LOOP_LEN;
         const wrapZ = (offset: number) => {
@@ -735,29 +740,29 @@ export function SkyCloudsEnvironment() {
         }
         if (mountainChunkRef.current) mountainChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN);
         if (oceanChunkRef.current) oceanChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 2);
+        if (cityChunkRef.current) cityChunkRef.current.position.z = wrapZ(RUNWAY_OFFSET + CHUNK_LEN * 3);
       } else {
-        // Kontinu tanpa jeda/snap dari Take Off -> Airborne -> Manuver -> AAR -> Misi!
+        // Kontinu 4 Zona Penuh saat terbang: Bandara -> Pegunungan Gunung Sumbing -> Laut -> Kota Metropolitan 3D -> Bandara!
         const cz = chunkZ.current;
         const step = smoothSpeed * dt;
         cz.runway -= step;
         cz.mountain -= step;
         cz.ocean -= step;
+        cz.city -= step;
 
-        // Begitu Pegunungan lewat jauh ke belakang, sambung mulus di depan Laut; begitu pula sebaliknya!
-        if (cz.mountain < -CHUNK_LEN * 0.95) {
-          cz.mountain = cz.ocean + CHUNK_LEN;
-        }
-        if (cz.ocean < -CHUNK_LEN * 0.95) {
-          cz.ocean = cz.mountain + CHUNK_LEN;
-        }
+        const maxZ = () => Math.max(cz.runway, cz.mountain, cz.ocean, cz.city);
+        if (cz.runway < -CHUNK_LEN * 0.95) cz.runway = maxZ() + CHUNK_LEN;
+        if (cz.mountain < -CHUNK_LEN * 0.95) cz.mountain = maxZ() + CHUNK_LEN;
+        if (cz.ocean < -CHUNK_LEN * 0.95) cz.ocean = maxZ() + CHUNK_LEN;
+        if (cz.city < -CHUNK_LEN * 0.95) cz.city = maxZ() + CHUNK_LEN;
 
         if (runwayChunkRef.current) {
-          // Runway tetap terlihat mulus saat lepas landas sampai lewat di belakang kamera, lalu tidak pernah muncul lagi!
-          runwayChunkRef.current.visible = cz.runway > -CHUNK_LEN * 0.85;
+          runwayChunkRef.current.visible = true;
           runwayChunkRef.current.position.z = cz.runway;
         }
         if (mountainChunkRef.current) mountainChunkRef.current.position.z = cz.mountain;
         if (oceanChunkRef.current) oceanChunkRef.current.position.z = cz.ocean;
+        if (cityChunkRef.current) cityChunkRef.current.position.z = cz.city;
       }
 
       // Animasi perahu nelayan mengayun lembut & kawanan ikan/lumba-lumba melompat di atas laut!
@@ -1119,7 +1124,6 @@ export function SkyCloudsEnvironment() {
           </mesh>
           <Suspense fallback={null}>
             <AirbaseGlbModels />
-            <CityGlbModels />
             <MountSumbingGlbModels mode="airbase" />
           </Suspense>
 
@@ -1440,6 +1444,27 @@ export function SkyCloudsEnvironment() {
               </group>
             </group>
           ))}
+        </group>
+
+        {/* === ZONA 4: KOTA METROPOLITAN 3D (.GLB: beautiful_city, city_pack_3, & city-scan) TEPAT DI BAWAH JALUR TERBANG! === */}
+        <group ref={cityChunkRef} name="biome-city">
+          {/* Lahan daratan hijau & jaringan jalan raya utama membelah pusat kota */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]} receiveShadow>
+            <planeGeometry args={[280, CHUNK_LEN]} />
+            <meshStandardMaterial map={airbaseGrassTex} color="#c5d9c2" roughness={0.94} />
+          </mesh>
+          {/* Jalan tol / boulevard utama membelah tengah kota */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
+            <planeGeometry args={[10.5, CHUNK_LEN]} />
+            <meshStandardMaterial color="#2b313a" roughness={0.88} />
+          </mesh>
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.03, 0]}>
+            <planeGeometry args={[0.35, CHUNK_LEN]} />
+            <meshBasicMaterial color="#fbbf24" />
+          </mesh>
+          <Suspense fallback={null}>
+            <CityGlbModels />
+          </Suspense>
         </group>
       </group>
     </group>

@@ -151,8 +151,9 @@ export function AirbaseGlbModels() {
 }
 
 /**
- * Kota 3D Realistis (.GLB) dari folder footage (beautiful_city.glb, city_pack_3.glb, & 3d_scan_of_a_russian_city_quarter.glb)
- * ditempatkan di sisi kota pangkalan udara (X = -104) menggantikan gedung kotak lama!
+ * Zona 4: Kota Metropolitan 3D Realistis (.GLB: beautiful_city.glb, city_pack_3.glb, & 3d_scan_of_a_russian_city_quarter.glb)
+ * Membentang langsung di bawah jalur terbang pesawat (X = -95..+95, Z = -130..+130) dengan tinggi aman <= 22m
+ * agar seluruh pesawat melintas megah tepat di atas gedung-gedung pencakar langit tanpa pernah menabrak!
  */
 export function CityGlbModels() {
   const mainCityGltf = useGLTF('/models/env/city-main.glb');
@@ -160,21 +161,32 @@ export function CityGlbModels() {
   const scanCityGltf = useGLTF('/models/env/city-scan.glb');
 
   const cities = useMemo(() => {
-    const mainCenter = normalizeGlbPart(mainCityGltf.scene, 30.0);
-    const districtNorth = normalizeGlbPart(districtGltf.scene, 20.0);
-    const districtSouth = normalizeGlbPart(districtGltf.scene, 22.0);
-    const scanQuarter1 = normalizeGlbPart(scanCityGltf.scene, 18.0);
-    const scanQuarter2 = normalizeGlbPart(scanCityGltf.scene, 16.0);
-    return { mainCenter, districtNorth, districtSouth, scanQuarter1, scanQuarter2 };
+    const mainWest = normalizeGlbPart(mainCityGltf.scene, 21.0);
+    const mainEast = normalizeGlbPart(mainCityGltf.scene, 22.0);
+    const districtNW = normalizeGlbPart(districtGltf.scene, 16.0);
+    const districtNE = normalizeGlbPart(districtGltf.scene, 17.0);
+    const districtSW = normalizeGlbPart(districtGltf.scene, 16.0);
+    const districtSE = normalizeGlbPart(districtGltf.scene, 17.0);
+    const scanCenter1 = normalizeGlbPart(scanCityGltf.scene, 14.0);
+    const scanCenter2 = normalizeGlbPart(scanCityGltf.scene, 14.0);
+    return { mainWest, mainEast, districtNW, districtNE, districtSW, districtSE, scanCenter1, scanCenter2 };
   }, [mainCityGltf.scene, districtGltf.scene, scanCityGltf.scene]);
 
   return (
     <group name="city-glb-models">
-      <primitive object={cities.mainCenter} position={[-106.0, -0.1, -6.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={cities.districtNorth} position={[-104.0, -0.1, -112.0]} rotation={[0, 0, 0]} />
-      <primitive object={cities.districtSouth} position={[-104.0, -0.1, 106.0]} rotation={[0, Math.PI, 0]} />
-      <primitive object={cities.scanQuarter1} position={[-76.0, -0.1, -72.0]} rotation={[0, Math.PI * 0.5, 0]} />
-      <primitive object={cities.scanQuarter2} position={[-76.0, -0.1, 68.0]} rotation={[0, -Math.PI * 0.5, 0]} />
+      {/* Pusat Kota Pencakar Langit Kiri & Kanan tepat mengapit jalur terbang tengah */}
+      <primitive object={cities.mainWest} position={[-42.0, 0, -10.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={cities.mainEast} position={[44.0, 0, 12.0]} rotation={[0, -Math.PI * 0.5, 0]} />
+
+      {/* Distrik Kota Utara & Selatan (city_pack_3.glb) */}
+      <primitive object={cities.districtNW} position={[-48.0, 0, -105.0]} rotation={[0, 0, 0]} />
+      <primitive object={cities.districtNE} position={[48.0, 0, -102.0]} rotation={[0, Math.PI, 0]} />
+      <primitive object={cities.districtSW} position={[-46.0, 0, 108.0]} rotation={[0, Math.PI * 0.5, 0]} />
+      <primitive object={cities.districtSE} position={[46.0, 0, 104.0]} rotation={[0, -Math.PI * 0.5, 0]} />
+
+      {/* Kawasan Kota 3D Scan Fotogrametri tepat di bawah jalur terbang tengah (ketinggian aman 14m di bawah pesawat 28m!) */}
+      <primitive object={cities.scanCenter1} position={[0.0, 0, -68.0]} rotation={[0, 0, 0]} />
+      <primitive object={cities.scanCenter2} position={[0.0, 0, 68.0]} rotation={[0, Math.PI, 0]} />
     </group>
   );
 }
