@@ -140,6 +140,7 @@ export function AircraftModel() {
   const airframeRef = useRef<THREE.Group>(null);
   const phaseTime = useRef(0);
   const safetyTime = useRef(0);
+  const aeroTime = useRef(0);
   const gearRetract = useRef(0); // 0 = roda turun/keluar, 1 = roda masuk penuh di dalam badan
   const currentX = useRef(0);
   const currentY = useRef(0);
@@ -229,6 +230,11 @@ export function AircraftModel() {
       airframeRef.current.visible = true;
     }
   }, [safetyMode, safetyNonce, flightMode, unit.id]);
+
+  // Reset waktu animasi Aerodinamika agar langsung bergerak instan begitu menu Aerodinamika diklik!
+  useEffect(() => {
+    aeroTime.current = 0;
+  }, [aeroMode, aeroManeuver, unit.id]);
 
   // Kanopi pesawat tempur dibuat gelap (smoked stealth tint) sehingga pilot di dalam kokpit terlihat samar-samar & elegan!
   const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
@@ -1127,22 +1133,28 @@ export function AircraftModel() {
         }
       }
     } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
-      // Animasi 3D Aerodinamika: Proses Lift Terbang, Menanjak, Menurun, Belok Kiri, & Belok Kanan!
+      // Animasi 3D Aerodinamika: langsung aktif instan tanpa jeda!
+      aeroTime.current += dt;
       if (aeroManeuver === 'liftDemo') {
-        const cyc = t % 12;
-        if (cyc < 3.5) {
+        const cyc = aeroTime.current % 9.5;
+        if (cyc < 0.35) {
           targetY = 0;
           targetPitch = 0;
           targetGear = 0;
-        } else if (cyc < 7.5) {
-          const p = easeInOut((cyc - 3.5) / 4.0);
-          targetY = THREE.MathUtils.lerp(0, 2.1, p);
-          targetPitch = -0.14 * Math.sin(p * Math.PI * 0.7);
-          targetGear = p > 0.55 ? 1 : 0;
-        } else {
+        } else if (cyc < 3.6) {
+          const p = easeInOut((cyc - 0.35) / 3.25);
+          targetY = THREE.MathUtils.lerp(0, 2.15, p);
+          targetPitch = -0.15 * Math.sin(p * Math.PI * 0.75);
+          targetGear = p > 0.5 ? 1 : 0;
+        } else if (cyc < 8.0) {
           targetY = 2.15 + Math.sin(t * 2.2) * 0.12;
           targetPitch = -0.08 + Math.sin(t * 1.5) * 0.02;
           targetGear = 1;
+        } else {
+          const p = easeInOut((cyc - 8.0) / 1.5);
+          targetY = THREE.MathUtils.lerp(2.15, 0, p);
+          targetPitch = THREE.MathUtils.lerp(-0.08, 0, p);
+          targetGear = p > 0.45 ? 0 : 1;
         }
       } else if (aeroManeuver === 'climb') {
         targetY = 2.4 + Math.sin(t * 1.6) * 0.35;

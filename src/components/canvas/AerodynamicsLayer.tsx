@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -102,6 +102,11 @@ export function AerodynamicsLayer() {
   const rightAilRef = useRef<THREE.Group>(null);
   const trimRef = useRef<THREE.Group>(null);
   const flowRefs = useRef<(THREE.Group | null)[]>([]);
+  const aeroTime = useRef(0);
+
+  useEffect(() => {
+    aeroTime.current = 0;
+  }, [aeroMode, aeroManeuver, unit.id]);
 
   const isEquipment = unit.id === 'gsuit' || unit.id === 'pilot-helmet';
   const isHeli = unit.category === 'Helikopter';
@@ -129,24 +134,27 @@ export function AerodynamicsLayer() {
     let liftPhaseMult = 1.0;
 
     if (aeroManeuver === 'liftDemo') {
-      // Siklus demo 12 detik:
-      // 0..3.5s: Angin depan netral (Trim 0°, Flap 0°) -> Lift kecil
-      // 3.5..7.5s: Trim naik +8° & Flap turun 25° -> Angin dibelokkan ke bawah (Downwash kuat!)
-      // 7.5..12s: Gaya Lift melonjak tinggi -> Pesawat terangkat terbang!
-      const cyc = t % 12;
-      if (cyc < 3.5) {
-        effFlap = 0;
-        effTrim = 0;
-        liftPhaseMult = 0.55;
-      } else if (cyc < 7.5) {
-        const p = (cyc - 3.5) / 4.0;
-        effFlap = THREE.MathUtils.lerp(0, 30, p);
-        effTrim = THREE.MathUtils.lerp(0, 8, p);
-        liftPhaseMult = THREE.MathUtils.lerp(0.55, 1.35, p);
-      } else {
+      // Siklus demo 9.5 detik — langsung bergerak instan begitu menu Aerodinamika dibuka!
+      aeroTime.current += dt;
+      const cyc = aeroTime.current % 9.5;
+      if (cyc < 0.35) {
+        effFlap = 5;
+        effTrim = 1;
+        liftPhaseMult = 0.7;
+      } else if (cyc < 3.6) {
+        const p = (cyc - 0.35) / 3.25;
+        effFlap = THREE.MathUtils.lerp(5, 30, p);
+        effTrim = THREE.MathUtils.lerp(1, 8, p);
+        liftPhaseMult = THREE.MathUtils.lerp(0.7, 1.4, p);
+      } else if (cyc < 8.0) {
         effFlap = 30;
         effTrim = 8;
         liftPhaseMult = 1.45;
+      } else {
+        const p = (cyc - 8.0) / 1.5;
+        effFlap = THREE.MathUtils.lerp(30, 0, p);
+        effTrim = THREE.MathUtils.lerp(8, 0, p);
+        liftPhaseMult = THREE.MathUtils.lerp(1.45, 0.65, p);
       }
     } else if (aeroManeuver === 'climb') {
       effTrim = 8;
