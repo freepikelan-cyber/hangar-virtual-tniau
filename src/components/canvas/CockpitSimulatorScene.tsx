@@ -39,6 +39,15 @@ import {
   makeTransportSideGaugeTexture,
 } from '../../utils/cockpitPanelTextures';
 
+/** 5 gugusan pegunungan 3D yang tersebar luas di sekeliling Lanud & kepulauan (semua memiliki deteksi tabrakan eksak!). */
+const SIM_MOUNTAIN_POSITIONS: [number, number][] = [
+  [-140, 680],
+  [-480, 180],
+  [580, 1520],
+  [-920, 1340],
+  [-280, -1080],
+];
+
 /** 10 Cincin Target Manuver Udara (dimulai lurus di depan ujung Runway 09 lalu membelok melintasi gunung & laut). */
 const TARGET_RINGS: { pos: [number, number, number]; rotY: number }[] = [
   { pos: [0, 32, 230], rotY: 0 },
@@ -205,6 +214,9 @@ function CockpitWorldAndPhysics() {
 
   const cockpitRigRef = useRef<THREE.Group>(null);
   const extAircraftRef = useRef<THREE.Group>(null);
+  const skyDomeRef = useRef<THREE.Mesh>(null);
+  const oceanRef = useRef<THREE.Mesh>(null);
+  const cloudRefs = useRef<(THREE.Sprite | null)[]>([]);
   const crashFireRef = useRef<THREE.Group>(null);
   const crashFlameRefs = useRef<(THREE.Sprite | null)[]>([]);
   const crashSmokeRefs = useRef<(THREE.Sprite | null)[]>([]);
@@ -233,7 +245,13 @@ function CockpitWorldAndPhysics() {
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
   const grassTex = useMemo(() => makeAirbaseGrassTexture(), []);
   const hangarTex = useMemo(() => makeHangarMetalTexture(), []);
-  const oceanTex = useMemo(() => makeOceanTextures(), []);
+  const oceanTex = useMemo(() => {
+    const t = makeOceanTextures();
+    // Skala ulang repeat untuk lautan tak terbatas 11.000m x 11.000m agar ombak tetap tajam & alami
+    t.map.repeat.set(140, 140);
+    t.bumpMap.repeat.set(140, 140);
+    return t;
+  }, []);
   const mtnDetail = useMemo(() => makeMountainDetailTextures(), []);
   const cloudTex = useMemo(() => makePhotorealCloudTexture(), []);
   const fireTex = useMemo(() => makeRealisticFireTexture(), []);
@@ -269,12 +287,12 @@ function CockpitWorldAndPhysics() {
       seed = (seed * 16807) % 2147483647;
       return (seed - 1) / 2147483646;
     };
-    for (let i = 0; i < 34; i++) {
+    for (let i = 0; i < 48; i++) {
       arr.push({
-        x: (rand() - 0.5) * 1400,
-        y: 95 + rand() * 140,
-        z: -350 + rand() * 1450,
-        s: 36 + rand() * 44,
+        x: (rand() - 0.5) * 4200,
+        y: 110 + rand() * 340,
+        z: (rand() - 0.5) * 4200,
+        s: 52 + rand() * 76,
       });
     }
     return arr;
@@ -353,9 +371,28 @@ function CockpitWorldAndPhysics() {
     const tel = cockpitTelemetry;
     const inp = cockpitInput;
 
-    // Animasi riak ombak laut
-    oceanTex.map.offset.y -= dt * 0.06;
-    oceanTex.bumpMap.offset.y -= dt * 0.06;
+    // Dunia Terbang Tanpa Batas (Infinite Sky, Ocean & Clouds mengikuti pesawat secara mulus!)
+    if (skyDomeRef.current) {
+      skyDomeRef.current.position.set(tel.x, 0, tel.z);
+    }
+    if (oceanRef.current) {
+      oceanRef.current.position.set(tel.x, -0.35, tel.z);
+      const tileScale = 140 / 11000;
+      const u = tel.x * tileScale;
+      const v = -tel.z * tileScale - t * 0.055;
+      oceanTex.map.offset.set(u, v);
+      oceanTex.bumpMap.offset.set(u, v);
+    }
+    const cloudSpan = 4200;
+    const cloudHalf = cloudSpan * 0.5;
+    for (let i = 0; i < clouds.length; i++) {
+      const sp = cloudRefs.current[i];
+      if (!sp) continue;
+      const cl = clouds[i];
+      const wx = tel.x + ((((cl.x - tel.x + cloudHalf) % cloudSpan) + cloudSpan) % cloudSpan) - cloudHalf;
+      const wz = tel.z + ((((cl.z - tel.z + cloudHalf) % cloudSpan) + cloudSpan) % cloudSpan) - cloudHalf;
+      sp.position.set(wx, cl.y, wz);
+    }
 
     // Ganti Misi Pelatihan jika dipilih
     if (inp.requestedMissionId !== null) {
@@ -637,11 +674,14 @@ function CockpitWorldAndPhysics() {
       }
     }
 
-    // === DETEKSI TABRAKAN GUNUNG 3D, HANGGAR, & MENARA ATC (Berlaku untuk Pesawat & Helikopter!) ===
+    // === DETEKSI TABRAKAN GUNUNG 3D (5 GUGUSAN), HANGGAR, & MENARA ATC (Berlaku untuk Pesawat & Helikopter!) ===
     if (!tel.crashed) {
-      const mtn1H = sampleMountainRangeHeight(tel.x - -140, tel.z - 680, 520, 680) - 0.2;
-      const mtn2H = sampleMountainRangeHeight(tel.x - -420, tel.z - 180, 520, 680) - 0.2;
-      const terrainH = Math.max(mtn1H, mtn2H);
+      let terrainH = -10;
+      for (let i = 0; i < SIM_MOUNTAIN_POSITIONS.length; i++) {
+        const [mx, mz] = SIM_MOUNTAIN_POSITIONS[i];
+        const h = sampleMountainRangeHeight(tel.x - mx, tel.z - mz, 520, 680) - 0.2;
+        if (h > terrainH) terrainH = h;
+      }
 
       // Peringatan PULL UP otomatis bila terbang terlalu dekat di atas tebing gunung
       if (!tel.onGround && terrainH > 2.2 && tel.y < terrainH + 22) {
@@ -667,10 +707,8 @@ function CockpitWorldAndPhysics() {
       }
     }
 
-    // Batasi area dunia terbang agar tidak terlalu jauh dari peta
-    tel.x = THREE.MathUtils.clamp(tel.x, -950, 950);
-    tel.z = THREE.MathUtils.clamp(tel.z, -650, 1250);
-    tel.y = Math.min(360, tel.y);
+    // Dunia Terbang Tanpa Batas Horizontal (X/Z bebas tanpa tembok tak terlihat, plafon tinggi 45.000 ft!)
+    tel.y = Math.min(2500, tel.y);
 
     // Hitung Altitude (Feet) & Compass Heading (090° = Runway 09 arah +Z)
     tel.altFt = Math.max(0, Math.round((tel.y - 2.4) * 18));
@@ -895,16 +933,16 @@ function CockpitWorldAndPhysics() {
         color={timeOfDay === 'sunset' ? '#ff9d5c' : '#ffffff'}
       />
 
-      {/* Kubah Langit 3D */}
-      <mesh>
-        <sphereGeometry args={[1800, 32, 24]} />
+      {/* Kubah Langit 3D Tak Terbatas (Mengikuti posisi pesawat!) */}
+      <mesh ref={skyDomeRef}>
+        <sphereGeometry args={[5200, 32, 24]} />
         <meshBasicMaterial map={skyTex} side={THREE.BackSide} depthWrite={false} fog={false} />
       </mesh>
 
-      {/* === DUNIA TERBANG 3D: RUNWAY 09, LANUD, PEGUNUNGAN, LAUT & AWAN === */}
-      {/* Daratan Rumput Lanud */}
+      {/* === DUNIA TERBANG 3D LUAS TANPA BATAS: RUNWAY 09, LANUD, 5 PEGUNUNGAN, LAUT & AWAN === */}
+      {/* Daratan Rumput Lanud Luas */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-120, -0.05, 80]}>
-        <planeGeometry args={[520, 720]} />
+        <planeGeometry args={[760, 1080]} />
         <meshStandardMaterial map={grassTex} roughness={0.94} />
       </mesh>
 
@@ -950,29 +988,22 @@ function CockpitWorldAndPhysics() {
         </mesh>
       </group>
 
-      {/* Pegunungan Prosedural di Utara & Barat */}
-      <mesh geometry={mtnGeo} position={[-140, -0.2, 680]}>
-        <meshStandardMaterial
-          vertexColors
-          map={mtnDetail.map}
-          bumpMap={mtnDetail.bumpMap}
-          bumpScale={0.7}
-          roughness={0.92}
-        />
-      </mesh>
-      <mesh geometry={mtnGeo} position={[-420, -0.2, 180]}>
-        <meshStandardMaterial
-          vertexColors
-          map={mtnDetail.map}
-          bumpMap={mtnDetail.bumpMap}
-          bumpScale={0.7}
-          roughness={0.92}
-        />
-      </mesh>
+      {/* 5 Gugusan Pegunungan Prosedural Tersebar Luas di Seluruh Cakrawala */}
+      {SIM_MOUNTAIN_POSITIONS.map(([mx, mz], idx) => (
+        <mesh key={`sim-mtn-${idx}`} geometry={mtnGeo} position={[mx, -0.2, mz]}>
+          <meshStandardMaterial
+            vertexColors
+            map={mtnDetail.map}
+            bumpMap={mtnDetail.bumpMap}
+            bumpScale={0.7}
+            roughness={0.92}
+          />
+        </mesh>
+      ))}
 
-      {/* Lautan Luas Berombak di Timur & Sekeliling */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[420, -0.3, 280]}>
-        <planeGeometry args={[1400, 2200]} />
+      {/* Lautan Luas Tak Terbatas (Mengikuti pesawat secara seamless ke segala penjuru!) */}
+      <mesh ref={oceanRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.35, 0]}>
+        <planeGeometry args={[11000, 11000]} />
         <meshStandardMaterial
           map={oceanTex.map}
           bumpMap={oceanTex.bumpMap}
@@ -982,9 +1013,16 @@ function CockpitWorldAndPhysics() {
         />
       </mesh>
 
-      {/* Awan Cumulus Volumetrik */}
+      {/* Awan Cumulus Volumetrik Tak Terbatas (Wrapping mulus di sekeliling pesawat!) */}
       {clouds.map((cl, idx) => (
-        <sprite key={`sim-cloud-${idx}`} position={[cl.x, cl.y, cl.z]} scale={[cl.s * 1.6, cl.s, 1]}>
+        <sprite
+          key={`sim-cloud-${idx}`}
+          ref={(el) => {
+            cloudRefs.current[idx] = el;
+          }}
+          position={[cl.x, cl.y, cl.z]}
+          scale={[cl.s * 1.6, cl.s, 1]}
+        >
           <spriteMaterial map={cloudTex} transparent opacity={timeOfDay === 'night' ? 0.28 : 0.82} depthWrite={false} />
         </sprite>
       ))}
@@ -1518,7 +1556,7 @@ export function CockpitSimulatorScene() {
     >
       <Canvas
         dpr={[1, 1.5]}
-        camera={{ fov: 62, near: 0.05, far: 2400 }}
+        camera={{ fov: 62, near: 0.05, far: 12000 }}
         gl={{
           antialias: true,
           powerPreference: 'high-performance',
@@ -1526,7 +1564,7 @@ export function CockpitSimulatorScene() {
           toneMappingExposure: 1.08,
         }}
       >
-        <fog attach="fog" args={['#8cc5f0', 260, 1550]} />
+        <fog attach="fog" args={['#8cc5f0', 1100, 5200]} />
         <CockpitWorldAndPhysics />
       </Canvas>
     </div>
