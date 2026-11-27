@@ -36,6 +36,24 @@ function ridgedFbm(x: number, y: number): number {
 }
 
 /**
+ * Menghitung tinggi permukaan pegunungan (localX, localZ) secara eksak sesuai mesh `buildMountainRangeGeometry`
+ * agar deteksi tabrakan pesawat dengan gunung 100% akurat tanpa menembus tebing.
+ */
+export function sampleMountainRangeHeight(localX: number, localZ: number, width: number, length: number): number {
+  if (Math.abs(localX) > width * 0.5 || Math.abs(localZ) > length * 0.5) return -10;
+  const zEdge = Math.min(1, Math.min(localZ + length / 2, length / 2 - localZ) / 28);
+  const zFade = zEdge * zEdge * (3 - 2 * zEdge);
+  const riverCenter = Math.sin(localZ * 0.028) * 10;
+  const distFromRiver = Math.abs(localX - riverCenter);
+  const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 18, 48);
+  const ridge = ridgedFbm(localX * 0.021 + 4.3, localZ * 0.021 + 1.7);
+  const erosion = ridgedFbm(localX * 0.055 + 9.1, localZ * 0.055 + 3.4) * 0.25;
+  const detail = valueNoise2D(localX * 0.11, localZ * 0.11) * 0.2;
+  const rawH = Math.min(22.5, Math.pow(ridge, 1.32) * 20 + erosion * 4.5 + detail * 2.5);
+  return rawH * valleyMask * zFade - 0.15;
+}
+
+/**
  * Membuat geometri pegunungan 3D nyata (heightmap displaced mesh) dengan lembah sungai di tengah,
  * lereng hutan hijau tropis, tebing batu vulkanik (berdasarkan kemiringan), dan puncak berkabut alami.
  */
@@ -763,6 +781,114 @@ export function makePhotorealCloudTexture(): THREE.CanvasTexture {
     ctx.arc(px, py, r, 0, Math.PI * 2);
     ctx.fill();
   }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Tekstur lidah api ledakan fotorealistis (inti putih-kuning menyala -> oranye berkobar -> tepi merah gelap organik). */
+export function makeRealisticFireTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.clearRect(0, 0, size, size);
+
+  const lobes: [number, number, number, string, string][] = [
+    [128, 138, 108, 'rgba(239,68,68,0.68)', 'rgba(127,29,29,0)'],
+    [92, 118, 72, 'rgba(249,115,22,0.75)', 'rgba(185,28,28,0)'],
+    [164, 122, 68, 'rgba(249,115,22,0.72)', 'rgba(185,28,28,0)'],
+    [126, 90, 74, 'rgba(251,146,60,0.85)', 'rgba(234,88,12,0)'],
+    [116, 134, 62, 'rgba(253,224,71,0.9)', 'rgba(249,115,22,0)'],
+    [142, 128, 56, 'rgba(254,240,138,0.88)', 'rgba(245,158,11,0)'],
+    [128, 140, 40, 'rgba(255,255,255,0.98)', 'rgba(253,224,71,0)'],
+  ];
+
+  for (const [x, y, r, inner, outer] of lobes) {
+    const g = ctx.createRadialGradient(x, y, r * 0.06, x, y, r);
+    g.addColorStop(0, inner);
+    g.addColorStop(0.45, inner.replace(/[\d.]+\)$/, '0.48)'));
+    g.addColorStop(1, outer);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Lidah api menjilat ke atas secara organik
+  for (let i = 0; i < 9; i++) {
+    const lx = 78 + i * 12 + Math.sin(i * 2.1) * 8;
+    const ly = 56 + (i % 3) * 18;
+    const lr = 24 + (i % 4) * 7;
+    const g = ctx.createRadialGradient(lx, ly, 2, lx, ly, lr);
+    g.addColorStop(0, 'rgba(254,215,170,0.75)');
+    g.addColorStop(0.5, 'rgba(234,88,12,0.35)');
+    g.addColorStop(1, 'rgba(153,27,27,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(lx, ly, lr, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Tekstur asap tebal hitam-abu pekat ledakan bahan bakar pesawat (volumetric billowing puffs). */
+export function makeExplosionSmokeTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.clearRect(0, 0, size, size);
+
+  const puffs: [number, number, number, string][] = [
+    [128, 128, 102, 'rgba(15,18,24,0.88)'],
+    [86, 114, 68, 'rgba(24,28,36,0.78)'],
+    [168, 120, 66, 'rgba(20,24,32,0.8)'],
+    [124, 86, 62, 'rgba(38,44,54,0.72)'],
+    [134, 158, 64, 'rgba(12,14,18,0.85)'],
+    [104, 142, 48, 'rgba(92,42,20,0.42)'],
+  ];
+  for (const [x, y, r, col] of puffs) {
+    const g = ctx.createRadialGradient(x, y, r * 0.1, x, y, r);
+    g.addColorStop(0, col);
+    g.addColorStop(0.6, col.replace(/[\d.]+\)$/, '0.35)'));
+    g.addColorStop(1, 'rgba(15,18,24,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Tekstur cincin gelombang kejut ledakan (blast shockwave ring). */
+export function makeShockwaveRingTexture(): THREE.CanvasTexture {
+  const size = 256;
+  const c = document.createElement('canvas');
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext('2d')!;
+  ctx.clearRect(0, 0, size, size);
+
+  const g = ctx.createRadialGradient(128, 128, 64, 128, 128, 126);
+  g.addColorStop(0, 'rgba(255,255,255,0)');
+  g.addColorStop(0.55, 'rgba(255,237,213,0.12)');
+  g.addColorStop(0.78, 'rgba(251,146,60,0.82)');
+  g.addColorStop(0.88, 'rgba(255,251,235,0.95)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(128, 128, 126, 0, Math.PI * 2);
+  ctx.fill();
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;

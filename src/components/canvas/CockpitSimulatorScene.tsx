@@ -15,11 +15,15 @@ import { cockpitSimAudio } from '../../utils/cockpitSimAudio';
 import {
   buildMountainRangeGeometry,
   makeAirbaseGrassTexture,
+  makeExplosionSmokeTexture,
   makeHangarMetalTexture,
   makeMountainDetailTextures,
   makeOceanTextures,
   makePhotorealCloudTexture,
+  makeRealisticFireTexture,
   makeRunwayAsphaltTexture,
+  makeShockwaveRingTexture,
+  sampleMountainRangeHeight,
 } from '../../utils/terrainTextures';
 import {
   makeFighterHudControlTexture,
@@ -202,7 +206,11 @@ function CockpitWorldAndPhysics() {
   const cockpitRigRef = useRef<THREE.Group>(null);
   const extAircraftRef = useRef<THREE.Group>(null);
   const crashFireRef = useRef<THREE.Group>(null);
-  const crashSmokeRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const crashFlameRefs = useRef<(THREE.Sprite | null)[]>([]);
+  const crashSmokeRefs = useRef<(THREE.Sprite | null)[]>([]);
+  const crashEmberRefs = useRef<(THREE.Mesh | null)[]>([]);
+  const crashShockwaveRef = useRef<THREE.Mesh>(null);
+  const crashFlashLightRef = useRef<THREE.PointLight>(null);
   const stickPivotRef = useRef<THREE.Group>(null);
   const throttleLeverRef = useRef<THREE.Group>(null);
   const ringRefs = useRef<(THREE.Mesh | null)[]>([]);
@@ -228,6 +236,9 @@ function CockpitWorldAndPhysics() {
   const oceanTex = useMemo(() => makeOceanTextures(), []);
   const mtnDetail = useMemo(() => makeMountainDetailTextures(), []);
   const cloudTex = useMemo(() => makePhotorealCloudTexture(), []);
+  const fireTex = useMemo(() => makeRealisticFireTexture(), []);
+  const expSmokeTex = useMemo(() => makeExplosionSmokeTexture(), []);
+  const shockwaveTex = useMemo(() => makeShockwaveRingTexture(), []);
   const mtnGeo = useMemo(() => buildMountainRangeGeometry(520, 680), []);
 
   const isTransportCockpit = unit.category === 'Angkut & VIP';
@@ -290,6 +301,9 @@ function CockpitWorldAndPhysics() {
       mtnDetail.map.dispose();
       mtnDetail.bumpMap.dispose();
       cloudTex.dispose();
+      fireTex.dispose();
+      expSmokeTex.dispose();
+      shockwaveTex.dispose();
       mtnGeo.dispose();
       mfdLeftTex.dispose();
       mfdCenterTex.dispose();
@@ -367,37 +381,88 @@ function CockpitWorldAndPhysics() {
       passedSetRef.current.clear();
     }
 
-    // Mode Pesawat Jatuh & Terbakar -> Otomatis ulang dari awal setelah 3.2 detik!
+    // Mode Pesawat Jatuh & Terbakar -> Efek ledakan fotorealistis lalu otomatis ulang setelah 4.2 detik!
     if (tel.crashed) {
       tel.crashTimer = Math.max(0, tel.crashTimer - dt);
+      const elapsed = Math.max(0, 4.2 - tel.crashTimer);
       if (cockpitRigRef.current) cockpitRigRef.current.visible = false;
       if (extAircraftRef.current) {
         extAircraftRef.current.visible = true;
-        extAircraftRef.current.position.set(tel.x, Math.max(0.6, tel.y - 1.5), tel.z);
+        extAircraftRef.current.position.set(tel.x, Math.max(0.6, tel.y - 1.2), tel.z);
         extEuler.set(-tel.pitch * 0.4, tel.yaw, tel.roll * 0.7, 'YXZ');
         extAircraftRef.current.quaternion.setFromEuler(extEuler);
       }
       if (crashFireRef.current) {
         crashFireRef.current.visible = true;
-        crashFireRef.current.position.set(tel.x, Math.max(1.2, tel.y - 0.6), tel.z);
-        const flicker = 1.0 + Math.sin(t * 28) * 0.28 + Math.cos(t * 17) * 0.16;
-        crashFireRef.current.scale.set(flicker, flicker * 1.25, flicker);
+        crashFireRef.current.position.set(tel.x, Math.max(1.0, tel.y - 0.5), tel.z);
+
+        // 1. Kilatan cahaya api dinamis menyinari bangkai pesawat & lereng gunung
+        if (crashFlashLightRef.current) {
+          const blastBoost = elapsed < 0.45 ? (1 - elapsed / 0.45) * 20 : 0;
+          crashFlashLightRef.current.intensity = 7.5 + blastBoost + Math.sin(t * 34) * 2.4 + Math.cos(t * 21) * 1.5;
+        }
+
+        // 2. Cincin gelombang kejut ledakan (blast shockwave) mengembang cepat saat benturan
+        if (crashShockwaveRef.current) {
+          const swT = Math.min(1, elapsed / 0.85);
+          crashShockwaveRef.current.visible = swT < 1;
+          const swScale = 2.5 + swT * 28;
+          crashShockwaveRef.current.scale.set(swScale, swScale, 1);
+          const swMat = crashShockwaveRef.current.material as THREE.MeshBasicMaterial;
+          swMat.opacity = (1 - swT) * (1 - swT) * 0.92;
+        }
+
+        // 3. 12 Lidah api volumetrik berkobar naik-turun bergolak realistis
+        const blastExpand = elapsed < 0.5 ? 0.55 + (elapsed / 0.5) * 1.05 : Math.max(0.85, 1.6 - (elapsed - 0.5) * 0.14);
+        crashFlameRefs.current.forEach((fl, idx) => {
+          if (!fl) return;
+          const phase = (t * (2.2 + (idx % 3) * 0.45) + idx * 0.53) % 1;
+          const ang = idx * 2.399 + t * 0.35;
+          const rad = (idx < 3 ? 0.6 : 1.4 + (idx % 4) * 0.85) * blastExpand;
+          const riseY = phase * (idx < 3 ? 4.2 : 7.5) + (idx < 3 ? 0.8 : 1.4);
+          fl.position.set(Math.cos(ang) * rad, riseY, Math.sin(ang) * rad);
+          const sz = (idx < 3 ? 7.8 : 6.2 - phase * 2.2) * blastExpand * (0.9 + Math.sin(t * 26 + idx * 3) * 0.18);
+          fl.scale.set(sz, sz * (1.18 + phase * 0.35), 1);
+          const fMat = fl.material as THREE.SpriteMaterial;
+          fMat.rotation = Math.sin(t * 3.5 + idx) * 0.45;
+          fMat.opacity = Math.min(1, (1 - phase * 0.72) * (elapsed < 0.35 ? 1 : 0.88));
+        });
+
+        // 4. 14 Kepulan asap hitam pekat bahan bakar pesawat membumbung tinggi
         crashSmokeRefs.current.forEach((sm, idx) => {
           if (!sm) return;
-          const rise = ((t * 1.9 + idx * 0.35) % 2.4);
-          sm.position.set(Math.sin(t * 2 + idx) * (0.8 + rise), rise * 4.8, Math.cos(t * 1.7 + idx) * (0.8 + rise));
-          const sc = 0.7 + rise * 1.3;
-          sm.scale.set(sc, sc, sc);
+          const rise = ((t * 0.55 + idx * 0.19) % 1);
+          const swirlAng = idx * 1.9 + t * 0.5;
+          const spread = 1.4 + rise * 7.5;
+          sm.position.set(Math.cos(swirlAng) * spread, 2.2 + rise * 22, Math.sin(swirlAng) * spread);
+          const sc = 4.8 + rise * 14.5;
+          sm.scale.set(sc, sc * 1.08, 1);
+          const sMat = sm.material as THREE.SpriteMaterial;
+          sMat.rotation = t * (idx % 2 === 0 ? 0.35 : -0.35) + idx;
+          sMat.opacity = Math.sin(rise * Math.PI) * 0.82;
+        });
+
+        // 5. 16 Percikan bara api & serpihan terbakar terpental balistik
+        crashEmberRefs.current.forEach((em, idx) => {
+          if (!em) return;
+          const eT = (elapsed + idx * 0.04) % 2.4;
+          const ang = idx * 2.39996;
+          const horizSpd = 5.5 + (idx % 5) * 3.4;
+          const upSpd = 9.0 + (idx % 4) * 3.8;
+          const py = Math.max(0.2, 1.0 + upSpd * eT - 4.9 * eT * eT);
+          em.position.set(Math.cos(ang) * horizSpd * eT, py, Math.sin(ang) * horizSpd * eT);
+          const sc = Math.max(0.15, 1.0 - eT / 2.4);
+          em.scale.set(sc, sc, sc);
         });
       }
-      // Kamera mundur menyaksikan pesawat terbakar dengan getaran dampak
-      const shake = tel.crashTimer > 2.4 ? (tel.crashTimer - 2.4) * 0.6 : 0.08;
+      // Kamera mundur menyaksikan pesawat meledak & terbakar dengan getaran dampak
+      const shake = tel.crashTimer > 3.2 ? (tel.crashTimer - 3.2) * 0.65 : 0.07;
       camera.position.set(
-        tel.x - Math.sin(tel.yaw) * 16 + Math.sin(t * 45) * shake,
-        Math.max(4.5, tel.y + 6.5) + Math.cos(t * 40) * shake,
-        tel.z - Math.cos(tel.yaw) * 16,
+        tel.x - Math.sin(tel.yaw) * 19 + Math.sin(t * 45) * shake,
+        Math.max(5.5, tel.y + 7.5) + Math.cos(t * 40) * shake,
+        tel.z - Math.cos(tel.yaw) * 19,
       );
-      lookTarget.set(tel.x, Math.max(1.5, tel.y), tel.z);
+      lookTarget.set(tel.x, Math.max(1.8, tel.y + 1.5), tel.z);
       camera.lookAt(lookTarget);
       cockpitSimAudio.update(unit.category, 0, 0, false, false, false);
 
@@ -545,7 +610,7 @@ function CockpitWorldAndPhysics() {
           if (overOceanOrOffBase || badAttitude || gearForgot || tooFastImpact) {
             tel.y = 2.4;
             tel.crashed = true;
-            tel.crashTimer = 3.2;
+            tel.crashTimer = 4.2;
             tel.crashReason = overOceanOrOffBase
               ? 'PESAWAT MENABRAK LAUT / DARATAN DI LUAR RUNWAY'
               : gearForgot
@@ -569,6 +634,36 @@ function CockpitWorldAndPhysics() {
           -1.5,
           9.0,
         );
+      }
+    }
+
+    // === DETEKSI TABRAKAN GUNUNG 3D, HANGGAR, & MENARA ATC (Berlaku untuk Pesawat & Helikopter!) ===
+    if (!tel.crashed) {
+      const mtn1H = sampleMountainRangeHeight(tel.x - -140, tel.z - 680, 520, 680) - 0.2;
+      const mtn2H = sampleMountainRangeHeight(tel.x - -420, tel.z - 180, 520, 680) - 0.2;
+      const terrainH = Math.max(mtn1H, mtn2H);
+
+      // Peringatan PULL UP otomatis bila terbang terlalu dekat di atas tebing gunung
+      if (!tel.onGround && terrainH > 2.2 && tel.y < terrainH + 22) {
+        tel.pullUpWarn = true;
+      }
+
+      const hitMountain = terrainH > 1.2 && tel.y <= terrainH + 2.1;
+      const hitHangar = Math.abs(tel.x + 42) < 12.2 && Math.abs(tel.z + 90) < 15.2 && tel.y < 12.6;
+      const hitAtc = Math.abs(tel.x + 36) < 4.8 && Math.abs(tel.z - 18) < 4.8 && tel.y < 21.8;
+
+      if (hitMountain || hitHangar || hitAtc) {
+        if (hitMountain) tel.y = Math.max(tel.y, terrainH + 0.6);
+        tel.crashed = true;
+        tel.crashTimer = 4.2;
+        tel.crashReason = hitMountain
+          ? 'PESAWAT MENABRAK TEBING GUNUNG!'
+          : hitHangar
+            ? 'PESAWAT MENABRAK BANGUNAN HANGGAR!'
+            : 'PESAWAT MENABRAK MENARA ATC!';
+        tel.speedKts = 0;
+        tel.throttle = 0;
+        cockpitSimAudio.playExplosionSfx(soundEnabled);
       }
     }
 
@@ -914,29 +1009,64 @@ function CockpitWorldAndPhysics() {
         <primitive object={extAircraftGroup} />
       </group>
 
-      {/* Efek Kebakaran & Ledakan 3D saat Pesawat Jatuh (Crash!) */}
+      {/* Efek Kebakaran & Ledakan 3D Fotorealistis (Bola Api Volumetrik, Shockwave, Asap Pekat, & Percikan Bara!) */}
       <group ref={crashFireRef} name="sim-crash-fire" visible={false}>
-        <mesh>
-          <sphereGeometry args={[2.6, 14, 14]} />
-          <meshBasicMaterial color="#fff7ed" transparent opacity={0.92} />
+        {/* Kilatan cahaya api dinamis menyinari pesawat & lereng gunung */}
+        <pointLight ref={crashFlashLightRef} position={[0, 3.2, 0]} color="#ff7b24" intensity={12} distance={55} decay={1.6} />
+
+        {/* Cincin Gelombang Kejut Ledakan (Blast Shockwave Ring) */}
+        <mesh ref={crashShockwaveRef} position={[0, 0.8, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial
+            map={shockwaveTex}
+            transparent
+            opacity={0.9}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
         </mesh>
-        <mesh position={[0, 1.2, 0]}>
-          <sphereGeometry args={[3.8, 14, 14]} />
-          <meshBasicMaterial color="#f97316" transparent opacity={0.74} />
-        </mesh>
-        <mesh position={[0, 2.2, 0]}>
-          <sphereGeometry args={[4.8, 12, 12]} />
-          <meshBasicMaterial color="#dc2626" transparent opacity={0.45} />
-        </mesh>
-        {[0, 1, 2, 3, 4, 5].map((idx) => (
-          <mesh
+
+        {/* 12 Lidah Api Volumetrik Berkobar (Additive Blending) */}
+        {Array.from({ length: 12 }, (_, idx) => (
+          <sprite
+            key={`crash-fl-${idx}`}
+            ref={(el) => {
+              crashFlameRefs.current[idx] = el;
+            }}
+          >
+            <spriteMaterial
+              map={fireTex}
+              transparent
+              opacity={0.95}
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </sprite>
+        ))}
+
+        {/* 14 Kepulan Asap Hitam Pekat Membumbung Tinggi */}
+        {Array.from({ length: 14 }, (_, idx) => (
+          <sprite
             key={`crash-sm-${idx}`}
             ref={(el) => {
               crashSmokeRefs.current[idx] = el;
             }}
           >
-            <sphereGeometry args={[2.2, 10, 10]} />
-            <meshBasicMaterial color="#1f2937" transparent opacity={0.72} depthWrite={false} />
+            <spriteMaterial map={expSmokeTex} transparent opacity={0.82} depthWrite={false} />
+          </sprite>
+        ))}
+
+        {/* 16 Percikan Bara Api & Serpihan Terbakar Terpental Balistik */}
+        {Array.from({ length: 16 }, (_, idx) => (
+          <mesh
+            key={`crash-em-${idx}`}
+            ref={(el) => {
+              crashEmberRefs.current[idx] = el;
+            }}
+          >
+            <sphereGeometry args={[idx % 3 === 0 ? 0.34 : 0.2, 6, 6]} />
+            <meshBasicMaterial color={idx % 2 === 0 ? '#fef08a' : '#f97316'} />
           </mesh>
         ))}
       </group>
