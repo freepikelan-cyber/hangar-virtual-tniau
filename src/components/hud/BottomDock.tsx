@@ -8,9 +8,7 @@ import {
   Flame,
   Fuel,
   Lock,
-  Mail,
   MapPin,
-  Phone,
   PlaneLanding,
   PlaneTakeoff,
   Rotate3d,
@@ -591,29 +589,6 @@ export function BottomDock() {
           </button>
         </nav>
       )}
-
-      {/* Footer Kredit & Kontak di Bagian Bawah Aplikasi */}
-      <footer className="hud-panel pointer-events-auto flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-3 gap-y-0.5 rounded-full px-3 sm:px-4 py-1 text-[10px] sm:text-xs text-slate-300">
-        <a
-          href="mailto:bangelan@gmail.com"
-          title="Kirim email ke bangelan@gmail.com"
-          className="inline-flex items-center gap-1 text-[#ffb703] hover:text-[#ffd166] hover:underline transition-colors"
-        >
-          <Mail className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-          <span>
-            Created By : <strong className="font-semibold">Abang Elan</strong>
-          </span>
-        </a>
-        <span className="text-[#4da6ff]/45">•</span>
-        <a
-          href="tel:+6281314127822"
-          title="Hubungi +6281314127822"
-          className="inline-flex items-center gap-1 text-[#4da6ff] hover:text-white hover:underline transition-colors"
-        >
-          <Phone className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
-          <span>+6281314127822</span>
-        </a>
-      </footer>
     </div>
   );
 }

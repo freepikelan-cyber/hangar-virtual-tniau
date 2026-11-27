@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Moon, Music, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
+import { Info, Mail, Moon, Music, Phone, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit, type TimeOfDay } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -21,6 +21,7 @@ export function TopHeader() {
   const toggleShowcase = useHangarStore((s) => s.toggleShowcase);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [devInfoOpen, setDevInfoOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Tutup panel pengaturan jika klik di luar area menu
@@ -48,6 +49,25 @@ export function TopHeader() {
       {/* Header Kiri Atas: Tombol Pengaturan + Logo 3D TNI AU + Judul Ringkas */}
       <div ref={menuRef} className="relative pointer-events-auto w-full md:w-auto md:max-w-[54vw]">
         <div className="hud-panel flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-1.5">
+          {/* Tombol Info Pengembang (Pengganti Beranda) */}
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsOpen(false);
+              setDevInfoOpen(true);
+            }}
+            aria-label="Info Pengembang"
+            title="Info Pengembang Aplikasi"
+            className={`flex h-9 sm:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2.5 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+              devInfoOpen
+                ? 'border-[#ffb703] bg-[#ffb703]/25 text-[#ffb703] shadow-amber'
+                : 'border-[#ffb703]/45 bg-[#ffb703]/15 text-[#ffb703] hover:bg-[#ffb703]/25 hover:border-[#ffb703]'
+            }`}
+          >
+            <Info className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Pengembang</span>
+          </button>
+
           {/* Tombol Pengaturan (Kiri Atas) */}
           <button
             type="button"
@@ -270,6 +290,106 @@ export function TopHeader() {
           </span>
         </div>
       </div>
+
+      {/* Modal Info Pengembang Aplikasi */}
+      {devInfoOpen && (
+        <div
+          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[#040d1e]/80 backdrop-blur-md p-3 sm:p-6"
+          onClick={() => setDevInfoOpen(false)}
+        >
+          <div
+            className="hud-panel relative flex max-h-[88dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl border-[#ffb703]/55 bg-[#081933]/98 shadow-[0_20px_60px_rgba(2,8,20,0.9)] animate-slidein"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header Modal Info Pengembang */}
+            <div className="flex items-center justify-between gap-2 border-b border-[#4da6ff]/25 bg-[#0b2349]/90 px-4 py-3 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/50 bg-[#ffb703]/15 text-[#ffb703]">
+                  <Info className="h-4 w-4" />
+                </div>
+                <div>
+                  <h2 className="font-display text-sm sm:text-base font-bold tracking-[0.14em] text-[#ffb703] uppercase leading-tight">
+                    INFO PENGEMBANG
+                  </h2>
+                  <p className="text-[10px] sm:text-[11px] text-slate-300">
+                    Media Edukasi Interaktif Pesawat TNI AU 3D
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDevInfoOpen(false)}
+                aria-label="Tutup Info Pengembang"
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-600/80 bg-[#0e2a54] text-slate-200 hover:border-[#ffb703] hover:text-[#ffb703] cursor-pointer active:scale-95"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Isi Detail Pengembang (Touch-Scrollable di HP Landscape) */}
+            <div
+              className="hud-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 space-y-3 text-xs sm:text-sm"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
+              <div className="rounded-xl border border-[#4da6ff]/25 bg-[#0a2145]/80 p-3 space-y-2.5">
+                <div>
+                  <p className="font-display text-[10px] font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
+                    Programming and Director
+                  </p>
+                  <p className="font-display text-sm sm:text-base font-bold text-white">Herlani</p>
+                </div>
+                <div className="h-px bg-[#4da6ff]/15" />
+                <div>
+                  <p className="font-display text-[10px] font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
+                    Analisa
+                  </p>
+                  <p className="font-semibold text-slate-100">Muhammad Dzaky Dirgantara</p>
+                </div>
+                <div className="h-px bg-[#4da6ff]/15" />
+                <div>
+                  <p className="font-display text-[10px] font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
+                    Desain
+                  </p>
+                  <p className="font-semibold text-slate-100">Aqila Mufidah, Dahlia</p>
+                </div>
+                <div className="h-px bg-[#4da6ff]/15" />
+                <div>
+                  <p className="font-display text-[10px] font-bold tracking-[0.16em] text-[#ffb703] uppercase">
+                    Support
+                  </p>
+                  <p className="font-semibold text-white">IT RSAU dr. ESNAWAN ANTARIKSA</p>
+                </div>
+              </div>
+
+              {/* Kontak */}
+              <div className="rounded-xl border border-[#ffb703]/30 bg-[#0b2349]/75 p-3 space-y-2">
+                <a
+                  href="tel:081314127822"
+                  className="flex items-center gap-2 text-slate-200 hover:text-[#ffb703] transition-colors"
+                >
+                  <Phone className="h-3.5 w-3.5 shrink-0 text-[#ffb703]" />
+                  <span>
+                    <strong className="text-slate-400 font-medium">Telp :</strong> 081314127822
+                  </span>
+                </a>
+                <div className="flex items-start gap-2 text-slate-200">
+                  <Mail className="h-3.5 w-3.5 shrink-0 text-[#4da6ff] mt-0.5" />
+                  <div className="flex flex-wrap gap-x-2 gap-y-0.5">
+                    <strong className="text-slate-400 font-medium">Email :</strong>
+                    <a href="mailto:itrsauantariksa@gmail.com" className="text-[#75bcff] hover:underline">
+                      itrsauantariksa@gmail.com
+                    </a>
+                    <span className="text-slate-500">•</span>
+                    <a href="mailto:bangelan@gmail.com" className="text-[#75bcff] hover:underline">
+                      bangelan@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 }
