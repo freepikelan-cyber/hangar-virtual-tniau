@@ -9,6 +9,7 @@ import {
   Compass,
   Flame,
   LogOut,
+  Navigation,
   RotateCcw,
   Target,
   Volume2,
@@ -51,6 +52,7 @@ interface HudSnapshot {
   missionCompleted: boolean;
   missionProgressText: string;
   coachHint: string;
+  autopilot: boolean;
 }
 
 type ManualTab = 'takeoff' | 'controls' | 'landing' | 'missions';
@@ -116,6 +118,7 @@ export function CockpitSimulatorHud() {
     missionCompleted: false,
     missionProgressText: 'Siap di Runway 09',
     coachHint: 'Dorong Throttle (Shift / Slider Kiri) ke 90–100% untuk mulai melaju!',
+    autopilot: false,
   });
 
   const joyBaseRef = useRef<HTMLDivElement>(null);
@@ -134,6 +137,7 @@ export function CockpitSimulatorHud() {
       if (e.key === 'Shift') cockpitInput.keys.shift = true;
       if (e.key === 'Control') cockpitInput.keys.ctrl = true;
       if (k === 'g' && !e.repeat) cockpitInput.toggleGearRequested = true;
+      if (k === 'p' && !e.repeat) cockpitInput.toggleAutopilotRequested = true;
       if (k === 'c' && !e.repeat) cockpitInput.cycleCameraRequested = true;
       if (k === 'm' && !e.repeat) setManualOpen((v) => !v);
       if (k === 'q') cockpitTelemetry.lookYaw = Math.min(Math.PI, cockpitTelemetry.lookYaw + 0.16);
@@ -204,6 +208,7 @@ export function CockpitSimulatorHud() {
         missionCompleted: t.missionCompleted,
         missionProgressText: t.missionProgressText,
         coachHint: t.coachHint,
+        autopilot: t.autopilot,
       });
     }, 42);
     return () => window.clearInterval(timer);
@@ -260,6 +265,24 @@ export function CockpitSimulatorHud() {
         </div>
 
         <div className="pointer-events-auto flex flex-wrap items-center gap-2">
+          {/* Tombol Mode Jelajah / Autopilot (Tombol P) */}
+          <button
+            type="button"
+            onClick={() => {
+              cockpitSimAudio.start();
+              cockpitInput.toggleAutopilotRequested = true;
+            }}
+            title="Nyalakan / Matikan Mode Jelajah Autopilot (Tombol P)"
+            className={`flex h-10 items-center gap-1.5 rounded-lg border-2 px-3 font-display text-xs font-bold tracking-wider uppercase cursor-pointer active:scale-95 transition-all ${
+              hud.autopilot
+                ? 'border-emerald-300 bg-emerald-500/30 text-emerald-100 shadow-[0_0_16px_rgba(16,185,129,0.5)]'
+                : 'border-sky-400/65 bg-[#061d2e]/90 text-sky-200 hover:bg-sky-500/20'
+            }`}
+          >
+            <Navigation className={`h-4 w-4 ${hud.autopilot ? 'text-emerald-300 animate-pulse' : 'text-sky-300'}`} />
+            <span>{hud.autopilot ? 'Jelajah: ON' : 'Mode Jelajah'}</span>
+          </button>
+
           {/* Tombol Ganti Kamera (Dalam Kokpit / Ekor / Sayap / Orbit 360°) */}
           <button
             type="button"

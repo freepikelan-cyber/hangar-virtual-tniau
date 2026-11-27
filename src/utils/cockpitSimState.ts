@@ -95,6 +95,7 @@ export interface CockpitTelemetry {
   missionCompleted: boolean;
   missionProgressText: string;
   coachHint: string;
+  autopilot: boolean;
 }
 
 export interface CockpitInputState {
@@ -111,6 +112,7 @@ export interface CockpitInputState {
   };
   resetRequested: boolean;
   toggleGearRequested: boolean;
+  toggleAutopilotRequested: boolean;
   cycleCameraRequested: boolean;
   requestedMissionId: number | null;
 }
@@ -218,6 +220,7 @@ export const cockpitTelemetry: CockpitTelemetry = {
   missionCompleted: false,
   missionProgressText: 'Siap di Runway 09',
   coachHint: 'Dorong Throttle (Shift / Slider Kiri) ke 90–100% untuk mulai melaju!',
+  autopilot: false,
 };
 
 export const cockpitInput: CockpitInputState = {
@@ -234,6 +237,7 @@ export const cockpitInput: CockpitInputState = {
   },
   resetRequested: false,
   toggleGearRequested: false,
+  toggleAutopilotRequested: false,
   cycleCameraRequested: false,
   requestedMissionId: null,
 };
@@ -258,6 +262,8 @@ export function resetCockpitSimState(isVtol: boolean, keepMission = true) {
   cockpitTelemetry.stickX = 0;
   cockpitTelemetry.stickY = 0;
   cockpitTelemetry.isVtol = isVtol;
+  cockpitTelemetry.autopilot = false;
+  cockpitInput.toggleAutopilotRequested = false;
   cockpitTelemetry.lookYaw = 0;
   cockpitTelemetry.lookPitch = 0;
   cockpitTelemetry.crashed = false;

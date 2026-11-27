@@ -521,21 +521,83 @@ function CockpitWorldAndPhysics() {
       }
     }
 
-    // 1. Baca input ganda (Keyboard + Touch Virtual Joystick & Slider)
-    if (inp.keys.shift) {
-      tel.throttle = Math.min(1, tel.throttle + dt * 0.55);
-      inp.touchThrottle = tel.throttle;
-    } else if (inp.keys.ctrl) {
-      tel.throttle = Math.max(0, tel.throttle - dt * 0.55);
-      inp.touchThrottle = tel.throttle;
-    } else if (inp.touchThrottle !== null) {
-      tel.throttle = THREE.MathUtils.clamp(inp.touchThrottle, 0, 1);
+    // Toggle Mode Jelajah / Autopilot (Tombol P atau tombol HUD)
+    if (inp.toggleAutopilotRequested) {
+      inp.toggleAutopilotRequested = false;
+      tel.autopilot = !tel.autopilot;
+      cockpitSimAudio.playGearClick(soundEnabled);
     }
 
-    const keyPitch = (inp.keys.s ? 1 : 0) - (inp.keys.w ? 1 : 0); // S = tarik stick (naik), W = dorong (turun/maju)
-    const keyRoll = (inp.keys.d ? 1 : 0) - (inp.keys.a ? 1 : 0); // D = kanan, A = kiri
-    const rawPitchIn = THREE.MathUtils.clamp(keyPitch + inp.touchPitch, -1, 1);
-    const rawRollIn = THREE.MathUtils.clamp(keyRoll + inp.touchRoll, -1, 1);
+    // 1. Baca input ganda (Keyboard + Touch Virtual Joystick & Slider) ATAU Flight Director Autopilot (Mode Jelajah)
+    let rawPitchIn = 0;
+    let rawRollIn = 0;
+
+    if (tel.autopilot) {
+      // Cek ketinggian gunung di depan pesawat agar Autopilot selalu aman menghindari tebing!
+      let aheadMtnH = 0;
+      const lookAheadX = tel.x + Math.sin(tel.yaw) * 150;
+      const lookAheadZ = tel.z + Math.cos(tel.yaw) * 150;
+      for (let i = 0; i < SIM_MOUNTAIN_POSITIONS.length; i++) {
+        const [mx, mz] = SIM_MOUNTAIN_POSITIONS[i];
+        const h1 = sampleMountainRangeHeight(tel.x - mx, tel.z - mz, 520, 680);
+        const h2 = sampleMountainRangeHeight(lookAheadX - mx, lookAheadZ - mz, 520, 680);
+        if (h1 > aheadMtnH) aheadMtnH = h1;
+        if (h2 > aheadMtnH) aheadMtnH = h2;
+      }
+
+      if (profile.isVtol) {
+        // Autopilot Helikopter: naik vertikal mulus lalu terbang jelajah panoramik
+        const targetAlt = Math.max(66, aheadMtnH + 45);
+        const targetThr = THREE.MathUtils.clamp(0.48 + (targetAlt - tel.y) * 0.015, 0.44, 0.84);
+        tel.throttle = THREE.MathUtils.lerp(tel.throttle, targetThr, dt * 2.2);
+        inp.touchThrottle = tel.throttle;
+        const targetPitch = tel.y > 18 ? -0.18 : 0;
+        const targetRoll = tel.y > 28 ? Math.sin(t * 0.14) * 0.24 : 0;
+        rawPitchIn = THREE.MathUtils.clamp((targetPitch - tel.pitch) * 2.4, -0.7, 0.7);
+        rawRollIn = THREE.MathUtils.clamp((targetRoll - tel.roll) * 2.2, -0.7, 0.7);
+      } else {
+        // Autopilot Pesawat Sayap Tetap (Tempur / Angkut / Latih): auto-takeoff, lipat roda, jelajah halus!
+        const targetAlt = Math.max(118, aheadMtnH + 62);
+        const targetThr = tel.onGround
+          ? 0.96
+          : tel.y < targetAlt - 24
+            ? 0.92
+            : unit.category === 'Tempur'
+              ? 0.72
+              : 0.78;
+        tel.throttle = THREE.MathUtils.lerp(tel.throttle, targetThr, dt * 1.8);
+        inp.touchThrottle = tel.throttle;
+
+        if (tel.onGround) {
+          rawRollIn = 0;
+          rawPitchIn = tel.speedKts >= profile.liftoffKts ? 0.58 : 0;
+        } else {
+          if (tel.gearDown && tel.y > 16) {
+            tel.gearDown = false;
+            cockpitSimAudio.playGearClick(soundEnabled);
+          }
+          const targetPitch = THREE.MathUtils.clamp((targetAlt - tel.y) * 0.011, -0.16, 0.22);
+          const targetRoll = tel.y > 42 ? Math.sin(t * 0.12) * 0.32 : 0;
+          rawPitchIn = THREE.MathUtils.clamp((targetPitch - tel.pitch) * 2.8, -0.75, 0.75);
+          rawRollIn = THREE.MathUtils.clamp((targetRoll - tel.roll) * 2.4, -0.75, 0.75);
+        }
+      }
+    } else {
+      if (inp.keys.shift) {
+        tel.throttle = Math.min(1, tel.throttle + dt * 0.55);
+        inp.touchThrottle = tel.throttle;
+      } else if (inp.keys.ctrl) {
+        tel.throttle = Math.max(0, tel.throttle - dt * 0.55);
+        inp.touchThrottle = tel.throttle;
+      } else if (inp.touchThrottle !== null) {
+        tel.throttle = THREE.MathUtils.clamp(inp.touchThrottle, 0, 1);
+      }
+
+      const keyPitch = (inp.keys.s ? 1 : 0) - (inp.keys.w ? 1 : 0); // S = tarik stick (naik), W = dorong (turun/maju)
+      const keyRoll = (inp.keys.d ? 1 : 0) - (inp.keys.a ? 1 : 0); // D = kanan, A = kiri
+      rawPitchIn = THREE.MathUtils.clamp(keyPitch + inp.touchPitch, -1, 1);
+      rawRollIn = THREE.MathUtils.clamp(keyRoll + inp.touchRoll, -1, 1);
+    }
 
     tel.stickX = THREE.MathUtils.lerp(tel.stickX, rawRollIn, Math.min(1, dt * 10));
     tel.stickY = THREE.MathUtils.lerp(tel.stickY, rawPitchIn, Math.min(1, dt * 10));
@@ -919,8 +981,13 @@ function CockpitWorldAndPhysics() {
       throttleLeverRef.current.rotation.x = -0.25 - tel.throttle * 0.52;
     }
 
-    // 5. Update Audio Web Audio API Real-Time
-    cockpitSimAudio.update(unit.category, tel.throttle, tel.speedKts, tel.stallWarn, tel.pullUpWarn, soundEnabled);
+    if (tel.autopilot) {
+      tel.coachHint =
+        'MODE JELAJAH (AUTOPILOT) AKTIF — Geser layar 360° untuk menikmati kokpit, atau tekan P / tombol Jelajah untuk kendali manual.';
+    }
+
+    // 5. Update Audio Web Audio API Real-Time (Khusus per Jenis Pesawat: Tempur / C-130J / B737 / Heli / Latih)
+    cockpitSimAudio.update(unit.category, tel.throttle, tel.speedKts, tel.stallWarn, tel.pullUpWarn, soundEnabled, unit.id);
   });
 
   return (
