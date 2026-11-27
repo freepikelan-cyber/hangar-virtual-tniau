@@ -6,7 +6,7 @@ import { buildMixedQuiz, type QuizQuestion } from '../data/quizData';
 import { aircraftAudio } from '../utils/aircraftAudio';
 
 export type InfoTab = 'spec' | 'ops' | 'quiz';
-export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim' | 'aar' | 'mission';
+export type FlightMode = 'parked' | 'takeoff' | 'airborne' | 'maneuver' | 'landing' | 'engineSim' | 'aar' | 'mission' | 'salute';
 export type TimeOfDay = 'day' | 'sunset' | 'night';
 export type AeroManeuver = 'liftDemo' | 'climb' | 'descend' | 'turnLeft' | 'turnRight' | 'level';
 export type Vec3 = [number, number, number];
@@ -109,6 +109,7 @@ interface HangarState {
   gForceLevel: 1 | 4 | 9;
   aarFuel: number;
   aarStep: number;
+  saluteStep: number;
   flightMode: FlightMode;
   flightNonce: number;
   flightLabel: string | null;
@@ -141,6 +142,8 @@ interface HangarState {
   setGForceLevel: (g: 1 | 4 | 9) => void;
   triggerAar: () => void;
   setAarProgress: (fuel: number, step: number) => void;
+  triggerSalute: () => void;
+  setSaluteStep: (step: number) => void;
   triggerMission: () => void;
   enterCockpitSim: () => void;
   exitCockpitSim: () => void;
@@ -207,6 +210,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
   gForceLevel: 4,
   aarFuel: 35,
   aarStep: 0,
+  saluteStep: 0,
   flightMode: 'parked',
   flightNonce: 0,
   flightLabel: null,
@@ -379,6 +383,44 @@ export const useHangarStore = create<HangarState>((set, get) => ({
     if (s.aarFuel !== aarFuel || s.aarStep !== aarStep) {
       set({ aarFuel, aarStep });
     }
+  },
+  triggerSalute: () => {
+    const s = get();
+    aircraftAudio.unlock();
+    aircraftAudio.resetPhaseTriggers();
+    aircraftAudio.stopVoiceRadio();
+    if (s.flightMode === 'salute') {
+      aircraftAudio.stop();
+      set({
+        flightMode: 'parked',
+        flightNonce: s.flightNonce + 1,
+        flightLabel: null,
+        saluteStep: 0,
+        autoRotate: false,
+        activeHotspot: null,
+        camRequest: { ...getDefaultCamera(s.selectedId), nonce: nonce++ },
+      });
+      return;
+    }
+    flightSync.phaseTime = 0;
+    set({
+      flightMode: 'salute',
+      flightNonce: s.flightNonce + 1,
+      flightLabel: null,
+      saluteStep: 0,
+      safetyMode: false,
+      aeroMode: false,
+      oxygenMode: false,
+      showInfographic: false,
+      showPins: false,
+      showcaseMode: false,
+      autoRotate: false,
+      activeHotspot: null,
+      camRequest: { pos: [7.6, 2.8, 11.4] as Vec3, target: [1.1, 1.55, 4.6] as Vec3, nonce: nonce++ },
+    });
+  },
+  setSaluteStep: (saluteStep) => {
+    if (get().saluteStep !== saluteStep) set({ saluteStep });
   },
   triggerMission: () => {
     const s = get();

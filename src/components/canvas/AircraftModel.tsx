@@ -239,14 +239,14 @@ export function AircraftModel() {
     aeroTime.current = 0;
   }, [aeroMode, aeroManeuver, unit.id]);
 
-  // Kanopi pesawat tempur dibuat gelap (smoked stealth tint) sehingga pilot di dalam kokpit terlihat samar-samar & elegan!
+  // Kanopi pesawat tempur dibuat gelap (smoked stealth tint), kecuali saat Hormat Teknisi agar balasan hormat pilot terlihat jelas!
   const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
-  const isFighterCanopy = unit.category === 'Tempur';
+  const isFighterCanopy = unit.category === 'Tempur' && flightMode !== 'salute';
   useEffect(() => {
     applyVisualModes(activeGroup, false, wireframe, isAnySimActive, isFighterCanopy);
   }, [activeGroup, wireframe, isAnySimActive, isFighterCanopy]);
 
-  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, AAR, safety, & demo aerodinamika!
+  // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, AAR, salute, safety, & demo aerodinamika!
   const isEngineVisualActive =
     flightMode === 'engineSim' ||
     flightMode === 'takeoff' ||
@@ -254,6 +254,7 @@ export function AircraftModel() {
     flightMode === 'maneuver' ||
     flightMode === 'landing' ||
     flightMode === 'aar' ||
+    flightMode === 'salute' ||
     flightMode === 'mission' ||
     safetyMode ||
     aeroMode;
@@ -1408,6 +1409,30 @@ export function AircraftModel() {
           setFlightLabel('SIMULASI MESIN • MANUVER MENUKIK (BAWAH)');
         }
       }
+    } else if (flightMode === 'salute') {
+      // Tradisi Hormat Teknisi (22s loop): 0..17.2s diam idle di apron -> 17.2..21.5s spool-up & taxi maju keluar apron!
+      const cyc = pt % 22.0;
+      targetX = 0;
+      targetY = 0;
+      targetGear = 0;
+      if (cyc < 17.2) {
+        targetZ = 0;
+        targetPitch = 0;
+        // Reset langsung posisi Z saat mengulang siklus baru agar tidak mundur perlahan
+        if (cyc < 0.25 && currentZ.current > 1.0) {
+          currentZ.current = 0;
+        }
+      } else if (cyc < 21.6) {
+        const p = Math.min(1, (cyc - 17.2) / 4.4);
+        targetZ = 14.5 * (p * p);
+        // Sedikit anggukan hidung halus saat rem roda dilepas & mesin spool-up
+        targetPitch = Math.sin(Math.min(1, p * 3.5) * Math.PI) * 0.015;
+      } else {
+        targetZ = 14.5;
+        targetPitch = 0;
+      }
+      targetRoll = 0;
+      targetYawOffset = 0;
     } else if (aeroMode && unit.id !== 'gsuit' && unit.id !== 'pilot-helmet') {
       // Animasi 3D Aerodinamika: SAT-SET, langsung bergerak instan begitu diklik tanpa menunggu!
       aeroTime.current += dt;

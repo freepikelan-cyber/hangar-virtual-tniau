@@ -8,6 +8,7 @@ import { getUnit } from '../../data/fleetData';
 import { radarFloorTexture, sweepTexture } from '../../utils/textures';
 import { AircraftModel } from './AircraftModel';
 import { AirRefuelingLayer } from './AirRefuelingLayer';
+import { CrewSaluteLayer } from './CrewSaluteLayer';
 import { DogfightCombatLayer } from './DogfightCombatLayer';
 import { SkyCloudsEnvironment } from './SkyCloudsEnvironment';
 
@@ -296,6 +297,7 @@ export function HangarScene() {
         )}
         <AircraftModel />
         {flightMode === 'aar' && <AirRefuelingLayer />}
+        {flightMode === 'salute' && <CrewSaluteLayer />}
         {flightMode === 'mission' && <DogfightCombatLayer />}
         <CameraRig />
       </Canvas>

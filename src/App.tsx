@@ -21,6 +21,9 @@ const AeroControlPanel = lazy(() =>
 const AarStatusPanel = lazy(() =>
   import('./components/hud/AarStatusPanel').then((m) => ({ default: m.AarStatusPanel })),
 );
+const SaluteStatusPanel = lazy(() =>
+  import('./components/hud/SaluteStatusPanel').then((m) => ({ default: m.SaluteStatusPanel })),
+);
 const FighterManeuverPanel = lazy(() =>
   import('./components/hud/FighterManeuverPanel').then((m) => ({ default: m.FighterManeuverPanel })),
 );
@@ -166,6 +169,7 @@ export function App() {
           <Suspense fallback={null}>
             <AeroControlPanel />
             <AarStatusPanel />
+            <SaluteStatusPanel />
             <FighterManeuverPanel />
             <GSuitControlPanel />
             <SafetyStoryPanel />

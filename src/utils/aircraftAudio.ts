@@ -1473,6 +1473,20 @@ class AircraftAudioEngine {
           throttle = Math.max(0.03, 0.16 * (1 - idleP * 0.8));
         }
       }
+    } else if (flightMode === 'salute') {
+      // Hormat Teknisi: suara mesin idle tenang di apron (0..16.2s) -> spool-up mantap saat pesawat mulai taxi keluar apron (16.2..21.5s), TANPA suara narasi/radio!
+      if (this.activeAtcSrc || this.activeAtcCarrier) {
+        this.stopAtcPlayback();
+      }
+      const cyc = phaseTime % 22.0;
+      if (cyc < 16.2) {
+        throttle = 0.28 + Math.sin(phaseTime * 1.4) * 0.015;
+        speedMod = -0.08;
+      } else {
+        const spoolP = Math.min(1, (cyc - 16.2) / 4.2);
+        throttle = 0.28 + spoolP * 0.52;
+        speedMod = -0.08 + spoolP * 0.22;
+      }
     } else if (flightMode === 'airborne' || flightMode === 'aar' || flightMode === 'mission') {
       if (flightMode === 'airborne' && unitId === 'kt1b') {
         if (!this.atcBuffers.has('jupiter-arrowhead-roll')) {
@@ -1647,6 +1661,17 @@ class AircraftAudioEngine {
           const idleP = Math.min(1, (phaseTime - ld.taxiEnd) / 1.4);
           sampleVol = Math.max(0.001, 0.38 * (1 - idleP));
           sampleRate = Math.max(0.45, 0.9 - idleP * 0.45);
+        }
+      } else if (flightMode === 'salute') {
+        const cyc = phaseTime % 22.0;
+        desiredTrack = 'taxi';
+        if (cyc < 16.2) {
+          sampleVol = 0.34;
+          sampleRate = 0.86;
+        } else {
+          const spoolP = Math.min(1, (cyc - 16.2) / 4.2);
+          sampleVol = 0.34 + spoolP * 0.38;
+          sampleRate = 0.86 + spoolP * 0.22;
         }
       } else {
         // airborne, maneuver, mission (Dogfight), aar, engineSim

@@ -14,6 +14,7 @@ import {
   Rotate3d,
   RotateCcw,
   ShieldAlert,
+  ShieldCheck,
   Sparkles,
   Square,
   Waves,
@@ -46,6 +47,7 @@ export function BottomDock() {
   const triggerManeuver = useHangarStore((s) => s.triggerManeuver);
   const triggerLanding = useHangarStore((s) => s.triggerLanding);
   const triggerAar = useHangarStore((s) => s.triggerAar);
+  const triggerSalute = useHangarStore((s) => s.triggerSalute);
   const triggerMission = useHangarStore((s) => s.triggerMission);
   const enterCockpitSim = useHangarStore((s) => s.enterCockpitSim);
   const toggleEngineSim = useHangarStore((s) => s.toggleEngineSim);
@@ -61,7 +63,7 @@ export function BottomDock() {
       setSimBarCollapsed(false);
       return;
     }
-    if (flightMode === 'takeoff' || flightMode === 'maneuver' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'aar' || safetyMode) {
+    if (flightMode === 'takeoff' || flightMode === 'maneuver' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'aar' || flightMode === 'salute' || safetyMode) {
       const timer = window.setTimeout(() => setSimBarCollapsed(true), 2200);
       return () => window.clearTimeout(timer);
     }
@@ -71,6 +73,7 @@ export function BottomDock() {
   const isHelmet = selectedId === 'pilot-helmet';
   const isEquipment = isGSuit || isHelmet;
   const isVvip = selectedId === 'b737vip' || selectedId === 'falcon8x';
+  const isSaluteEligible = unit.category === 'Tempur' || selectedId === 'kt1b';
   const missionBtnLabel =
     unit.category === 'Helikopter'
       ? 'SAR Hoist Laut'
@@ -275,6 +278,7 @@ export function BottomDock() {
               {!safetyMode && flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
               {!safetyMode && flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Klik Hentikan atau 3. Landing`}
               {!safetyMode && flightMode === 'aar' && 'AAR Refueling aktif! Klik Hentikan AAR atau 3. Landing'}
+              {!safetyMode && flightMode === 'salute' && 'Tradisi Hormat Teknisi (Crew Chief Salute) aktif! Klik Hentikan untuk kembali ke Hanggar'}
             </div>
             <button
               type="button"
@@ -430,6 +434,29 @@ export function BottomDock() {
               {flightMode === 'aar' ? <Square className="h-3.5 w-3.5 fill-current" /> : <Fuel className="h-4 w-4" />}
               {flightMode === 'aar' ? 'Hentikan AAR' : 'AAR Refueling'}
             </button>
+
+            {isSaluteEligible && (
+              <button
+                type="button"
+                title={
+                  flightMode === 'salute'
+                    ? 'Klik untuk menghentikan ilustrasi Hormat Teknisi'
+                    : 'Ilustrasi Tradisi Hormat Teknisi (Crew Chief Salute) sebelum pesawat keluar apron menuju runway'
+                }
+                onClick={() => {
+                  triggerSalute();
+                  setSimMenuOpen(false);
+                }}
+                className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 font-display text-xs font-bold tracking-wider uppercase transition-all cursor-pointer active:scale-95 ${
+                  flightMode === 'salute'
+                    ? 'border-[#ffb703] bg-[#ffb703] text-[#0a1e3c] shadow-amber'
+                    : 'border-[#ffb703]/60 bg-[#0e2a54] text-[#ffb703] hover:bg-[#ffb703]/20'
+                }`}
+              >
+                {flightMode === 'salute' ? <Square className="h-3.5 w-3.5 fill-current" /> : <ShieldCheck className="h-4 w-4" />}
+                {flightMode === 'salute' ? 'Hentikan Hormat' : 'Hormat Teknisi'}
+              </button>
+            )}
 
             <button
               type="button"

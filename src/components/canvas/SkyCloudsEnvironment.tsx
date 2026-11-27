@@ -709,6 +709,12 @@ export function SkyCloudsEnvironment() {
         targetWorldY = -28.0;
         groundSpeed = 50;
       }
+    } else if (flightMode === 'salute') {
+      // Apron & Runway Lanud TNI AU diam kokoh di bawah roda pesawat & Crew Chief selama tradisi Hormat Teknisi!
+      targetWorldY = -0.02;
+      groundSpeed = 0;
+      scrollZ.current = 0;
+      kinematicRollDist = 0;
     } else if (flightMode === 'airborne' || flightMode === 'aar') {
       targetWorldY = -28.0;
       groundSpeed = 50;

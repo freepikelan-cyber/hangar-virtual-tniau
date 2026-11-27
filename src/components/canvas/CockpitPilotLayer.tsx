@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
+import { flightSync, useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 
 interface SeatSpec {
   pos: [number, number, number];
@@ -138,9 +138,28 @@ export function CockpitPilotLayer() {
       let stickRoll = 0;
       let throttlePush = 0;
       let torsoLeanZ = 0;
+      let pilotSalute = 0;
 
       if (isSim) {
-        if (flightMode === 'takeoff') {
+        if (flightMode === 'salute') {
+          const cyc = flightSync.phaseTime % 22.0;
+          // Pilot menoleh ke kanan-depan melihat Crew Chief di apron, membalas hormat di babak 3 (11..16s), lalu mendorong throttle!
+          if (cyc < 10.6) {
+            headY = 0.28;
+            headX = 0.06;
+          } else if (cyc < 16.0) {
+            headY = 0.34;
+            // Anggukan mantap setelah membalas hormat (14.4..15.6s)
+            headX = cyc > 14.4 && cyc < 15.6 ? 0.16 : 0.05;
+            const up = Math.max(0, Math.min(1, (cyc - 11.0) / 0.55));
+            const down = 1 - Math.max(0, Math.min(1, (cyc - 15.2) / 0.55));
+            pilotSalute = up * down;
+          } else {
+            headY = 0.05;
+            headX = -0.02;
+            throttlePush = Math.min(1, (cyc - 16.2) / 1.5) * 0.24;
+          }
+        } else if (flightMode === 'takeoff') {
           headY = Math.sin(t * 0.65) * 0.08;
           headX = -0.05;
           stickPitch = -0.14;
@@ -193,8 +212,10 @@ export function CockpitPilotLayer() {
         head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, headZ, smooth);
       }
       if (rArm) {
-        rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, 0.85 + stickPitch * 0.55, smooth);
-        rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, -0.14 + stickRoll * 0.4, smooth);
+        const targetRArmX = pilotSalute > 0.01 ? THREE.MathUtils.lerp(0.85, -1.78, pilotSalute) : 0.85 + stickPitch * 0.55;
+        const targetRArmZ = pilotSalute > 0.01 ? THREE.MathUtils.lerp(-0.14, -0.34, pilotSalute) : -0.14 + stickRoll * 0.4;
+        rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, targetRArmX, smooth);
+        rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, targetRArmZ, smooth);
       }
       if (lArm) {
         lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, 0.82 + throttlePush, smooth);
