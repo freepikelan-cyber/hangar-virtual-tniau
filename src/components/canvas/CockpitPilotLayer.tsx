@@ -3,7 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { flightSync, useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 
-interface SeatSpec {
+export interface SeatSpec {
   pos: [number, number, number];
   scale?: number;
   isFighter?: boolean;
@@ -13,7 +13,7 @@ interface SeatSpec {
  * Posisi & skala kursi pilot proporsional per jenis pesawat agar figur Pilot 3D duduk alami
  * (sedikit rebah di kursi lontar) dan seluruh helm berada rapi di dalam kaca kanopi kokpit.
  */
-function getPilotSeats(unitId: string, category: string): SeatSpec[] {
+export function getPilotSeats(unitId: string, category: string): SeatSpec[] {
   switch (unitId) {
     case 'f16id':
       return [{ pos: [0, 1.74, 3.3], scale: 0.66, isFighter: true }];
@@ -109,6 +109,7 @@ export function CockpitPilotLayer() {
   const torsoRefs = useRef<(THREE.Group | null)[]>([]);
   const headRefs = useRef<(THREE.Group | null)[]>([]);
   const rightArmRefs = useRef<(THREE.Group | null)[]>([]);
+  const rightForearmRefs = useRef<(THREE.Group | null)[]>([]);
   const leftArmRefs = useRef<(THREE.Group | null)[]>([]);
   const stickRefs = useRef<(THREE.Group | null)[]>([]);
 
@@ -127,6 +128,7 @@ export function CockpitPilotLayer() {
       const torso = torsoRefs.current[idx];
       const head = headRefs.current[idx];
       const rArm = rightArmRefs.current[idx];
+      const rForearm = rightForearmRefs.current[idx];
       const lArm = leftArmRefs.current[idx];
       const stick = stickRefs.current[idx];
 
@@ -143,19 +145,19 @@ export function CockpitPilotLayer() {
       if (isSim) {
         if (flightMode === 'salute') {
           const cyc = flightSync.phaseTime % 22.0;
-          // Pilot menoleh ke kanan-depan melihat Crew Chief di apron, membalas hormat di babak 3 (11..16s), lalu mendorong throttle!
+          // Pilot menoleh ke kiri-depan (+X, +Z) melihat Crew Chief di apron, membalas hormat dengan TANGAN KANAN (-X) di babak 3 (11..16s), lalu mendorong throttle!
           if (cyc < 10.6) {
-            headY = 0.28;
-            headX = 0.06;
-          } else if (cyc < 16.0) {
             headY = 0.34;
+            headX = 0.04;
+          } else if (cyc < 16.0) {
+            headY = 0.4;
             // Anggukan mantap setelah membalas hormat (14.4..15.6s)
-            headX = cyc > 14.4 && cyc < 15.6 ? 0.16 : 0.05;
-            const up = Math.max(0, Math.min(1, (cyc - 11.0) / 0.55));
+            headX = cyc > 14.4 && cyc < 15.6 ? 0.16 : 0.02;
+            const up = Math.max(0, Math.min(1, (cyc - 10.9) / 0.5));
             const down = 1 - Math.max(0, Math.min(1, (cyc - 15.2) / 0.55));
-            pilotSalute = up * down;
+            pilotSalute = idx === 0 ? up * down : 0;
           } else {
-            headY = 0.05;
+            headY = 0.06;
             headX = -0.02;
             throttlePush = Math.min(1, (cyc - 16.2) / 1.5) * 0.24;
           }
@@ -212,13 +214,21 @@ export function CockpitPilotLayer() {
         head.rotation.z = THREE.MathUtils.lerp(head.rotation.z, headZ, smooth);
       }
       if (rArm) {
-        const targetRArmX = pilotSalute > 0.01 ? THREE.MathUtils.lerp(0.85, -1.78, pilotSalute) : 0.85 + stickPitch * 0.55;
-        const targetRArmZ = pilotSalute > 0.01 ? THREE.MathUtils.lerp(-0.14, -0.34, pilotSalute) : -0.14 + stickRoll * 0.4;
+        // Lengan kanan asli pilot ada di sisi -X (karena menghadap +Z):
+        // Hormat Militer: bahu naik ke samping-depan (-1.15, +0.92), siku menekuk ke pelipis helm!
+        const targetRArmX = pilotSalute > 0.01 ? THREE.MathUtils.lerp(-0.85, -1.22, pilotSalute) : -0.85 + stickPitch * 0.55;
+        const targetRArmZ = pilotSalute > 0.01 ? THREE.MathUtils.lerp(0.14, -0.92, pilotSalute) : 0.14 + stickRoll * 0.4;
         rArm.rotation.x = THREE.MathUtils.lerp(rArm.rotation.x, targetRArmX, smooth);
         rArm.rotation.z = THREE.MathUtils.lerp(rArm.rotation.z, targetRArmZ, smooth);
       }
+      if (rForearm) {
+        const targetElX = pilotSalute > 0.01 ? -1.18 * pilotSalute : -0.25;
+        const targetElZ = pilotSalute > 0.01 ? 0.88 * pilotSalute : 0;
+        rForearm.rotation.x = THREE.MathUtils.lerp(rForearm.rotation.x, targetElX, smooth);
+        rForearm.rotation.z = THREE.MathUtils.lerp(rForearm.rotation.z, targetElZ, smooth);
+      }
       if (lArm) {
-        lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, 0.82 + throttlePush, smooth);
+        lArm.rotation.x = THREE.MathUtils.lerp(lArm.rotation.x, -0.82 - throttlePush, smooth);
       }
       if (stick) {
         stick.rotation.x = THREE.MathUtils.lerp(stick.rotation.x, stickPitch, smooth);
@@ -233,8 +243,15 @@ export function CockpitPilotLayer() {
     <group name="cockpit-pilots-3d">
       {seats.map((seat, idx) => {
         const s = seat.scale ?? 0.64;
+        // Saat mode Hormat Teknisi, angkat sedikit posisi duduk (+0.22m pada tempur) agar bahu, helm, & tangan kanan hormat tampil PENUH di dalam kanopi gelembung (tidak tenggelam di balik bingkai kokpit)!
+        const saluteLift = flightMode === 'salute' && seat.isFighter ? 0.22 : 0;
+        const seatPos: [number, number, number] = [seat.pos[0], seat.pos[1] + saluteLift, seat.pos[2]];
         return (
-          <group key={`${unit.id}-pilot-${idx}`} position={seat.pos} scale={[s, s, s]}>
+          <group key={`${unit.id}-pilot-${idx}`} position={seatPos} scale={[s, s, s]}>
+            {/* Lampu penerangan kokpit lembut khusus mode Hormat Teknisi agar figur & gestur hormat pilot terlihat super jelas */}
+            {flightMode === 'salute' && idx === 0 && (
+              <pointLight position={[0.35, 0.72, 0.55]} intensity={2.4} distance={2.8} color="#fff7e6" />
+            )}
             {/* Sandaran Kursi Lontar (Ejection Seat Headrest) */}
             {seat.isFighter && (
               <group position={[0, 0.35, -0.22]} rotation={[-0.22, 0, 0]}>
@@ -297,8 +314,8 @@ export function CockpitPilotLayer() {
                 <meshStandardMaterial color="#364232" roughness={0.85} />
               </mesh>
 
-              {/* Lengan Kiri (Throttle — beranimasi mendorong tuas gas) */}
-              <group position={[-0.17, 0.25, 0.0]}>
+              {/* Lengan Kiri Asli (+X saat menghadap +Z — Throttle) */}
+              <group position={[0.17, 0.25, 0.0]}>
                 <mesh>
                   <sphereGeometry args={[0.058, 12, 12]} />
                   <meshStandardMaterial color="#43533b" roughness={0.82} />
@@ -307,7 +324,7 @@ export function CockpitPilotLayer() {
                   ref={(el) => {
                     leftArmRefs.current[idx] = el;
                   }}
-                  rotation={[0.82, 0, 0.12]}
+                  rotation={[-0.82, 0, -0.12]}
                 >
                   <mesh position={[0, -0.11, 0]}>
                     <capsuleGeometry args={[0.045, 0.17, 8, 12]} />
@@ -321,8 +338,8 @@ export function CockpitPilotLayer() {
                 </group>
               </group>
 
-              {/* Lengan Kanan (HOTAS Stick — beranimasi mengendalikan manuver) */}
-              <group position={[0.17, 0.25, 0.0]}>
+              {/* Lengan Kanan Asli (-X saat menghadap +Z — HOTAS Stick & Hormat Militer berengsel siku!) */}
+              <group position={[-0.17, 0.25, 0.0]}>
                 <mesh>
                   <sphereGeometry args={[0.058, 12, 12]} />
                   <meshStandardMaterial color="#43533b" roughness={0.82} />
@@ -331,17 +348,29 @@ export function CockpitPilotLayer() {
                   ref={(el) => {
                     rightArmRefs.current[idx] = el;
                   }}
-                  rotation={[0.85, 0, -0.14]}
+                  rotation={[-0.85, 0, 0.14]}
                 >
-                  <mesh position={[0, -0.11, 0]}>
-                    <capsuleGeometry args={[0.045, 0.17, 8, 12]} />
-                    <meshStandardMaterial color="#3f4e38" roughness={0.82} />
+                  <mesh position={[0, -0.08, 0]}>
+                    <capsuleGeometry args={[0.044, 0.11, 8, 12]} />
+                    <meshStandardMaterial color="#495b41" roughness={0.78} />
                   </mesh>
-                  {/* Sarung tangan penerbang Nomex */}
-                  <mesh position={[0, -0.22, 0]}>
-                    <sphereGeometry args={[0.036, 10, 10]} />
-                    <meshStandardMaterial color="#1f2937" roughness={0.8} />
-                  </mesh>
+                  <group
+                    ref={(el) => {
+                      rightForearmRefs.current[idx] = el;
+                    }}
+                    position={[0, -0.16, 0]}
+                    rotation={[-0.25, 0, 0]}
+                  >
+                    <mesh position={[0, -0.075, 0]}>
+                      <capsuleGeometry args={[0.038, 0.11, 8, 12]} />
+                      <meshStandardMaterial color="#495b41" roughness={0.78} />
+                    </mesh>
+                    {/* Sarung tangan penerbang Nomex terang agar gestur hormat sangat kontras */}
+                    <mesh position={[0, -0.16, 0.01]}>
+                      <boxGeometry args={[0.052, 0.088, 0.03]} />
+                      <meshStandardMaterial color="#cbd5e1" roughness={0.6} />
+                    </mesh>
+                  </group>
                 </group>
               </group>
 

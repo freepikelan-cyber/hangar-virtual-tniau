@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { flightSync, useHangarStore, useSelectedUnit, type Vec3 } from '../../store/useHangarStore';
+import { getPilotSeats } from './CockpitPilotLayer';
 
 export const SALUTE_CYCLE_SEC = 22.0;
 
@@ -59,14 +60,16 @@ export function CrewSaluteLayer() {
     if (step !== lastStepRef.current) {
       lastStepRef.current = step;
       setSaluteStep(step);
-      const isKt1b = unit.id === 'kt1b';
+      const frontSeat = getPilotSeats(unit.id, unit.category)[0];
+      const cockpitY = frontSeat ? frontSeat.pos[1] + 0.56 : 2.35;
+      const cockpitZ = frontSeat ? frontSeat.pos[2] : 3.5;
       const camPresets: { pos: Vec3; target: Vec3 }[] = [
         // Babak 1: Fokus dekat roda depan & Crew Chief melepas ganjal roda + pita RBF
         { pos: [7.6, 2.7, noseGearZ + 6.4], target: [1.1, 1.45, noseGearZ + 0.4] },
         // Babak 2: Over-the-shoulder / 3/4 menampilkan Crew Chief sikap sempurna hormat ke kokpit
         { pos: [6.4, 2.35, noseGearZ + 6.9], target: [0.8, 1.85, noseGearZ - 0.6] },
-        // Babak 3: Close-up menyorot Pilot membalas hormat dari dalam kanopi kokpit
-        { pos: [3.9, isKt1b ? 2.65 : 2.95, isKt1b ? 4.8 : 5.9], target: [0.0, isKt1b ? 1.85 : 2.05, isKt1b ? 2.4 : 3.4] },
+        // Babak 3: Close-up presisi sejajar kanopi menyorot Pilot mengangkat tangan kanan membalas hormat!
+        { pos: [2.15, cockpitY + 0.52, cockpitZ + 1.85], target: [0.0, cockpitY, cockpitZ] },
         // Babak 4: Wide cinematic menampilkan Crew Chief marshalling & pesawat mulai bergerak taxi keluar apron
         { pos: [11.2, 3.8, noseGearZ + 9.2], target: [0.6, 1.65, noseGearZ + 1.8] },
       ];
@@ -149,7 +152,7 @@ export function CrewSaluteLayer() {
       rShX = -walkPhase * 0.35;
       lShX = walkPhase * 0.28 - 0.15;
     } else if (cyc < 16.2) {
-      // HORMAT MILITER TEGAS (Babak 2 & 3: 5.5..16.2s)!
+      // HORMAT MILITER TEGAS dengan TANGAN KANAN ASLI (-X) (Babak 2 & 3: 5.5..16.2s)!
       const salP = smoothstep(5.6, 6.25, cyc) * (1 - smoothstep(15.6, 16.2, cyc));
       // Lengan atas kanan terangkat menyamping-depan, siku menekuk rapi membawa ujung tangan ke pelipis helm
       rShX = -1.18 * salP;
@@ -158,7 +161,7 @@ export function CrewSaluteLayer() {
       rElZ = 0.72 * salP;
       // Tangan kiri lurus rapat di samping paha (sikap sempurna)
       lShX = 0;
-      lShZ = 0.04;
+      lShZ = -0.04;
       lElX = -0.06;
     } else {
       // Babak 4 (16.2..22.0s): Isyarat Marshalling "CLEAR TO TAXI / MAJU" dengan dua tongkat menyala!
@@ -347,8 +350,8 @@ export function CrewSaluteLayer() {
               ))}
             </group>
 
-            {/* Lengan Kanan (Bahu -> Siku -> Tangan: Pita RBF, Hormat Militer, Tongkat Marshaller) */}
-            <group ref={rightShoulderRef} position={[0.23, 0.44, 0]}>
+            {/* Lengan Kanan Asli (-X saat menghadap +Z: Pita RBF, Hormat Militer, Tongkat Marshaller) */}
+            <group ref={rightShoulderRef} position={[-0.23, 0.44, 0]}>
               <mesh>
                 <sphereGeometry args={[0.062, 10, 10]} />
                 <meshStandardMaterial color="#364834" roughness={0.84} />
@@ -398,8 +401,8 @@ export function CrewSaluteLayer() {
               </group>
             </group>
 
-            {/* Lengan Kiri (Bahu -> Siku -> Tangan: Membawa Wheel Chocks & Tongkat Marshaller Kiri) */}
-            <group ref={leftShoulderRef} position={[-0.23, 0.44, 0]}>
+            {/* Lengan Kiri Asli (+X saat menghadap +Z: Membawa Wheel Chocks & Tongkat Marshaller Kiri) */}
+            <group ref={leftShoulderRef} position={[0.23, 0.44, 0]}>
               <mesh>
                 <sphereGeometry args={[0.062, 10, 10]} />
                 <meshStandardMaterial color="#364834" roughness={0.84} />

@@ -27,6 +27,8 @@ interface SavedMatProps {
   colorHex: number | null;
   roughness: number | null;
   metalness: number | null;
+  envMapIntensity: number | null;
+  clearcoat: number | null;
 }
 
 const savedMaterials = new WeakMap<THREE.Material, SavedMatProps>();
@@ -37,6 +39,7 @@ function applyVisualModes(
   wireframe: boolean,
   clearCanopy = false,
   darkFighterCanopy = false,
+  ultraClearCanopy = false,
 ) {
   root.traverse((obj) => {
     const mesh = obj as THREE.Mesh;
@@ -48,7 +51,7 @@ function applyVisualModes(
     for (const mat of mats) {
       if (!mat) continue;
       if (!savedMaterials.has(mat)) {
-        const std = mat as THREE.MeshStandardMaterial;
+        const std = mat as THREE.MeshPhysicalMaterial;
         savedMaterials.set(mat, {
           transparent: mat.transparent,
           opacity: mat.opacity,
@@ -57,10 +60,12 @@ function applyVisualModes(
           colorHex: 'color' in std && std.color ? std.color.getHex() : null,
           roughness: 'roughness' in std ? std.roughness : null,
           metalness: 'metalness' in std ? std.metalness : null,
+          envMapIntensity: 'envMapIntensity' in std ? std.envMapIntensity : null,
+          clearcoat: 'clearcoat' in std ? std.clearcoat : null,
         });
       }
       const orig = savedMaterials.get(mat)!;
-      const std = mat as THREE.MeshStandardMaterial;
+      const std = mat as THREE.MeshPhysicalMaterial;
 
       if (role === 'internal') {
         mesh.visible = cutaway;
@@ -80,17 +85,29 @@ function applyVisualModes(
         if ('wireframe' in std) std.wireframe = wireframe;
       } else if (role === 'glass') {
         mat.transparent = true;
-        if (darkFighterCanopy && !cutaway) {
+        if (ultraClearCanopy && !cutaway) {
+          // Mode Hormat Teknisi: kaca kanopi super bening tanpa pantulan silau agar Pilot yang membalas hormat terlihat 100% jelas!
+          mat.opacity = 0.12;
+          if ('color' in std && std.color) std.color.set('#d8f0ff');
+          if ('roughness' in std) std.roughness = 0.22;
+          if ('metalness' in std) std.metalness = 0.05;
+          if ('envMapIntensity' in std) std.envMapIntensity = 0.35;
+          if ('clearcoat' in std) std.clearcoat = 0.1;
+        } else if (darkFighterCanopy && !cutaway) {
           // Kanopi kaca gelap (smoked stealth tint) khas pesawat tempur agar pilot terlihat samar-samar & sangat keren!
           mat.opacity = 0.78;
           if ('color' in std && std.color) std.color.set('#081322');
           if ('roughness' in std) std.roughness = 0.08;
           if ('metalness' in std) std.metalness = 0.78;
+          if ('envMapIntensity' in std && orig.envMapIntensity !== null) std.envMapIntensity = orig.envMapIntensity;
+          if ('clearcoat' in std && orig.clearcoat !== null) std.clearcoat = orig.clearcoat;
         } else {
           mat.opacity = cutaway ? 0.16 : clearCanopy ? Math.min(orig.opacity, 0.28) : orig.opacity;
           if ('color' in std && std.color && orig.colorHex !== null) std.color.setHex(orig.colorHex);
           if ('roughness' in std && orig.roughness !== null) std.roughness = orig.roughness;
           if ('metalness' in std && orig.metalness !== null) std.metalness = orig.metalness;
+          if ('envMapIntensity' in std && orig.envMapIntensity !== null) std.envMapIntensity = orig.envMapIntensity;
+          if ('clearcoat' in std && orig.clearcoat !== null) std.clearcoat = orig.clearcoat;
         }
         mat.depthWrite = false;
         if ('wireframe' in std) std.wireframe = wireframe;
@@ -239,12 +256,13 @@ export function AircraftModel() {
     aeroTime.current = 0;
   }, [aeroMode, aeroManeuver, unit.id]);
 
-  // Kanopi pesawat tempur dibuat gelap (smoked stealth tint), kecuali saat Hormat Teknisi agar balasan hormat pilot terlihat jelas!
+  // Kanopi pesawat tempur dibuat gelap (smoked stealth tint), kecuali saat Hormat Teknisi dibuat super bening agar balasan hormat pilot terlihat 100% jelas!
   const isAnySimActive = flightMode !== 'parked' || safetyMode || aeroMode;
   const isFighterCanopy = unit.category === 'Tempur' && flightMode !== 'salute';
+  const isSaluteClear = flightMode === 'salute';
   useEffect(() => {
-    applyVisualModes(activeGroup, false, wireframe, isAnySimActive, isFighterCanopy);
-  }, [activeGroup, wireframe, isAnySimActive, isFighterCanopy]);
+    applyVisualModes(activeGroup, false, wireframe, isAnySimActive, isFighterCanopy, isSaluteClear);
+  }, [activeGroup, wireframe, isAnySimActive, isFighterCanopy, isSaluteClear]);
 
   // Mesin & baling-baling/rotor TETAP berputar penuh selama terbang, landing, AAR, salute, safety, & demo aerodinamika!
   const isEngineVisualActive =
