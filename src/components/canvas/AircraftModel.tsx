@@ -646,14 +646,14 @@ export function AircraftModel() {
           targetY = THREE.MathUtils.lerp(3.0, 12.0, p);
           targetPitch = -0.025;
           setFlightLabel('JAT — Persiapan Screw Roll');
-        } else if (pt < 50.0) {
-          // Atraksi 3B: Screw Roll (J1–J5 stabil di Y=12; J6 melingkar jauh di luar radius aman!)
+        } else if (pt < 50.5) {
+          // Atraksi 3B: Screw Roll (J1, J2, J3 stabil di depan Y=12; J4 memutar pelan di belakang; J5 & J6 menjauh!)
           targetY = 12.0;
           targetPitch = -0.025;
           targetRoll = 0;
-          setFlightLabel('Screw Roll — 1 pesawat berputar melingkari formasi utama');
-        } else if (pt < 53.5) {
-          const p = easeInOut((pt - 50.0) / 3.5);
+          setFlightLabel('Screw Roll — J1, J2, J3 di depan, Jupiter 4 memutar perlahan di belakang');
+        } else if (pt < 54.5) {
+          const p = easeInOut((pt - 50.5) / 4.0);
           targetY = THREE.MathUtils.lerp(12.0, 3.0, p);
           targetPitch = -0.025;
           setFlightLabel('JAT — Kembali ke formasi Arrowhead perlahan');

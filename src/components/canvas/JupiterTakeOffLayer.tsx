@@ -253,7 +253,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
           ly = 3.0 + (1 - Math.cos(a)) * 9.5;
           lz = Math.sin(a) * 9.5;
           lPitch = -a;
-        } else if (flightMode === 'airborne' && pt >= 42.0 && pt < 50.0) {
+        } else if (flightMode === 'airborne' && pt >= 42.0 && pt < 50.5) {
           ly = 12.0;
         } else if (flightMode === 'airborne' && pt >= 60.0 && pt < 68.0) {
           lx = 0;
@@ -574,16 +574,17 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             tz = THREE.MathUtils.lerp(tightSlot[2], -26.0, p);
           } else {
             const side = i === 3 ? 1 : -1;
-            tx = THREE.MathUtils.lerp(tightSlot[0], side * 58.0, p);
-            ty = THREE.MathUtils.lerp(tightSlot[1], 3.0, p);
-            tz = THREE.MathUtils.lerp(tightSlot[2], -42.0, p);
+            tx = THREE.MathUtils.lerp(tightSlot[0], side * 72.0, p);
+            ty = THREE.MathUtils.lerp(tightSlot[1], 4.0, p);
+            tz = THREE.MathUtils.lerp(tightSlot[2], -72.0, p);
+            smokeOn = p < 0.4;
           }
           tp = -0.025;
         } else if (pt < 50.5) {
           // 42.0..50.5s — ATRAKSI 3B: SCREW ROLL PELAN & ELEGAN (8.5 detik untuk 1 putaran penuh 360°!)
           // Hanya 3 pesawat di depan (J1, J2, J3) terbang lurus stabil;
           // J4 (i=2) melakukan Screw Roll pelan-pelan tepat di belakang J1–J3 (Z=-26, Rx=18, Ry=9 -> 0% tabrakan!);
-          // J5 (i=3) & J6 (i=4) tetap menjauh di sisi luar (X=±58, Z=-42).
+          // J5 (i=3) & J6 (i=4) menjauh jauh di sisi luar (X=±72, Z=-72) dengan asap dimatikan agar arena bersih!
           const p = easeInOut((pt - 42.0) / 8.5);
           if (i === 0 || i === 1) {
             tx = i === 0 ? 11.0 : -11.0;
@@ -599,10 +600,11 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             tp = -0.05 * Math.cos(a);
           } else {
             const side = i === 3 ? 1 : -1;
-            tx = side * 58.0;
-            ty = 3.0;
-            tz = -42.0;
+            tx = side * 72.0;
+            ty = 4.0;
+            tz = -72.0;
             tp = -0.025;
+            smokeOn = false;
           }
         } else if (pt < 54.5) {
           // 50.5..54.5s: Kembali perlahan & stabil (4 detik) ke formasi Arrowhead 6 pesawat
@@ -617,9 +619,10 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
             tz = THREE.MathUtils.lerp(-26.0, tightSlot[2], p);
           } else {
             const side = i === 3 ? 1 : -1;
-            tx = THREE.MathUtils.lerp(side * 58.0, tightSlot[0], p);
-            ty = THREE.MathUtils.lerp(3.0, tightSlot[1], p);
-            tz = THREE.MathUtils.lerp(-42.0, tightSlot[2], p);
+            tx = THREE.MathUtils.lerp(side * 72.0, tightSlot[0], p);
+            ty = THREE.MathUtils.lerp(4.0, tightSlot[1], p);
+            tz = THREE.MathUtils.lerp(-72.0, tightSlot[2], p);
+            smokeOn = p > 0.5;
           }
           tp = -0.025;
           tr = 0;
@@ -913,17 +916,17 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         if (!visible) continue;
       }
 
-      // Gerakan halus & perlahan — saat fase kembali ke formasi (rejoin), gunakan damping ekstra lembut (1.9) agar stabil & tidak buru-buru!
-      const isScrewOrbit = flightMode === 'airborne' && pt >= 42.0 && pt < 50.0 && i === 4;
+      // Gerakan halus & perlahan — saat Screw Roll (J4 = i===2), gunakan tracking presisi & directRoll agar mulus tanpa melintir!
+      const isScrewOrbit = flightMode === 'airborne' && pt >= 42.0 && pt < 50.5 && i === 2;
       const isRejoinPhase =
         flightMode === 'airborne' &&
         ((pt >= 14.0 && pt < 17.5) ||
-          (pt >= 50.0 && pt < 53.5) ||
+          (pt >= 50.5 && pt < 54.5) ||
           (pt >= 68.0 && pt < 72.0) ||
           (pt >= 97.5 && pt < 101.5) ||
           (pt >= 127.5 && pt < 132.5) ||
           (pt >= 154.5 && pt < 161.5));
-      const lerpRate = useTangentQuat ? 7.5 : isScrewOrbit ? 9.5 : isRejoinPhase ? 1.9 : flightMode === 'airborne' ? 2.6 : 6.0;
+      const lerpRate = useTangentQuat ? 7.5 : isScrewOrbit ? 10.5 : isRejoinPhase ? 1.9 : flightMode === 'airborne' ? 2.6 : 6.0;
       const rotRate = isRejoinPhase ? 1.9 : 2.6;
       grp.position.x = THREE.MathUtils.lerp(grp.position.x, tx, Math.min(1, dt * lerpRate));
       grp.position.y = THREE.MathUtils.lerp(grp.position.y, ty, Math.min(1, dt * lerpRate));
@@ -935,7 +938,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         const directLoopPitch = flightMode === 'airborne' && pt >= 20.5 && pt < 30.0;
         const directRollPhase =
           flightMode === 'airborne' &&
-          ((pt >= 33.0 && pt < 39.0) || (pt >= 42.0 && pt < 50.0 && i === 4) || (pt >= 89.5 && pt < 97.5 && i <= 2));
+          ((pt >= 33.0 && pt < 39.0) || (pt >= 42.0 && pt < 50.5 && i === 2) || (pt >= 89.5 && pt < 97.5 && i <= 2));
         if (directLoopPitch) {
           grp.rotation.x = tp;
         } else {

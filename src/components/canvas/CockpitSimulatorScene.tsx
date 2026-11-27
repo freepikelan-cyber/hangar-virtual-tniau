@@ -646,7 +646,8 @@ function CockpitWorldAndPhysics() {
       // === PESAWAT SAYAP TETAP (TEMPUR / ANGKUT / LATIH) ===
       const gearDrag = tel.gearDown ? 0.08 : 0;
       const climbGravity = -Math.sin(tel.pitch) * 42;
-      const targetAccel = tel.throttle * profile.accelRate - tel.speedKts * (profile.dragFactor + gearDrag) + climbGravity;
+      const effectiveAccel = tel.autopilot && tel.onGround ? profile.accelRate * 1.55 : profile.accelRate;
+      const targetAccel = tel.throttle * effectiveAccel - tel.speedKts * (profile.dragFactor + gearDrag) + climbGravity;
       tel.speedKts = THREE.MathUtils.clamp(tel.speedKts + targetAccel * dt, 0, profile.maxSpeedKts);
 
       if (tel.onGround) {
@@ -659,6 +660,7 @@ function CockpitWorldAndPhysics() {
           tel.pitch = Math.min(0.32, tel.pitch + rawPitchIn * profile.pitchRate * 0.7 * dt);
           if (tel.pitch > 0.06) {
             tel.onGround = false;
+            tel.y = 2.68; // Angkat langsung dari landasan agar tidak salah terdeteksi crash saat liftoff!
           }
         } else {
           tel.pitch = THREE.MathUtils.lerp(tel.pitch, 0, dt * 5);
@@ -700,8 +702,8 @@ function CockpitWorldAndPhysics() {
         // Pull-Up warning jika menukik rendah dekat permukaan
         tel.pullUpWarn = tel.y < 24 && tel.pitch < -0.14;
 
-        // Sentuh permukaan: cek apakah mendarat mulus di Runway atau JATUH TERBAKAR (Crash)!
-        if (tel.y <= 2.45) {
+        // Sentuh permukaan: cek HANYA saat sedang turun (forwardVec.y < -0.01) & tidak sedang Autopilot!
+        if (tel.y <= 2.45 && forwardVec.y < -0.01 && !tel.autopilot) {
           const overOceanOrOffBase = Math.abs(tel.z) > 220 || Math.abs(tel.x) > 42;
           const badAttitude = tel.pitch < -0.2 || Math.abs(tel.roll) > 0.42;
           const gearForgot = !tel.gearDown;
@@ -726,6 +728,8 @@ function CockpitWorldAndPhysics() {
             tel.pitch = 0;
             tel.roll = 0;
           }
+        } else if (tel.y < 2.45 && tel.autopilot) {
+          tel.y = 2.45;
         }
 
         tel.gForce = THREE.MathUtils.clamp(
@@ -745,27 +749,34 @@ function CockpitWorldAndPhysics() {
         if (h > terrainH) terrainH = h;
       }
 
-      // Peringatan PULL UP otomatis bila terbang terlalu dekat di atas tebing gunung
-      if (!tel.onGround && terrainH > 2.2 && tel.y < terrainH + 22) {
-        tel.pullUpWarn = true;
-      }
+      if (tel.autopilot) {
+        // Mode Jelajah (Autopilot) otomatis menjaga jarak aman di atas tebing gunung & tidak pernah jatuh terbakar
+        if (!tel.onGround && terrainH > 0) {
+          tel.y = Math.max(tel.y, terrainH + 28);
+        }
+      } else {
+        // Peringatan PULL UP otomatis bila terbang terlalu dekat di atas tebing gunung
+        if (!tel.onGround && terrainH > 2.2 && tel.y < terrainH + 22) {
+          tel.pullUpWarn = true;
+        }
 
-      const hitMountain = terrainH > 1.2 && tel.y <= terrainH + 2.1;
-      const hitHangar = Math.abs(tel.x + 42) < 12.2 && Math.abs(tel.z + 90) < 15.2 && tel.y < 12.6;
-      const hitAtc = Math.abs(tel.x + 36) < 4.8 && Math.abs(tel.z - 18) < 4.8 && tel.y < 21.8;
+        const hitMountain = terrainH > 1.2 && tel.y <= terrainH + 2.1;
+        const hitHangar = Math.abs(tel.x + 42) < 12.2 && Math.abs(tel.z + 90) < 15.2 && tel.y < 12.6;
+        const hitAtc = Math.abs(tel.x + 36) < 4.8 && Math.abs(tel.z - 18) < 4.8 && tel.y < 21.8;
 
-      if (hitMountain || hitHangar || hitAtc) {
-        if (hitMountain) tel.y = Math.max(tel.y, terrainH + 0.6);
-        tel.crashed = true;
-        tel.crashTimer = 4.2;
-        tel.crashReason = hitMountain
-          ? 'PESAWAT MENABRAK TEBING GUNUNG!'
-          : hitHangar
-            ? 'PESAWAT MENABRAK BANGUNAN HANGGAR!'
-            : 'PESAWAT MENABRAK MENARA ATC!';
-        tel.speedKts = 0;
-        tel.throttle = 0;
-        cockpitSimAudio.playExplosionSfx(soundEnabled);
+        if (hitMountain || hitHangar || hitAtc) {
+          if (hitMountain) tel.y = Math.max(tel.y, terrainH + 0.6);
+          tel.crashed = true;
+          tel.crashTimer = 4.2;
+          tel.crashReason = hitMountain
+            ? 'PESAWAT MENABRAK TEBING GUNUNG!'
+            : hitHangar
+              ? 'PESAWAT MENABRAK BANGUNAN HANGGAR!'
+              : 'PESAWAT MENABRAK MENARA ATC!';
+          tel.speedKts = 0;
+          tel.throttle = 0;
+          cockpitSimAudio.playExplosionSfx(soundEnabled);
+        }
       }
     }
 
