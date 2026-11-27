@@ -79,3 +79,94 @@
 .logo-3d-tilt:hover {
   transform: rotateY(12deg) rotateX(-4deg) scale(1.06);
 }
+
+/* Hilangkan scrollbar visual pada bar menu horizontal smartphone */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ============================================================================
+ * OPTIMALISASI LAYAR LEBAR SMARTPHONE ANDROID (Landscape <= 520px tinggi)
+ * Skala otomatis huruf, padding, & menu aplikasi agar terasa native & lega!
+ * Tidak mengubah tampilan monitor desktop/smartboard (> 520px tinggi).
+ * ============================================================================ */
+@media (max-height: 520px) {
+  html {
+    font-size: 13px;
+  }
+
+  .app-top-header {
+    padding-top: max(0.3rem, env(safe-area-inset-top)) !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right)) !important;
+  }
+
+  .app-top-header .hud-panel {
+    padding: 0.28rem 0.55rem !important;
+    border-radius: 0.65rem !important;
+  }
+
+  .app-top-header button {
+    height: 2rem !important;
+    font-size: 0.68rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
+  }
+
+  .app-top-header h1 {
+    font-size: 0.78rem !important;
+  }
+
+  .app-bottom-dock {
+    bottom: max(0.25rem, env(safe-area-inset-bottom)) !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right)) !important;
+    gap: 0.25rem !important;
+  }
+
+  .app-bottom-dock nav.hud-panel {
+    padding: 0.25rem 0.45rem !important;
+    border-radius: 0.9rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .app-bottom-dock nav button {
+    min-height: 2.15rem !important;
+    min-width: 2.3rem !important;
+    padding: 0.2rem 0.55rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .app-bottom-dock footer {
+    padding: 0.12rem 0.65rem !important;
+    font-size: 0.6rem !important;
+  }
+
+  .app-cockpit-hud {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  .app-cockpit-topbar {
+    padding-top: 0.3rem !important;
+    padding-left: max(0.5rem, env(safe-area-inset-left)) !important;
+    padding-right: max(0.5rem, env(safe-area-inset-right)) !important;
+  }
+
+  .app-cockpit-topbar button {
+    height: 2rem !important;
+    padding-left: 0.55rem !important;
+    padding-right: 0.55rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  .app-cockpit-mission {
+    margin-top: 0.25rem !important;
+    padding: 0.35rem 0.55rem !important;
+    max-width: 255px !important;
+  }
+}

@@ -186,7 +186,7 @@ export function BottomDock() {
   if (showcaseMode) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
+    <div className="app-bottom-dock pointer-events-none fixed bottom-1.5 sm:bottom-2 left-0 right-0 z-30 flex flex-col items-center gap-1 sm:gap-1.5 px-2 sm:px-3">
       {/* Subtitle Ringkas Atraksi / Fase Penerbangan di Bawah */}
       {flightLabel && (
         <div
@@ -485,7 +485,7 @@ export function BottomDock() {
       {!isSimPanelActive && !isAeroPanelActive && (
         <nav
           aria-label="Kontrol Hangar 3D"
-          className="hud-panel pointer-events-auto flex max-w-full items-center gap-1 sm:gap-2 overflow-x-auto rounded-2xl px-1.5 sm:px-3 py-1.5 sm:py-2"
+          className="hud-panel no-scrollbar pointer-events-auto flex max-w-full items-center gap-1 sm:gap-2 overflow-x-auto rounded-2xl px-1.5 sm:px-3 py-1.5 sm:py-2"
         >
           {buttons.map((b) => {
             const Icon = b.icon;

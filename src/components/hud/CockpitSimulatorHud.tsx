@@ -244,9 +244,9 @@ export function CockpitSimulatorHud() {
   const activeMission = SIM_MISSIONS.find((m) => m.id === hud.missionId) ?? SIM_MISSIONS[0];
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-30 select-none overflow-hidden font-mono">
+    <div className="app-cockpit-hud pointer-events-none fixed inset-0 z-30 select-none overflow-hidden font-mono">
       {/* === BAR ATAS: IDENTITAS UNIT, KAMERA, BUKU MANUAL PILOT, RESET & KELUAR KOKPIT === */}
-      <div className="flex flex-wrap items-start justify-between gap-2 px-3 sm:px-5 pt-2.5 sm:pt-3.5">
+      <div className="app-cockpit-topbar flex flex-wrap items-start justify-between gap-1.5 sm:gap-2 px-3 sm:px-5 pt-2.5 sm:pt-3.5">
         <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-emerald-400/45 bg-[#04140e]/85 px-3 py-2 backdrop-blur-sm">
           <div>
             <p className="font-display text-[10px] font-bold tracking-[0.18em] text-emerald-400 uppercase">
@@ -344,7 +344,7 @@ export function CockpitSimulatorHud() {
       </div>
 
       {/* === KARTU MISI PELATIHAN PROGRESIF & PILOT COACH (KIRI ATAS) === */}
-      <div className="pointer-events-auto ml-3 sm:ml-5 mt-2 w-[min(340px,calc(100vw-1.5rem))] rounded-xl border border-emerald-400/45 bg-[#04140e]/85 p-2.5 backdrop-blur-sm shadow-lg">
+      <div className="app-cockpit-mission pointer-events-auto ml-3 sm:ml-5 mt-2 w-[min(340px,calc(100vw-1.5rem))] rounded-xl border border-emerald-400/45 bg-[#04140e]/85 p-2.5 backdrop-blur-sm shadow-lg">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <Award className="h-4 w-4 text-amber-300 shrink-0" />

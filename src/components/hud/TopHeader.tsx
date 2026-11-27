@@ -45,7 +45,7 @@ export function TopHeader() {
   const volumePercent = Math.round(bgmVolume * 100);
 
   return (
-    <header className="pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
+    <header className="app-top-header pointer-events-none fixed top-0 left-0 right-0 z-30 flex items-start justify-between gap-2 sm:gap-3 px-2.5 sm:px-4 pt-2 sm:pt-3">
       {/* Header Kiri Atas: Tombol Pengaturan + Logo 3D TNI AU + Judul Ringkas */}
       <div ref={menuRef} className="relative pointer-events-auto w-full md:w-auto md:max-w-[54vw]">
         <div className="hud-panel flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-1.5">
