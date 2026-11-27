@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Activity,
   Check,
@@ -20,6 +20,7 @@ import {
   Square,
   Waves,
   Wind,
+  X,
 } from 'lucide-react';
 import { useHangarStore, useSelectedUnit } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -54,6 +55,19 @@ export function BottomDock() {
   const resetCamera = useHangarStore((s) => s.resetCamera);
 
   const [simMenuOpen, setSimMenuOpen] = useState(false);
+  const [simBarCollapsed, setSimBarCollapsed] = useState(false);
+
+  // Auto-reset collapse saat kembali ke mode parkir, & auto-hide bar simulasi setelah simulasi berjalan agar layar 3D lega!
+  useEffect(() => {
+    if (flightMode === 'parked' && !safetyMode) {
+      setSimBarCollapsed(false);
+      return;
+    }
+    if (flightMode === 'takeoff' || flightMode === 'maneuver' || flightMode === 'landing' || flightMode === 'mission' || flightMode === 'aar' || safetyMode) {
+      const timer = window.setTimeout(() => setSimBarCollapsed(true), 2200);
+      return () => window.clearTimeout(timer);
+    }
+  }, [flightMode, safetyMode]);
 
   const isGSuit = selectedId === 'gsuit';
   const isHelmet = selectedId === 'pilot-helmet';
@@ -229,18 +243,56 @@ export function BottomDock() {
         </div>
       )}
 
-      {/* Bar Menu "SIMULASI" Langsung Terbuka Saat Aktif (tanpa perlu klik Simulasi lagi, tutup via Stop) */}
-      {isSimPanelActive && (
-        <div className="hud-panel pointer-events-auto flex flex-col items-center gap-1.5 rounded-2xl border-[#ffb703]/50 bg-[#091c3a]/95 px-3 py-2 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
-          <div className="text-[10px] sm:text-[11px] font-medium tracking-wider text-slate-300">
-            {safetyMode && 'Simulasi Safety aktif! Klik Hentikan Safety untuk menghentikan demonstrasi keselamatan'}
-            {!safetyMode && flightMode === 'parked' && 'Tahapan Terbang: 1. Take Off → 2. Manuver → 3. Landing'}
-            {!safetyMode && flightMode === 'takeoff' && 'Pesawat sedang lepas landas di Runway... tunggu mengudara'}
-            {!safetyMode && flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver, Safety, atau 3. Landing'}
-            {!safetyMode && flightMode === 'maneuver' && 'Manuver udara aktif! Klik Hentikan Manuver atau 3. Landing'}
-            {!safetyMode && flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
-            {!safetyMode && flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Klik Hentikan atau 3. Landing`}
-            {!safetyMode && flightMode === 'aar' && 'AAR Refueling aktif! Klik Hentikan AAR atau 3. Landing'}
+      {/* Bar Menu "SIMULASI" — dilengkapi tombol Tutup (X) & auto-hide agar tidak menutupi pesawat 3D saat simulasi! */}
+      {isSimPanelActive && simBarCollapsed && (
+        <div className="pointer-events-auto flex items-center gap-1.5 animate-slidein">
+          <button
+            type="button"
+            onClick={() => setSimBarCollapsed(false)}
+            className="hud-panel inline-flex items-center gap-1.5 rounded-full border-[#ffb703]/65 bg-[#091c3a]/90 px-3 py-1.5 font-display text-[11px] font-bold tracking-wider text-[#ffb703] uppercase hover:bg-[#ffb703]/20 cursor-pointer active:scale-95 shadow-amber"
+          >
+            <ChevronUp className="h-3.5 w-3.5" />
+            Menu Simulasi
+          </button>
+          <button
+            type="button"
+            onClick={stopAllSim}
+            className="hud-panel inline-flex items-center gap-1 rounded-full border-rose-400/70 bg-rose-500/25 px-3 py-1.5 font-display text-[11px] font-bold tracking-wider text-rose-100 uppercase hover:bg-rose-500/40 cursor-pointer active:scale-95"
+          >
+            <Square className="h-3 w-3 fill-current" />
+            Stop
+          </button>
+        </div>
+      )}
+
+      {isSimPanelActive && !simBarCollapsed && (
+        <div className="hud-panel pointer-events-auto relative flex max-w-[96vw] flex-col items-center gap-1.5 rounded-2xl border-[#ffb703]/50 bg-[#091c3a]/95 px-3 py-2 shadow-[0_12px_32px_rgba(2,10,28,0.85)] animate-slidein">
+          <div className="flex w-full items-center justify-between gap-3">
+            <div className="text-[10px] sm:text-[11px] font-medium tracking-wider text-slate-300 truncate">
+              {safetyMode && 'Simulasi Safety aktif! Klik Hentikan Safety untuk menghentikan demonstrasi keselamatan'}
+              {!safetyMode && flightMode === 'parked' && 'Tahapan Terbang: 1. Take Off → 2. Manuver → 3. Landing'}
+              {!safetyMode && flightMode === 'takeoff' && 'Pesawat sedang lepas landas di Runway... tunggu mengudara'}
+              {!safetyMode && flightMode === 'airborne' && 'Pesawat sudah mengudara! Lanjut klik 2. Manuver, Safety, atau 3. Landing'}
+              {!safetyMode && flightMode === 'maneuver' && 'Manuver udara aktif! Klik Hentikan Manuver atau 3. Landing'}
+              {!safetyMode && flightMode === 'landing' && 'Pesawat sedang melakukan pendaratan ke Runway...'}
+              {!safetyMode && flightMode === 'mission' && `Misi aktif (${missionBtnLabel})! Klik Hentikan atau 3. Landing`}
+              {!safetyMode && flightMode === 'aar' && 'AAR Refueling aktif! Klik Hentikan AAR atau 3. Landing'}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (isFlightActive || safetyMode) {
+                  setSimBarCollapsed(true);
+                } else {
+                  setSimMenuOpen(false);
+                }
+              }}
+              aria-label="Sembunyikan Menu Simulasi"
+              title="Tutup / Sembunyikan Menu Simulasi"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-600/80 bg-[#0e2a54] text-slate-300 hover:border-[#ffb703] hover:text-[#ffb703] cursor-pointer active:scale-95"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-1.5">

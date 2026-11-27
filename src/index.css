@@ -169,4 +169,71 @@
     padding: 0.35rem 0.55rem !important;
     max-width: 255px !important;
   }
+
+  /* Panel Kiri (Pilih Armada) & Panel Kanan (Info) lega & bisa di-scroll jari dengan mulus di HP Landscape! */
+  .app-side-drawer {
+    top: max(2.85rem, calc(env(safe-area-inset-top) + 2.6rem)) !important;
+    bottom: max(3.15rem, calc(env(safe-area-inset-bottom) + 2.9rem)) !important;
+  }
+
+  .app-side-drawer .app-drawer-header {
+    padding: 0.4rem 0.65rem !important;
+  }
+
+  .app-side-drawer .app-drawer-header h2 {
+    font-size: 0.85rem !important;
+  }
+
+  .app-side-drawer .app-drawer-header .hud-btn {
+    min-height: 2rem !important;
+    min-width: 2rem !important;
+    height: 2rem !important;
+    width: 2rem !important;
+  }
+
+  .app-side-drawer .app-drawer-search {
+    padding: 0.35rem 0.6rem 0 !important;
+  }
+
+  .app-side-drawer .app-drawer-search input {
+    height: 2rem !important;
+    font-size: 0.75rem !important;
+  }
+
+  .app-side-drawer .app-drawer-cats {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding: 0.35rem 0.6rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .app-side-drawer .app-drawer-cats button {
+    min-height: 1.7rem !important;
+    padding: 0.15rem 0.5rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  .app-side-drawer .app-info-tabs {
+    padding: 0.3rem 0.5rem !important;
+    gap: 0.3rem !important;
+  }
+
+  .app-side-drawer .app-info-tabs button {
+    min-height: 1.95rem !important;
+    flex-direction: row !important;
+    gap: 0.3rem !important;
+    padding: 0.2rem 0.35rem !important;
+    font-size: 0.65rem !important;
+  }
+
+  .app-welcome-card {
+    padding: 0.85rem 1.4rem !important;
+  }
+
+  .app-welcome-logo {
+    height: 4.5rem !important;
+    width: 4.5rem !important;
+    margin-top: 0.45rem !important;
+    margin-bottom: 0.45rem !important;
+  }
 }

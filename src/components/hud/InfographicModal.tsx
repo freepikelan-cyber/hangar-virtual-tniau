@@ -76,8 +76,11 @@ export function InfographicModal() {
           </button>
         </div>
 
-        {/* Isi Infografis Scrollable */}
-        <div className="hud-scroll flex-1 overflow-y-auto p-4 sm:p-6 space-y-5">
+        {/* Isi Infografis Scrollable (Touch-Friendly di Smartphone) */}
+        <div
+          className="hud-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 sm:p-6 space-y-5"
+          style={{ WebkitOverflowScrolling: 'touch' }}
+        >
           {/* Gambar Pesawat Berlatar Transparan (Render langsung dari Model 3D) */}
           {previewUrl && (
             <div className="relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-[#4da6ff]/35 bg-gradient-to-b from-[#0f2e5e]/60 via-[#0a2145]/40 to-transparent px-4 py-3 sm:py-5">

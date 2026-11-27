@@ -53,7 +53,7 @@ export function InfoPanel() {
 
   return (
     <aside
-      className={`pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] right-2.5 sm:right-4 flex items-start gap-2 ${
+      className={`app-side-drawer pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] right-2.5 sm:right-4 flex items-start gap-2 ${
         rightOpen ? 'z-30 lg:z-20' : 'z-20'
       }`}
     >
@@ -73,7 +73,7 @@ export function InfoPanel() {
       {rightOpen && (
         <div className="hud-panel pointer-events-auto flex h-full w-[min(340px,calc(100vw-1.25rem))] lg:w-[320px] xl:w-[360px] flex-col rounded-xl overflow-hidden animate-slidein">
           {/* Header Unit */}
-          <div className="flex items-start justify-between gap-2 border-b border-[#4da6ff]/25 px-4 py-3">
+          <div className="app-drawer-header flex items-start justify-between gap-2 border-b border-[#4da6ff]/25 px-4 py-3 shrink-0">
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="rounded bg-[#ffb703]/20 border border-[#ffb703]/50 px-1.5 py-0.5 font-display text-[10px] font-bold tracking-widest text-[#ffb703] uppercase">
@@ -100,7 +100,7 @@ export function InfoPanel() {
           </div>
 
           {/* 3 Tab Navigasi */}
-          <div className="grid grid-cols-3 gap-2 border-b border-[#4da6ff]/20 p-2.5">
+          <div className="app-info-tabs grid grid-cols-3 gap-2 border-b border-[#4da6ff]/20 p-2.5 shrink-0">
             {tabs.map((t) => {
               const Icon = t.icon;
               const active = infoTab === t.id;
@@ -122,8 +122,11 @@ export function InfoPanel() {
             })}
           </div>
 
-          {/* Konten Tab */}
-          <div className="hud-scroll flex-1 overflow-y-auto p-4 space-y-4">
+          {/* Konten Tab (Scroll Sentuh Mulus di Smartphone Android/iOS!) */}
+          <div
+            className="hud-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain touch-pan-y p-4 space-y-4"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {infoTab === 'spec' && (
               <>
                 <div className="rounded-xl border border-[#4da6ff]/20 bg-[#0b2245]/70 p-3.5">

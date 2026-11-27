@@ -129,14 +129,14 @@ export function FleetSidebar() {
 
   return (
     <aside
-      className={`pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] left-2.5 sm:left-4 flex items-start gap-2 ${
+      className={`app-side-drawer pointer-events-none fixed top-[74px] sm:top-[84px] bottom-[102px] sm:bottom-[112px] left-2.5 sm:left-4 flex items-start gap-2 ${
         leftOpen ? 'z-30 lg:z-20' : 'z-20'
       }`}
     >
       {leftOpen && (
         <div className="hud-panel pointer-events-auto flex h-full w-[min(320px,calc(100vw-1.25rem))] lg:w-[290px] xl:w-[320px] flex-col rounded-xl overflow-hidden animate-slidein">
           {/* Header Katalog */}
-          <div className="flex items-center justify-between border-b border-[#4da6ff]/25 px-3.5 py-2.5">
+          <div className="app-drawer-header flex items-center justify-between border-b border-[#4da6ff]/25 px-3.5 py-2.5 shrink-0">
             <div>
               <h2 className="font-display text-sm font-bold tracking-[0.16em] text-[#4da6ff] uppercase">
                 PILIH ARMADA
@@ -155,7 +155,7 @@ export function FleetSidebar() {
           </div>
 
           {/* Pencarian Real-time */}
-          <div className="px-3 pt-3">
+          <div className="app-drawer-search px-3 pt-3 shrink-0">
             <div className="relative flex items-center">
               <Search className="pointer-events-none absolute left-3 h-4 w-4 text-[#4da6ff]/70" />
               <input
@@ -179,7 +179,7 @@ export function FleetSidebar() {
           </div>
 
           {/* Tab Kategori */}
-          <div className="flex flex-wrap gap-2 px-3 py-2.5 border-b border-[#4da6ff]/20">
+          <div className="app-drawer-cats no-scrollbar flex flex-wrap gap-2 px-3 py-2.5 border-b border-[#4da6ff]/20 shrink-0">
             {CATEGORIES.map((cat) => {
               const active = category === cat;
               return (
@@ -187,7 +187,7 @@ export function FleetSidebar() {
                   key={cat}
                   type="button"
                   onClick={() => setCategory(cat)}
-                  className={`min-h-[36px] rounded-md border px-2.5 py-1 font-display text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
+                  className={`min-h-[36px] shrink-0 rounded-md border px-2.5 py-1 font-display text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer ${
                     active
                       ? 'border-[#4da6ff] bg-[#4da6ff]/20 text-[#4da6ff] shadow-[0_0_12px_rgba(77,166,255,0.28)]'
                       : 'border-slate-700/80 bg-[#0e2a54]/70 text-slate-300 hover:border-[#4da6ff]/50 hover:text-white'
@@ -199,8 +199,11 @@ export function FleetSidebar() {
             })}
           </div>
 
-          {/* Daftar Kartu Armada */}
-          <div className="hud-scroll flex-1 space-y-2 overflow-y-auto p-3">
+          {/* Daftar Kartu Armada (Scroll Sentuh Mulus di Smartphone Android/iOS!) */}
+          <div
+            className="hud-scroll min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain touch-pan-y p-3"
+            style={{ WebkitOverflowScrolling: 'touch' }}
+          >
             {items.length === 0 ? (
               <div className="rounded-lg border border-dashed border-slate-700 p-5 text-center text-xs text-slate-400">
                 Tidak ada armada yang cocok dengan pencarian Anda.
