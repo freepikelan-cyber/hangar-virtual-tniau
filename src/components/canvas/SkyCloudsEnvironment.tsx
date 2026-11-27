@@ -219,21 +219,64 @@ export function SkyCloudsEnvironment() {
     city: RUNWAY_OFFSET + CHUNK_LEN * 3,
   });
   const prevFlightMode = useRef<string>('parked');
-  const shadersWarmedRef = useRef(false);
+  const warmedChunksRef = useRef<Set<string>>(new Set());
 
-  // Pre-compile seluruh shader & upload tekstur zona Laut/Gunung/Kota sekali saja di awal saat di darat,
-  // agar saat lepas landas -> mengudara -> landing TIDAK PERNAH freeze/lag!
+  // === AAA GAME-ENGINE GPU PRE-WARM (STAGGERED TEXTURE UPLOAD + SHADER COMPILE) ===
+  // Saat pesawat masih taxi/komunikasi ATC di darat, paksa upload tekstur & compile shader tiap zona
+  // (Laut, Gunung, Kota, Awan) SATU PER SATU secara bertahap agar saat lepas landas -> mengudara 0% lag/freeze!
   useEffect(() => {
-    if (!isOutdoorSim || shadersWarmedRef.current) return;
-    const t = window.setTimeout(() => {
+    if (!isOutdoorSim) return;
+    const warmGroup = (key: string, group: THREE.Object3D | null) => {
+      if (!group || warmedChunksRef.current.has(key)) return;
+      // Cek apakah GLB di dalam grup sudah termuat (punya mesh anak)
+      let meshCount = 0;
+      group.traverse((obj) => {
+        if ((obj as THREE.Mesh).isMesh) meshCount++;
+      });
+      if (meshCount === 0) return;
+
+      const prevVis = group.visible;
+      group.visible = true;
       try {
+        group.traverse((obj) => {
+          const mesh = obj as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const mat of mats) {
+            if (!mat) continue;
+            const std = mat as THREE.MeshStandardMaterial;
+            if (std.map) gl.initTexture(std.map);
+            if (std.normalMap) gl.initTexture(std.normalMap);
+            if (std.roughnessMap) gl.initTexture(std.roughnessMap);
+            if (std.metalnessMap) gl.initTexture(std.metalnessMap);
+            if (std.bumpMap) gl.initTexture(std.bumpMap);
+            if (std.emissiveMap) gl.initTexture(std.emissiveMap);
+          }
+        });
         gl.compile(scene, camera);
-        shadersWarmedRef.current = true;
+        warmedChunksRef.current.add(key);
       } catch {
         // ignore
+      } finally {
+        group.visible = prevVis;
       }
-    }, 650);
-    return () => window.clearTimeout(t);
+    };
+
+    // Jadwal bertahap selama fase taxi/radio (0..12s) agar tidak pernah memblokir 1 frame sekaligus!
+    const timers = [
+      window.setTimeout(() => warmGroup('ocean', oceanChunkRef.current), 1400),
+      window.setTimeout(() => warmGroup('mountain', mountainChunkRef.current), 3400),
+      window.setTimeout(() => warmGroup('city', cityChunkRef.current), 5600),
+      // Ulang cek ringan di detik 9 & 13 untuk GLB besar yang baru selesai parse di HP Android lambat
+      window.setTimeout(() => {
+        warmGroup('ocean', oceanChunkRef.current);
+        warmGroup('mountain', mountainChunkRef.current);
+      }, 9000),
+      window.setTimeout(() => warmGroup('city', cityChunkRef.current), 13000),
+    ];
+    return () => {
+      timers.forEach((id) => window.clearTimeout(id));
+    };
   }, [isOutdoorSim, gl, scene, camera]);
 
   const skyMatRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -659,16 +702,16 @@ export function SkyCloudsEnvironment() {
         currentSpeed.current = groundSpeed;
       } else if (pt < airborneStart) {
         const p = Math.min(1, (pt - rotStart) / Math.max(0.5, airborneStart - rotStart));
-        // Setelah mencapai ujung runway (rotStart), baru menanjak mulus ke langit sambil melaju penuh!
-        targetWorldY = THREE.MathUtils.lerp(-0.02, -18.0, p * p);
-        groundSpeed = 54;
+        // Setelah mencapai ujung runway (rotStart), menanjak super mulus dengan kecepatan menyambung halus (tanpa rem mendadak!)
+        targetWorldY = THREE.MathUtils.lerp(-0.02, -22.0, p * p);
+        groundSpeed = THREE.MathUtils.lerp(66, 50, p);
       } else {
         targetWorldY = -28.0;
-        groundSpeed = 48;
+        groundSpeed = 50;
       }
     } else if (flightMode === 'airborne' || flightMode === 'aar') {
       targetWorldY = -28.0;
-      groundSpeed = 48;
+      groundSpeed = 50;
     } else if (flightMode === 'mission') {
       if (isHeli) {
         // SAR Hoist Helikopter: terkunci langsung di atas Zona Laut 3D!
@@ -732,9 +775,9 @@ export function SkyCloudsEnvironment() {
     }
 
     // Interpolasi ketinggian & kecepatan super mulus agar perpindahan Take Off -> Airborne tidak pernah terasa berhenti/patah!
-    const yLerpRate = flightMode === 'airborne' ? 1.15 : 3.2;
+    const yLerpRate = flightMode === 'airborne' ? 1.35 : 3.0;
     worldY.current = THREE.MathUtils.lerp(worldY.current, targetWorldY, Math.min(1, dt * yLerpRate));
-    currentSpeed.current = THREE.MathUtils.lerp(currentSpeed.current, groundSpeed, Math.min(1, dt * 2.6));
+    currentSpeed.current = THREE.MathUtils.lerp(currentSpeed.current, groundSpeed, Math.min(1, dt * 3.8));
     const smoothSpeed = flightMode === 'landing' ? groundSpeed : currentSpeed.current;
 
     if (worldGroupRef.current) {
