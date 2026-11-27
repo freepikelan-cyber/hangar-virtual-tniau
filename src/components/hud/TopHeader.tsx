@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Home, Moon, Music, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
+import { Moon, Music, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit, type TimeOfDay } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -8,7 +8,6 @@ import { TniAuLogo3D } from './TniAuLogo3D';
 
 export function TopHeader() {
   const unit = useSelectedUnit();
-  const openWelcome = useHangarStore((s) => s.openWelcome);
   const soundEnabled = useHangarStore((s) => s.soundEnabled);
   const bgmEnabled = useHangarStore((s) => s.bgmEnabled);
   const bgmVolume = useHangarStore((s) => s.bgmVolume);
@@ -49,21 +48,6 @@ export function TopHeader() {
       {/* Header Kiri Atas: Tombol Pengaturan + Logo 3D TNI AU + Judul Ringkas */}
       <div ref={menuRef} className="relative pointer-events-auto w-full md:w-auto md:max-w-[54vw]">
         <div className="hud-panel flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-1.5">
-          {/* Tombol Kembali ke Halaman Utama (Beranda) */}
-          <button
-            type="button"
-            onClick={() => {
-              setSettingsOpen(false);
-              openWelcome();
-            }}
-            aria-label="Kembali ke Halaman Utama"
-            title="Kembali ke Halaman Utama (Beranda)"
-            className="flex h-9 sm:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#ffb703]/45 bg-[#ffb703]/15 px-2.5 font-display text-xs font-bold tracking-wider text-[#ffb703] uppercase hover:bg-[#ffb703]/25 hover:border-[#ffb703] transition-all cursor-pointer active:scale-95"
-          >
-            <Home className="h-4 w-4 shrink-0" />
-            <span className="hidden sm:inline">Beranda</span>
-          </button>
-
           {/* Tombol Pengaturan (Kiri Atas) */}
           <button
             type="button"
@@ -81,14 +65,11 @@ export function TopHeader() {
             <span className="hidden sm:inline">Pengaturan</span>
           </button>
 
-          <button
-            type="button"
-            onClick={openWelcome}
-            title="Kembali ke Halaman Awal"
-            className="relative flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/35 bg-[#0c264d]/60 p-1 hover:border-[#ffb703] transition-colors cursor-pointer"
+          <div
+            className="relative flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-lg border border-[#ffb703]/35 bg-[#0c264d]/60 p-1"
           >
             <TniAuLogo3D className="h-full w-full" />
-          </button>
+          </div>
 
           <div className="min-w-0 flex-1">
             <p className="font-display text-[9px] sm:text-[10px] font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-[#4da6ff] uppercase truncate">
