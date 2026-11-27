@@ -408,9 +408,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
           : u.category === 'Tempur'
             ? 'DOGFIGHT TEMPUR // SALING KEJAR, SALING TEMBAK, FLARE & JATUHKAN MUSUH'
             : 'MISI LATIH • FLARE COUNTERMEASURE ANTI-RUDAL';
-    if (u.category === 'Tempur') {
-      aircraftAudio.playFighterCombatVoice(s.soundEnabled);
-    }
+    // Suara kokpit Dogfight kini dipicu presisi oleh DogfightCombatLayer.tsx sesuai siklus 3D agar tidak mendahului!
     set({
       flightMode: 'mission',
       flightNonce: s.flightNonce + 1,

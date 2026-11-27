@@ -1386,7 +1386,8 @@ class AircraftAudioEngine {
         this.jupiterCheckinPlayed = true;
         this.playAtcRadio('jupiter-checkin');
       }
-      if (unitId === 'kt1b' && phaseTime > 37.0 && !this.jupiterAirbornePlayed) {
+      // Suara "Airborne / Gear up" tepat saat pesawat mulai mengudara (45.5s, bukan saat masih lari di runway!)
+      if (unitId === 'kt1b' && phaseTime > 45.5 && !this.jupiterAirbornePlayed) {
         this.jupiterAirbornePlayed = true;
         this.playAtcRadio('jupiter-airborne');
       }
@@ -1416,13 +1417,6 @@ class AircraftAudioEngine {
       const isHeli = profile === 'helicopter';
       if (phaseTime > 0.1 && !this.atcStartPlayed) {
         this.atcStartPlayed = true;
-        if (unitId === 'kt1b') {
-          // Khusus KT-1B Wong Bee (Jupiter Aerobatic Show):
-          // 1. jupiter-takeoff-prep.wav (0.3..18.44s): J1–J6 keluar hanggar menuju titik Take Off.
-          // 2. jupiter-checkin.wav (18.8..26.21s): Semua 6 pesawat bersiap di formasi Take Off ("Jupiters, check in! Two! Three! Four! Five! Six!").
-          // 3. Take Off satu per satu (26.5..46.5s): J1 lepas landas duluan, disusul J2–J6 satu per satu!
-          return { voiceStart: 0.3, rollStart: 26.5, rotStart: 28.6, climbStart: 30.0, airborneStart: 46.5 };
-        }
         if (isBasicTrainer) {
           void this.preloadAtc('trainer-landroll');
         }
@@ -1493,19 +1487,21 @@ class AircraftAudioEngine {
         if (!this.atcBuffers.has('jupiter-rejoin-landing')) {
           void this.preloadAtc('jupiter-rejoin-landing');
         }
-        if (phaseTime > 10.0 && !this.jupiterArrowheadPlayed) {
+        // Diselaraskan PRESISI dengan jadwal 3D JupiterTakeOffLayer.tsx agar suara TIDAK PERNAH mendahului atraksi!
+        // 20.5s: Arrow Head Loop & Jupiter Roll | 56.5s: Mirror | 78.0s: Heart (Love) & Roll | 154.5s: Rejoin Arrowhead
+        if (phaseTime >= 20.5 && !this.jupiterArrowheadPlayed) {
           this.jupiterArrowheadPlayed = true;
           this.playAtcRadio('jupiter-arrowhead-roll');
         }
-        if (phaseTime > 29.5 && !this.jupiterOpposingPlayed) {
+        if (phaseTime >= 56.5 && !this.jupiterOpposingPlayed) {
           this.jupiterOpposingPlayed = true;
           this.playAtcRadio('jupiter-opposing-pass');
         }
-        if (phaseTime > 47.0 && !this.jupiterHeartPlayed) {
+        if (phaseTime >= 78.0 && !this.jupiterHeartPlayed) {
           this.jupiterHeartPlayed = true;
           this.playAtcRadio('jupiter-heart-bombburst');
         }
-        if (phaseTime > 83.5 && !this.jupiterRejoinPlayed) {
+        if (phaseTime >= 154.5 && !this.jupiterRejoinPlayed) {
           this.jupiterRejoinPlayed = true;
           this.playAtcRadio('jupiter-rejoin-landing');
         }

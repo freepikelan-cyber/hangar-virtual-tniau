@@ -191,24 +191,18 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
   }, [whiteSmokeMat, redSmokeMat, smokeGeo, heartGeos, heartSmokeMat]);
 
   const { wingClones, wingPropCache } = useMemo(() => {
-    if (selectedId !== 'kt1b')
-      return {
-        wingClones: [] as THREE.Group[],
-        wingPropCache: [] as { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[]; gearObj: THREE.Object3D | null }[],
-      };
+    if (selectedId !== 'kt1b') return { wingClones: [] as THREE.Group[], wingPropCache: [] as { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[] }[] };
     const list: THREE.Group[] = [];
-    const cache: { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[]; gearObj: THREE.Object3D | null }[] = [];
+    const cache: { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[] }[] = [];
     for (let i = 0; i < 5; i++) {
       const clone = sourceGroup.clone(true);
       const props: THREE.Object3D[] = [];
       const blurs: THREE.MeshBasicMaterial[] = [];
-      let gearObj: THREE.Object3D | null = null;
       clone.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
           child.castShadow = false;
           child.receiveShadow = false;
         }
-        if (child.name === 'landing-gear') gearObj = child;
         if (
           child.name === 'kt1b-prop-pivot' ||
           child.name.includes('prop') ||
@@ -223,7 +217,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
         }
       });
       list.push(clone);
-      cache.push({ props, blurs, gearObj });
+      cache.push({ props, blurs });
     }
     return { wingClones: list, wingPropCache: cache };
   }, [sourceGroup, selectedId]);
@@ -980,7 +974,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       }
 
       gearStates.current[i] = THREE.MathUtils.lerp(gearStates.current[i], targetGear, Math.min(1, dt * 3));
-      const gearObj = pCache?.gearObj ?? null;
+      const gearObj = wingClones[i]?.getObjectByName('landing-gear') ?? null;
       if (gearObj) {
         const r = gearStates.current[i];
         gearObj.visible = r < 0.96;

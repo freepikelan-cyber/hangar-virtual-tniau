@@ -48,13 +48,13 @@ export interface DogfightHeroPose {
   pitch: number;
 }
 
-const COMBAT_LOOP_SEC = 18.0; // Siklus Dogfight realistis 18 detik: Intercept -> 3 Burst Kanon Terarah -> FOX-2 Rudal -> Ledakan & Jatuh Terbakar!
+const COMBAT_LOOP_SEC = 21.0; // Siklus Dogfight 21 detik selaras penuh dengan suara kokpit pilot: Intercept -> 3 Burst Kanon -> FOX-2 Rudal -> Ledakan & Jatuh Terbakar!
 
 /** Jadwal 3 burst tembakan kanon 30mm/20mm yang disiplin saat hidung terkunci lurus di ekor BANDIT-01. */
 const GUN_BURSTS: ReadonlyArray<readonly [number, number]> = [
-  [4.4, 5.12],
-  [5.85, 6.58],
-  [7.3, 8.02],
+  [5.0, 5.75],
+  [6.6, 7.35],
+  [8.2, 8.95],
 ];
 
 /** Posisi lintasan pesawat musuh BANDIT-01 yang selalu berada di sektor depan-atas agar kejar-kejaran & bidikan kanon 100% realistis. */
@@ -173,6 +173,7 @@ export function DogfightCombatLayer() {
   const lastBurstKey = useRef('');
   const lastMissileCycle = useRef(-1);
   const lastExplosionCycle = useRef(-1);
+  const lastVoiceCycle = useRef(-1);
   const crashStartPos = useRef(new THREE.Vector3(0, 5, 28));
 
   const pNow = useMemo(() => new THREE.Vector3(), []);
@@ -313,6 +314,7 @@ export function DogfightCombatLayer() {
     lastBurstKey.current = '';
     lastMissileCycle.current = -1;
     lastExplosionCycle.current = -1;
+    lastVoiceCycle.current = -1;
     heroFlares.forEach((f) => { f.active = false; });
     banditFlares.forEach((f) => { f.active = false; });
     tracers.forEach((tr) => { tr.active = false; });
@@ -329,12 +331,18 @@ export function DogfightCombatLayer() {
     const t = state.clock.elapsedTime;
 
     const cycleIdx = Math.floor(pt / COMBAT_LOOP_SEC);
-    const ct = pt % COMBAT_LOOP_SEC; // 0..18s
+    const ct = pt % COMBAT_LOOP_SEC; // 0..21s
     const heroPose = sampleDogfightHeroPose(pt);
 
-    const isMissileFlying = ct >= 8.5 && ct < 10.6;
-    const isHitPhase = ct >= 10.6 && ct < 17.4;
-    const isExploding = ct >= 10.6 && ct < 12.9;
+    // Putar suara kokpit pilot Dogfight TEPAT saat siklus pengejaran dimulai (ct >= 0.4s -> tidak mendahului & sinkron tiap siklus!)
+    if (ct >= 0.4 && lastVoiceCycle.current !== cycleIdx) {
+      lastVoiceCycle.current = cycleIdx;
+      aircraftAudio.playFighterCombatVoice(soundEnabled);
+    }
+
+    const isMissileFlying = ct >= 9.6 && ct < 12.0;
+    const isHitPhase = ct >= 12.0 && ct < 19.6;
+    const isExploding = ct >= 12.0 && ct < 14.5;
 
     // Cek apakah sedang di dalam salah satu dari 3 burst kanon yang disiplin
     let activeBurstIdx = -1;
@@ -347,17 +355,17 @@ export function DogfightCombatLayer() {
     const isFiringCannon = activeBurstIdx !== -1;
 
     // Update Label Drama Pertempuran
-    if (ct < 4.2) {
+    if (ct < 4.8) {
       setFlightLabel('⚔️ DOGFIGHT // PENGEJARAN POSISI 6 O’CLOCK & FLARE COUNTERMEASURE');
-    } else if (ct < 8.5) {
+    } else if (ct < 9.6) {
       setFlightLabel(
         isFiringCannon
           ? '🔥 DOGFIGHT // GUNS! GUNS! GUNS! TEMBAKAN KANON TERARAH KE BANDIT-01!'
           : '🎯 DOGFIGHT // KUNCI RADAR & BIDIK EKOR BANDIT-01!',
       );
-    } else if (ct < 10.6) {
+    } else if (ct < 12.0) {
       setFlightLabel('🚀 FOX-2! RUDAL UDARA-KE-UDARA MELUNCUR MENGUNCI BANDIT-01!');
-    } else if (ct < 17.4) {
+    } else if (ct < 19.6) {
       setFlightLabel('💥 SPLASH ONE! BANDIT-01 MELEDAK, TERBAKAR & JATUH!');
     } else {
       setFlightLabel('📡 DOGFIGHT // PENCARIAN TARGET BERIKUTNYA...');
@@ -366,7 +374,7 @@ export function DogfightCombatLayer() {
     // 1. Posisi & Gerak Pesawat Musuh BANDIT-01
     const grp = banditRef.current;
     if (grp) {
-      if (ct < 10.6) {
+      if (ct < 12.0) {
         const eps = 0.08;
         sampleBanditCombatPos(pt, pNow);
         sampleBanditCombatPos(pt + eps, pNext);
@@ -402,7 +410,7 @@ export function DogfightCombatLayer() {
               ? '🔥 BANDIT-01 • TAKING FIRE!'
               : 'BANDIT-01 • HOSTILE';
         }
-      } else if (ct < 17.4) {
+      } else if (ct < 19.6) {
         if (lastExplosionCycle.current !== cycleIdx) {
           lastExplosionCycle.current = cycleIdx;
           aircraftAudio.playExplosionSfx(soundEnabled);
@@ -423,7 +431,7 @@ export function DogfightCombatLayer() {
             );
           });
         }
-        const fallT = ct - 10.6;
+        const fallT = ct - 12.0;
         grp.visible = true;
         grp.position.set(
           crashStartPos.current.x + Math.sin(fallT * 2.1) * (fallT * 1.35),
@@ -530,7 +538,7 @@ export function DogfightCombatLayer() {
           lastMissileCycle.current = cycleIdx;
           aircraftAudio.playMissileLaunchSfx(soundEnabled);
         }
-        const mp = (ct - 8.5) / 2.1;
+        const mp = (ct - 9.6) / 2.4;
         // Mulai tepat dari pilon sayap kanan pesawat TNI AU
         heroOrigin.set(heroPose.x - 2.3, heroPose.y - 0.25, heroPose.z + 1.2);
         const curveFactor = mp * mp * 0.45 + mp * 0.55;
@@ -568,21 +576,21 @@ export function DogfightCombatLayer() {
       (mesh.material as THREE.MeshBasicMaterial).opacity = (1 - frac) * 0.62;
     });
 
-    // 4. Bola Api Ledakan Berlapis & Cincin Shockwave (Direct Hit 10.6..12.9s)
+    // 4. Bola Api Ledakan Berlapis & Cincin Shockwave (Direct Hit 12.0..14.5s)
     if (explosionRef.current && grp) {
       explosionRef.current.visible = isExploding;
       if (isExploding) {
-        const ep = (ct - 10.6) / 2.3;
+        const ep = (ct - 12.0) / 2.5;
         explosionRef.current.position.copy(grp.position);
         const s = 0.8 + Math.sin(ep * Math.PI) * 6.4;
         explosionRef.current.scale.set(s, s, s);
       }
     }
     if (shockwaveRef.current && grp) {
-      const showRing = ct >= 10.6 && ct < 11.6;
+      const showRing = ct >= 12.0 && ct < 13.0;
       shockwaveRef.current.visible = showRing;
       if (showRing) {
-        const rp = (ct - 10.6) / 1.0;
+        const rp = (ct - 12.0) / 1.0;
         shockwaveRef.current.position.copy(crashStartPos.current);
         const rs = 1.2 + rp * 13.5;
         shockwaveRef.current.scale.set(rs, rs, rs);
