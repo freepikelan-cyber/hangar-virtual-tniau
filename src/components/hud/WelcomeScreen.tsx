@@ -21,12 +21,15 @@ export function WelcomeScreen() {
     // Tahap 1: Splash "Media Edukasi Interaktif Pesawat TNI AU" + "Created By : Herlani" ala Capcom (2.4 detik)
     const tBrand = window.setTimeout(() => {
       setStage('loading');
+      // Langsung putar musik latar otomatis begitu masuk layar Loading!
+      if (bgmEnabled) bgmPlayer.unlockAndSync(true);
     }, 2400);
 
     // Tahap 2: Loading 0% -> 100% lalu LANGSUNG masuk ke halaman Hanggar Virtual 3D!
     let loadInterval: number | null = null;
     let finishTimeout: number | null = null;
     const tLoadStart = window.setTimeout(() => {
+      if (bgmEnabled) bgmPlayer.unlockAndSync(true);
       let pct = 0;
       loadInterval = window.setInterval(() => {
         pct = Math.min(100, pct + 5);
@@ -55,7 +58,10 @@ export function WelcomeScreen() {
   if (stage === 'brand') {
     return (
       <div
-        onClick={() => setStage('loading')}
+        onClick={() => {
+          if (bgmEnabled) bgmPlayer.unlockAndSync(true);
+          setStage('loading');
+        }}
         className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#030916] px-6 text-center select-none cursor-pointer"
       >
         <div

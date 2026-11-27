@@ -17,7 +17,7 @@ class BgmPlayer {
     if (!this.audio) {
       const a = new Audio('/audio/bgm-theme.mp3');
       a.loop = true;
-      a.preload = 'metadata';
+      a.preload = 'auto';
       a.volume = 0;
       this.audio = a;
     }
@@ -31,6 +31,8 @@ class BgmPlayer {
           }
         }, 0);
       };
+      window.addEventListener('pointerdown', onGesture, { passive: true });
+      window.addEventListener('touchstart', onGesture, { passive: true });
       window.addEventListener('click', onGesture, { passive: true });
       window.addEventListener('keydown', onGesture, { passive: true });
     }
