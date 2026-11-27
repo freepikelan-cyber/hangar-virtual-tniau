@@ -46,6 +46,14 @@ class BgmPlayer {
     }
   }
 
+  /** Preload file musik sejak awal aplikasi dibuka agar 0% delay saat loading screen mulai! */
+  preload() {
+    const a = this.ensureAudio();
+    if (a && a.readyState === 0) {
+      a.load();
+    }
+  }
+
   private tryStart() {
     const a = this.ensureAudio();
     if (!a || !this.shouldPlay) return;
@@ -54,6 +62,8 @@ class BgmPlayer {
       this.fadeTo(this.targetVol, false);
       return;
     }
+    // Mulai dari volume kecil yang langsung terdengar agar tidak terasa delay!
+    if (a.volume < 0.14) a.volume = Math.min(this.targetVol, 0.18);
     const p = a.play();
     if (p && typeof p.then === 'function') {
       p.then(() => {
@@ -74,8 +84,8 @@ class BgmPlayer {
     const a = this.audio;
     if (!a) return;
     this.clearFade();
-    const stepMs = 40;
-    const stepDelta = 0.045;
+    const stepMs = 35;
+    const stepDelta = 0.08;
     this.fadeTimer = window.setInterval(() => {
       if (!this.audio) {
         this.clearFade();

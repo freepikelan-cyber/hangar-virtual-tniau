@@ -91,6 +91,7 @@ export function CockpitSimulatorHud() {
 
   const profile = getFlightProfileSpec(unit.category);
   const [manualOpen, setManualOpen] = useState(false);
+  const [missionPickerOpen, setMissionPickerOpen] = useState(false);
   const [manualTab, setManualTab] = useState<ManualTab>('takeoff');
   const [hud, setHud] = useState<HudSnapshot>({
     speedKts: 0,
@@ -210,7 +211,7 @@ export function CockpitSimulatorHud() {
         coachHint: t.coachHint,
         autopilot: t.autopilot,
       });
-    }, 42);
+    }, 90);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -245,26 +246,19 @@ export function CockpitSimulatorHud() {
 
   return (
     <div className="app-cockpit-hud pointer-events-none fixed inset-0 z-30 select-none overflow-hidden font-mono">
-      {/* === BAR ATAS: IDENTITAS UNIT, KAMERA, BUKU MANUAL PILOT, RESET & KELUAR KOKPIT === */}
-      <div className="app-cockpit-topbar flex flex-wrap items-start justify-between gap-1.5 sm:gap-2 px-3 sm:px-5 pt-2.5 sm:pt-3.5">
-        <div className="pointer-events-auto flex items-center gap-2.5 rounded-xl border border-emerald-400/45 bg-[#04140e]/85 px-3 py-2 backdrop-blur-sm">
-          <div>
-            <p className="font-display text-[10px] font-bold tracking-[0.18em] text-emerald-400 uppercase">
-              SIMULATOR 3D • {profile.label}
-            </p>
-            <h2 className="font-display text-sm sm:text-base font-bold tracking-wider text-white uppercase leading-tight">
-              {unit.name} ({unit.tailNumber})
-            </h2>
-          </div>
-          <div className="hidden sm:flex items-center gap-1.5 rounded-lg border border-amber-400/50 bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-300">
-            <Target className="h-3.5 w-3.5" />
-            <span>
-              RING {hud.ringsPassed}/{hud.totalRings}
-            </span>
-          </div>
+      {/* === BAR ATAS RINGKAS 1 BARIS ALA GAME MOBILE PROFESIONAL === */}
+      <div className="app-cockpit-topbar flex items-center justify-between gap-2 px-2.5 sm:px-5 pt-2 sm:pt-3">
+        <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-emerald-400/40 bg-[#04140e]/85 px-3 py-1">
+          <span className="font-display text-xs sm:text-sm font-bold tracking-wider text-white uppercase truncate max-w-[140px] sm:max-w-[240px]">
+            {unit.name}
+          </span>
+          <span className="flex items-center gap-1 rounded-full border border-amber-400/50 bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-300 shrink-0">
+            <Target className="h-3 w-3" />
+            {hud.ringsPassed}/{hud.totalRings}
+          </span>
         </div>
 
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2">
+        <div className="pointer-events-auto no-scrollbar flex items-center gap-1.5 overflow-x-auto">
           {/* Tombol Mode Jelajah / Autopilot (Tombol P) */}
           <button
             type="button"
@@ -273,14 +267,14 @@ export function CockpitSimulatorHud() {
               cockpitInput.toggleAutopilotRequested = true;
             }}
             title="Nyalakan / Matikan Mode Jelajah Autopilot (Tombol P)"
-            className={`flex h-10 items-center gap-1.5 rounded-lg border-2 px-3 font-display text-xs font-bold tracking-wider uppercase cursor-pointer active:scale-95 transition-all ${
+            className={`flex h-9 sm:h-10 shrink-0 items-center gap-1.5 rounded-full border px-2.5 sm:px-3 font-display text-[11px] sm:text-xs font-bold tracking-wider uppercase cursor-pointer active:scale-95 transition-all ${
               hud.autopilot
-                ? 'border-emerald-300 bg-emerald-500/30 text-emerald-100 shadow-[0_0_16px_rgba(16,185,129,0.5)]'
-                : 'border-sky-400/65 bg-[#061d2e]/90 text-sky-200 hover:bg-sky-500/20'
+                ? 'border-emerald-300 bg-emerald-500/35 text-emerald-100 shadow-[0_0_12px_rgba(16,185,129,0.45)]'
+                : 'border-sky-400/60 bg-[#061d2e]/88 text-sky-200 hover:bg-sky-500/20'
             }`}
           >
-            <Navigation className={`h-4 w-4 ${hud.autopilot ? 'text-emerald-300 animate-pulse' : 'text-sky-300'}`} />
-            <span>{hud.autopilot ? 'Jelajah: ON' : 'Mode Jelajah'}</span>
+            <Navigation className={`h-3.5 w-3.5 ${hud.autopilot ? 'text-emerald-300 animate-pulse' : 'text-sky-300'}`} />
+            <span>{hud.autopilot ? 'Jelajah ON' : 'Jelajah'}</span>
           </button>
 
           {/* Tombol Ganti Kamera (Dalam Kokpit / Ekor / Sayap / Orbit 360°) */}
@@ -290,10 +284,10 @@ export function CockpitSimulatorHud() {
               cockpitInput.cycleCameraRequested = true;
             }}
             title="Ganti Sudut Pandang Kamera (Tombol C)"
-            className="flex h-10 items-center gap-1.5 rounded-lg border border-cyan-400/65 bg-[#061d2e]/90 px-3 font-display text-xs font-bold tracking-wider text-cyan-200 uppercase hover:bg-cyan-500/20 cursor-pointer active:scale-95"
+            className="flex h-9 sm:h-10 shrink-0 items-center gap-1.5 rounded-full border border-cyan-400/55 bg-[#061d2e]/88 px-2.5 sm:px-3 font-display text-[11px] sm:text-xs font-bold tracking-wider text-cyan-200 uppercase hover:bg-cyan-500/20 cursor-pointer active:scale-95"
           >
-            <Camera className="h-4 w-4 text-cyan-300" />
-            <span>{CAM_LABELS[hud.cameraMode]}</span>
+            <Camera className="h-3.5 w-3.5 text-cyan-300" />
+            <span className="hidden sm:inline">{CAM_LABELS[hud.cameraMode]}</span>
           </button>
 
           {/* Tombol Ikon Buku Manual Pilot */}
@@ -301,10 +295,10 @@ export function CockpitSimulatorHud() {
             type="button"
             onClick={() => setManualOpen(true)}
             title="Buka Buku Manual Kemudi Pilot (Tombol M)"
-            className="flex h-10 items-center gap-1.5 rounded-lg border-2 border-amber-400/80 bg-amber-500/20 px-3 font-display text-xs font-bold tracking-wider text-amber-200 uppercase shadow-[0_0_14px_rgba(251,191,36,0.3)] hover:bg-amber-500/35 cursor-pointer active:scale-95"
+            className="flex h-9 sm:h-10 shrink-0 items-center gap-1.5 rounded-full border border-amber-400/75 bg-amber-500/20 px-2.5 sm:px-3 font-display text-[11px] sm:text-xs font-bold tracking-wider text-amber-200 uppercase hover:bg-amber-500/35 cursor-pointer active:scale-95"
           >
-            <BookOpen className="h-4 w-4 text-amber-300" />
-            <span>Manual Pilot</span>
+            <BookOpen className="h-3.5 w-3.5 text-amber-300" />
+            <span className="hidden md:inline">Manual</span>
           </button>
 
           <button
@@ -314,7 +308,7 @@ export function CockpitSimulatorHud() {
               toggle('soundEnabled');
             }}
             title={soundEnabled ? 'Matikan Suara Mesin' : 'Nyalakan Suara Mesin'}
-            className="flex h-10 w-10 items-center justify-center rounded-lg border border-emerald-400/45 bg-[#04140e]/85 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer active:scale-95"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-emerald-400/45 bg-[#04140e]/88 text-emerald-300 hover:bg-emerald-500/20 cursor-pointer active:scale-95"
           >
             {soundEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4 text-slate-400" />}
           </button>
@@ -326,139 +320,95 @@ export function CockpitSimulatorHud() {
               setSliderPct(0);
             }}
             title="Ulang dari Runway 09 (Tombol R)"
-            className="flex h-10 items-center gap-1.5 rounded-lg border border-sky-400/45 bg-[#06182c]/85 px-3 font-display text-xs font-bold tracking-wider text-sky-200 uppercase hover:bg-sky-500/20 cursor-pointer active:scale-95"
+            className="flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-full border border-sky-400/45 bg-[#06182c]/88 text-sky-200 hover:bg-sky-500/20 cursor-pointer active:scale-95"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">Reset</span>
           </button>
 
           <button
             type="button"
             onClick={exitCockpitSim}
-            className="flex h-10 items-center gap-1.5 rounded-lg border border-rose-400/80 bg-rose-600/85 px-3.5 font-display text-xs font-bold tracking-wider text-white uppercase shadow-[0_0_16px_rgba(244,63,94,0.45)] hover:bg-rose-500 cursor-pointer active:scale-95"
+            className="flex h-9 sm:h-10 shrink-0 items-center gap-1.5 rounded-full border border-rose-400/80 bg-rose-600/90 px-3 font-display text-[11px] sm:text-xs font-bold tracking-wider text-white uppercase hover:bg-rose-500 cursor-pointer active:scale-95"
           >
-            <LogOut className="h-4 w-4" />
-            <span>Keluar Kokpit</span>
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Keluar</span>
           </button>
         </div>
       </div>
 
-      {/* === KARTU MISI PELATIHAN PROGRESIF & PILOT COACH (KIRI ATAS) === */}
-      <div className="app-cockpit-mission pointer-events-auto ml-3 sm:ml-5 mt-2 w-[min(340px,calc(100vw-1.5rem))] rounded-xl border border-emerald-400/45 bg-[#04140e]/85 p-2.5 backdrop-blur-sm shadow-lg">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <Award className="h-4 w-4 text-amber-300 shrink-0" />
-            <span className="font-display text-[11px] font-bold tracking-wider text-white uppercase">
-              {activeMission.title}
-            </span>
-          </div>
-          <span
-            className={`rounded px-1.5 py-0.5 text-[9px] font-bold uppercase ${
-              activeMission.difficulty === 'MUDAH'
-                ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-400/40'
-                : activeMission.difficulty === 'MENENGAH'
-                  ? 'bg-amber-500/25 text-amber-300 border border-amber-400/40'
-                  : activeMission.difficulty === 'SULIT'
-                    ? 'bg-orange-500/25 text-orange-300 border border-orange-400/40'
-                    : 'bg-rose-500/25 text-rose-300 border border-rose-400/40'
-            }`}
-          >
-            {activeMission.difficulty}
-          </span>
-        </div>
-
-        {/* Pemilih Level Misi 1 -> 5 */}
-        <div className="mt-1.5 flex items-center gap-1">
-          {SIM_MISSIONS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => {
-                cockpitInput.requestedMissionId = m.id;
-                setSliderPct(0);
-              }}
-              className={`flex-1 rounded py-1 font-display text-[10px] font-bold transition-all cursor-pointer ${
-                hud.missionId === m.id
-                  ? 'bg-emerald-400 text-[#03140d] shadow'
-                  : 'border border-emerald-400/30 bg-[#082217] text-emerald-300 hover:bg-emerald-500/20'
-              }`}
-            >
-              Misi {m.id}
-            </button>
-          ))}
-        </div>
-
-        <div className="mt-1.5 flex items-center justify-between text-[10px] text-emerald-300/90">
-          <span>Target: {hud.missionProgressText}</span>
-          {hud.missionCompleted && (
-            <span className="inline-flex items-center gap-1 font-bold text-emerald-300">
-              <CheckCircle2 className="h-3.5 w-3.5" /> SELESAI!
-            </span>
-          )}
-        </div>
-
-        <p className="mt-1 rounded-lg border border-amber-400/30 bg-amber-500/10 px-2 py-1.5 text-[11px] leading-snug text-amber-200">
-          {hud.coachHint}
-        </p>
-
-        {hud.missionCompleted && hud.missionId < SIM_MISSIONS.length && (
-          <button
-            type="button"
-            onClick={() => {
-              cockpitInput.requestedMissionId = hud.missionId + 1;
-              setSliderPct(0);
-            }}
-            className="mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg bg-emerald-500 py-1.5 font-display text-xs font-bold tracking-wider text-[#03140d] uppercase hover:bg-emerald-400 cursor-pointer active:scale-95"
-          >
-            <span>Lanjut ke Misi {hud.missionId + 1}</span>
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        )}
-
-        {/* Kontrol Cepat Arah Kepala Pilot 360° (Tengok Kiri / Atas / Depan / Kanan / Belakang — bisa juga seret layar!) */}
-        <div className="mt-2 border-t border-emerald-400/25 pt-1.5">
-          <div className="flex items-center justify-between text-[9px] font-bold tracking-wider text-cyan-300/90 uppercase mb-1">
-            <span>Tengok Kepala (Seret Layar / Q-E)</span>
-            <span>
-              {hud.lookYawDeg === 0 && hud.lookPitchDeg === 0
-                ? 'DEPAN'
-                : `${hud.lookYawDeg > 0 ? `KIRI ${hud.lookYawDeg}°` : hud.lookYawDeg < 0 ? `KANAN ${Math.abs(hud.lookYawDeg)}°` : ''}${
-                    hud.lookPitchDeg > 8 ? ' ATAS' : ''
-                  }`}
-            </span>
-          </div>
-          <div className="grid grid-cols-5 gap-1">
-            {[
-              { label: 'Kiri', yaw: Math.PI / 2, pitch: 0.05 },
-              { label: 'Atas', yaw: 0, pitch: 0.95 },
-              { label: 'Depan', yaw: 0, pitch: 0 },
-              { label: 'Kanan', yaw: -Math.PI / 2, pitch: 0.05 },
-              { label: 'Belakang', yaw: Math.PI, pitch: 0.14 },
-            ].map((view) => {
-              const isCur =
-                Math.abs(hud.lookYawDeg - Math.round((view.yaw * 180) / Math.PI)) < 15 &&
-                Math.abs(hud.lookPitchDeg - Math.round((view.pitch * 180) / Math.PI)) < 20;
-              return (
+      {/* === SUBTITLE MISI & PANDUAN PILOT TANPA KOTAK (BERSIH ALA GAME MOBILE PROFESIONAL) === */}
+      {!hud.crashed && (
+        <div className="pointer-events-none fixed bottom-2.5 sm:bottom-4 left-1/2 z-30 flex w-[min(560px,calc(100vw-13rem))] -translate-x-1/2 flex-col items-center text-center">
+          {/* Pemilih Level Misi 1-5 Ringkas (Muncul hanya saat badge Misi diklik) */}
+          {missionPickerOpen && (
+            <div className="pointer-events-auto mb-1.5 flex items-center gap-1 rounded-full bg-slate-950/85 px-2 py-1 border border-emerald-400/40">
+              {SIM_MISSIONS.map((m) => (
                 <button
-                  key={view.label}
+                  key={m.id}
                   type="button"
                   onClick={() => {
-                    cockpitTelemetry.lookYaw = view.yaw;
-                    cockpitTelemetry.lookPitch = view.pitch;
+                    cockpitInput.requestedMissionId = m.id;
+                    setSliderPct(0);
+                    setMissionPickerOpen(false);
                   }}
-                  className={`rounded py-1 font-display text-[9px] font-bold uppercase cursor-pointer active:scale-95 ${
-                    isCur
-                      ? 'bg-cyan-400 text-[#03140d]'
-                      : 'border border-cyan-400/35 bg-[#072030] text-cyan-200 hover:bg-cyan-500/25'
+                  className={`rounded-full px-2.5 py-0.5 font-display text-[10px] font-bold uppercase cursor-pointer ${
+                    hud.missionId === m.id
+                      ? 'bg-emerald-400 text-[#03140d]'
+                      : 'text-emerald-200 hover:bg-emerald-500/25'
                   }`}
                 >
-                  {view.label}
+                  M{m.id}
                 </button>
-              );
-            })}
+              ))}
+            </div>
+          )}
+
+          {/* Baris 1: Label Misi + Progress (Tanpa Kotak Besar) */}
+          <div className="pointer-events-auto flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setMissionPickerOpen((v) => !v)}
+              className="inline-flex items-center gap-1 rounded-full bg-black/45 px-2.5 py-0.5 font-display text-[10px] sm:text-[11px] font-bold tracking-wider text-amber-300 uppercase hover:bg-black/65 cursor-pointer"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.95)' }}
+            >
+              <Award className="h-3 w-3 shrink-0" />
+              <span>{activeMission.title} ▾</span>
+            </button>
+            <span
+              className="text-[10px] sm:text-[11px] font-bold text-emerald-300"
+              style={{ textShadow: '0 1px 6px rgba(0,0,0,0.98)' }}
+            >
+              {hud.missionProgressText}
+            </span>
+            {hud.missionCompleted && (
+              <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-bold text-emerald-300">
+                <CheckCircle2 className="h-3.5 w-3.5" /> SELESAI!
+              </span>
+            )}
+            {hud.missionCompleted && hud.missionId < SIM_MISSIONS.length && (
+              <button
+                type="button"
+                onClick={() => {
+                  cockpitInput.requestedMissionId = hud.missionId + 1;
+                  setSliderPct(0);
+                }}
+                className="inline-flex items-center gap-0.5 rounded-full bg-emerald-400 px-2.5 py-0.5 font-display text-[10px] font-bold text-[#03140d] uppercase cursor-pointer active:scale-95"
+              >
+                Lanjut M{hud.missionId + 1}
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            )}
           </div>
+
+          {/* Baris 2: Subtitle Panduan Pilot Murni Tanpa Kotak */}
+          <p
+            className="mt-0.5 text-[11px] sm:text-xs font-semibold leading-snug text-white"
+            style={{ textShadow: '0 2px 8px rgba(0,0,0,1), 0 0 4px rgba(0,0,0,0.95)' }}
+          >
+            {hud.coachHint}
+          </p>
         </div>
-      </div>
+      )}
 
       {/* === HEAD-UP DISPLAY (HUD) MILITER HIJAU BERCAHAYA DI TENGAH LAYAR === */}
       {!hud.crashed && (

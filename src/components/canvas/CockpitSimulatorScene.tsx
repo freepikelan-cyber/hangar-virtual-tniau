@@ -214,6 +214,23 @@ function CockpitWorldAndPhysics() {
     return clone;
   }, [unit.id, liveryId]);
 
+  // Cache node baling-baling, rotor, & landing-gear SEKALI agar 0% traverse per frame (60 FPS mulus!)
+  const extPartsCache = useMemo(() => {
+    const props: THREE.Object3D[] = [];
+    const rotors: THREE.Object3D[] = [];
+    let gearObj: THREE.Object3D | null = null;
+    extAircraftGroup.traverse((child) => {
+      const n = child.name.toLowerCase();
+      if (n === 'landing-gear') gearObj = child;
+      if (n.includes('prop') || n.includes('blade') || n.includes('fan') || n.includes('spinner')) {
+        props.push(child);
+      } else if (n.includes('rotor')) {
+        rotors.push(child);
+      }
+    });
+    return { props, rotors, gearObj: gearObj as THREE.Object3D | null };
+  }, [extAircraftGroup]);
+
   const cockpitRigRef = useRef<THREE.Group>(null);
   const extAircraftRef = useRef<THREE.Group>(null);
   const skyDomeRef = useRef<THREE.Mesh>(null);
@@ -949,18 +966,16 @@ function CockpitWorldAndPhysics() {
         extAircraftRef.current.position.set(tel.x, tel.y - 1.5, tel.z);
         extAircraftRef.current.quaternion.copy(extQuat);
 
-        // Putar baling-baling / rotor utama pada pesawat eksternal
+        // Putar baling-baling / rotor utama dari cache (0% traverse per frame!)
         const propSpeed = dt * (8 + tel.throttle * 34);
-        extAircraftGroup.traverse((child) => {
-          const n = child.name.toLowerCase();
-          if (n.includes('prop') || n.includes('blade') || n.includes('fan') || n.includes('spinner')) {
-            child.rotation.z += propSpeed;
-          } else if (n.includes('rotor')) {
-            child.rotation.y += propSpeed;
-          }
-        });
+        for (let k = 0; k < extPartsCache.props.length; k++) {
+          extPartsCache.props[k].rotation.z += propSpeed;
+        }
+        for (let k = 0; k < extPartsCache.rotors.length; k++) {
+          extPartsCache.rotors[k].rotation.y += propSpeed;
+        }
         extGearLerp.current = THREE.MathUtils.lerp(extGearLerp.current, tel.gearDown ? 0 : 1, Math.min(1, dt * 4));
-        const gearObj = extAircraftGroup.getObjectByName('landing-gear');
+        const gearObj = extPartsCache.gearObj;
         if (gearObj) {
           const r = extGearLerp.current;
           gearObj.visible = r < 0.96;
@@ -1656,7 +1671,7 @@ export function CockpitSimulatorScene() {
       }}
     >
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={typeof window !== 'undefined' && window.innerHeight <= 540 ? 1 : [1, 1.25]}
         camera={{ fov: 62, near: 0.05, far: 12000 }}
         gl={{
           antialias: true,

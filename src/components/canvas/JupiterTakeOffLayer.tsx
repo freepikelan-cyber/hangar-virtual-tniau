@@ -190,20 +190,42 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
     };
   }, [whiteSmokeMat, redSmokeMat, smokeGeo, heartGeos, heartSmokeMat]);
 
-  const wingClones = useMemo(() => {
-    if (selectedId !== 'kt1b') return [];
+  const { wingClones, wingPropCache } = useMemo(() => {
+    if (selectedId !== 'kt1b')
+      return {
+        wingClones: [] as THREE.Group[],
+        wingPropCache: [] as { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[]; gearObj: THREE.Object3D | null }[],
+      };
     const list: THREE.Group[] = [];
+    const cache: { props: THREE.Object3D[]; blurs: THREE.MeshBasicMaterial[]; gearObj: THREE.Object3D | null }[] = [];
     for (let i = 0; i < 5; i++) {
       const clone = sourceGroup.clone(true);
+      const props: THREE.Object3D[] = [];
+      const blurs: THREE.MeshBasicMaterial[] = [];
+      let gearObj: THREE.Object3D | null = null;
       clone.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
+          child.castShadow = false;
+          child.receiveShadow = false;
+        }
+        if (child.name === 'landing-gear') gearObj = child;
+        if (
+          child.name === 'kt1b-prop-pivot' ||
+          child.name.includes('prop') ||
+          child.name.includes('blade') ||
+          child.name.includes('spinner')
+        ) {
+          if (child.name !== 'kt1b-prop-blur') props.push(child);
+        }
+        if (child.name === 'kt1b-prop-blur' && (child as THREE.Mesh).isMesh) {
+          const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
+          if (mat && 'opacity' in mat) blurs.push(mat);
         }
       });
       list.push(clone);
+      cache.push({ props, blurs, gearObj });
     }
-    return list;
+    return { wingClones: list, wingPropCache: cache };
   }, [sourceGroup, selectedId]);
 
   useFrame((state, delta) => {
@@ -302,28 +324,18 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       const grp = wingRefs.current[i];
       if (!grp) continue;
 
-      const clone = wingClones[i];
-      // Putar baling-baling & tampilkan efek blur piringan baling-baling untuk SEMUA 5 pesawat pendamping (J2–J6)!
+      // Putar baling-baling dari cache (0% traverse per frame -> 60 FPS mulus di Web & Android!)
       const propSpeed = flightMode === 'landing' && pt >= 18.8 ? 8.0 : 38.0;
       const blurOpacity = flightMode === 'landing' && pt >= 18.8 ? 0.08 : 0.28;
-      clone.traverse((child) => {
-        if (
-          child.name === 'kt1b-prop-pivot' ||
-          child.name.includes('prop') ||
-          child.name.includes('blade') ||
-          child.name.includes('spinner')
-        ) {
-          if (child.name !== 'kt1b-prop-blur') {
-            child.rotation.z += dt * propSpeed;
-          }
+      const pCache = wingPropCache[i];
+      if (pCache) {
+        for (let k = 0; k < pCache.props.length; k++) {
+          pCache.props[k].rotation.z += dt * propSpeed;
         }
-        if (child.name === 'kt1b-prop-blur' && (child as THREE.Mesh).isMesh) {
-          const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial | undefined;
-          if (mat && 'opacity' in mat) {
-            mat.opacity = blurOpacity;
-          }
+        for (let k = 0; k < pCache.blurs.length; k++) {
+          pCache.blurs[k].opacity = blurOpacity;
         }
-      });
+      }
 
       let tx = 0;
       let ty = 0;
@@ -968,7 +980,7 @@ export function JupiterTakeOffLayer({ sourceGroup }: Props) {
       }
 
       gearStates.current[i] = THREE.MathUtils.lerp(gearStates.current[i], targetGear, Math.min(1, dt * 3));
-      const gearObj = clone.getObjectByName('landing-gear');
+      const gearObj = pCache?.gearObj ?? null;
       if (gearObj) {
         const r = gearStates.current[i];
         gearObj.visible = r < 0.96;

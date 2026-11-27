@@ -265,8 +265,8 @@ export function HangarScene() {
   return (
     <div className="absolute inset-0 bg-[#07152c] touch-none">
       <Canvas
-        shadows
-        dpr={isOutdoorSim || showcaseMode ? 1 : [1, 1.25]}
+        shadows={showGroundShadow}
+        dpr={isOutdoorSim || showcaseMode || (typeof window !== 'undefined' && window.innerHeight <= 540) ? 1 : [1, 1.25]}
         camera={{ position: initialCam.pos, fov: 42, near: 0.1, far: 440 }}
         gl={{
           antialias: true,
