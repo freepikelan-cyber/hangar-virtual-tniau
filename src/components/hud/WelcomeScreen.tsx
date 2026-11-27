@@ -101,7 +101,7 @@ export function WelcomeScreen() {
           <TniAuLogo3D className="h-full w-full" animated />
         </div>
         <h2 className="font-display text-sm sm:text-lg font-bold tracking-[0.12em] text-white uppercase leading-snug">
-          Selamat Datang di Hangar Virtual Pesawat TNI AU
+          Selamat Datang di Hanggar Virtual Pesawat TNI AU
         </h2>
         <p className="font-display text-[11px] sm:text-xs font-bold tracking-[0.22em] text-[#75bcff] uppercase">
           MEMUAT HANGGAR VIRTUAL 3D...

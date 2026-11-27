@@ -124,11 +124,11 @@ export function TopHeader() {
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="font-display text-[9px] sm:text-[10px] font-semibold tracking-[0.14em] sm:tracking-[0.16em] text-[#4da6ff] uppercase truncate">
+            <p className="font-display text-[8px] sm:text-[9px] font-semibold tracking-[0.12em] text-[#4da6ff] uppercase whitespace-nowrap">
               TNI ANGKATAN UDARA • EDUKASI DIRGANTARA 3D
             </p>
-            <h1 className="font-display text-xs sm:text-sm lg:text-base font-bold tracking-[0.05em] sm:tracking-[0.07em] text-white uppercase leading-tight truncate">
-              HANGAR VIRTUAL PESAWAT TNI AU 3D
+            <h1 className="font-display text-[11px] sm:text-xs lg:text-sm font-bold tracking-[0.04em] text-white uppercase leading-tight whitespace-nowrap">
+              Hanggar Virtual Pesawat TNI AU
             </h1>
             {/* Ringkasan Unit Aktif khusus layar HP (< md) */}
             <div className="mt-0.5 flex md:hidden items-center gap-1.5 text-[10px] text-slate-300 truncate">
@@ -441,7 +441,7 @@ export function TopHeader() {
                 Keluar dari Aplikasi?
               </h3>
               <p className="mt-1 text-xs text-slate-300">
-                Apakah Anda yakin ingin menutup Hangar Virtual Pesawat TNI AU 3D?
+                Apakah Anda yakin ingin menutup Hanggar Virtual Pesawat TNI AU?
               </p>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
