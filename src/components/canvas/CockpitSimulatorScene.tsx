@@ -21,6 +21,19 @@ import {
   makePhotorealCloudTexture,
   makeRunwayAsphaltTexture,
 } from '../../utils/terrainTextures';
+import {
+  makeFighterHudControlTexture,
+  makeFighterMainDashTexture,
+  makeFighterRadarMfdTexture,
+  makeFighterSideConsoleTexture,
+  makeTransportEcamTexture,
+  makeTransportMcpTexture,
+  makeTransportNdTexture,
+  makeTransportOverheadTexture,
+  makeTransportPedestalTexture,
+  makeTransportPfdTexture,
+  makeTransportSideGaugeTexture,
+} from '../../utils/cockpitPanelTextures';
 
 /** 10 Cincin Target Manuver Udara (dimulai lurus di depan ujung Runway 09 lalu membelok melintasi gunung & laut). */
 const TARGET_RINGS: { pos: [number, number, number]; rotY: number }[] = [
@@ -217,9 +230,26 @@ function CockpitWorldAndPhysics() {
   const cloudTex = useMemo(() => makePhotorealCloudTexture(), []);
   const mtnGeo = useMemo(() => buildMountainRangeGeometry(520, 680), []);
 
+  const isTransportCockpit = unit.category === 'Angkut & VIP';
+
   const mfdLeftTex = useMemo(() => makeMfdTexture('radar', unit.code), [unit.code]);
   const mfdCenterTex = useMemo(() => makeMfdTexture('hsi', unit.code), [unit.code]);
   const mfdRightTex = useMemo(() => makeMfdTexture('engine', unit.code), [unit.code]);
+
+  // Tekstur detail kokpit khusus Pesawat Angkut/VIP (Glass Cockpit) & Pesawat Tempur (Sukhoi/Flanker-style)
+  const transportPfdTex = useMemo(() => makeTransportPfdTexture(unit.code), [unit.code]);
+  const transportNdTex = useMemo(() => makeTransportNdTexture(unit.code), [unit.code]);
+  const transportEcamUpperTex = useMemo(() => makeTransportEcamTexture('upper', unit.code), [unit.code]);
+  const transportEcamLowerTex = useMemo(() => makeTransportEcamTexture('lower', unit.code), [unit.code]);
+  const transportMcpTex = useMemo(() => makeTransportMcpTexture(), []);
+  const transportOverheadTex = useMemo(() => makeTransportOverheadTexture(), []);
+  const transportPedestalTex = useMemo(() => makeTransportPedestalTexture(), []);
+  const transportSideGaugeTex = useMemo(() => makeTransportSideGaugeTexture(), []);
+
+  const fighterDashTex = useMemo(() => makeFighterMainDashTexture(unit.code), [unit.code]);
+  const fighterRadarTex = useMemo(() => makeFighterRadarMfdTexture(unit.code), [unit.code]);
+  const fighterHudCtrlTex = useMemo(() => makeFighterHudControlTexture(), []);
+  const fighterSideConsoleTex = useMemo(() => makeFighterSideConsoleTexture(), []);
 
   const clouds = useMemo(() => {
     const arr: { x: number; y: number; z: number; s: number }[] = [];
@@ -264,8 +294,44 @@ function CockpitWorldAndPhysics() {
       mfdLeftTex.dispose();
       mfdCenterTex.dispose();
       mfdRightTex.dispose();
+      transportPfdTex.dispose();
+      transportNdTex.dispose();
+      transportEcamUpperTex.dispose();
+      transportEcamLowerTex.dispose();
+      transportMcpTex.dispose();
+      transportOverheadTex.dispose();
+      transportPedestalTex.dispose();
+      transportSideGaugeTex.dispose();
+      fighterDashTex.dispose();
+      fighterRadarTex.dispose();
+      fighterHudCtrlTex.dispose();
+      fighterSideConsoleTex.dispose();
     };
-  }, [skyTex, runwayTex, grassTex, hangarTex, oceanTex, mtnDetail, cloudTex, mtnGeo, mfdLeftTex, mfdCenterTex, mfdRightTex]);
+  }, [
+    skyTex,
+    runwayTex,
+    grassTex,
+    hangarTex,
+    oceanTex,
+    mtnDetail,
+    cloudTex,
+    mtnGeo,
+    mfdLeftTex,
+    mfdCenterTex,
+    mfdRightTex,
+    transportPfdTex,
+    transportNdTex,
+    transportEcamUpperTex,
+    transportEcamLowerTex,
+    transportMcpTex,
+    transportOverheadTex,
+    transportPedestalTex,
+    transportSideGaugeTex,
+    fighterDashTex,
+    fighterRadarTex,
+    fighterHudCtrlTex,
+    fighterSideConsoleTex,
+  ]);
 
   useFrame((state, delta) => {
     const dt = Math.min(delta, 0.05);
@@ -716,8 +782,8 @@ function CockpitWorldAndPhysics() {
       stickPivotRef.current.rotation.z = -tel.stickX * 0.34;
     }
     if (throttleLeverRef.current) {
-      throttleLeverRef.current.position.z = -0.58 - tel.throttle * 0.14;
-      throttleLeverRef.current.rotation.x = -0.35 - tel.throttle * 0.45;
+      throttleLeverRef.current.position.z = (isTransportCockpit ? -0.53 : -0.54) - tel.throttle * 0.1;
+      throttleLeverRef.current.rotation.x = -0.25 - tel.throttle * 0.52;
     }
 
     // 5. Update Audio Web Audio API Real-Time
@@ -875,142 +941,419 @@ function CockpitWorldAndPhysics() {
         ))}
       </group>
 
-      {/* === INTERIOR KOKPIT 3D FIRST-PERSON (Menempel presisi pada kursi pilot / kamera) === */}
+      {/* === INTERIOR KOKPIT 3D FIRST-PERSON (Pesawat Angkut/VIP Glass Cockpit vs Pesawat Tempur Sukhoi-style) === */}
       <group ref={cockpitRigRef} name="first-person-cockpit-3d">
-        {/* Lampu lembut instrumen kokpit */}
-        <pointLight position={[0, -0.15, -0.55]} color="#34d399" intensity={0.9} distance={2.5} />
+        {isTransportCockpit ? (
+          /* ===================== KOKPIT PESAWAT ANGKUT & VVIP (DUAL-PILOT GLASS COCKPIT) ===================== */
+          <>
+            {/* Pencahayaan lembut kabin kokpit angkut */}
+            <pointLight position={[0, 0.12, -0.45]} color="#bae6fd" intensity={0.75} distance={2.8} />
+            <pointLight position={[-0.52, -0.18, -0.62]} color="#f59e0b" intensity={0.45} distance={1.1} />
+            <pointLight position={[0.52, -0.18, -0.62]} color="#f59e0b" intensity={0.45} distance={1.1} />
 
-        {/* Bingkai Kanopi Kiri, Kanan & Lengkungan Atas (Canopy Arch Bow) */}
-        <mesh position={[0, 0.36, -0.78]} rotation={[0, 0, Math.PI / 2]}>
-          <torusGeometry args={[0.62, 0.022, 10, 32, Math.PI]} />
-          <meshStandardMaterial color="#1a2230" roughness={0.45} metalness={0.55} />
-        </mesh>
-        <mesh position={[-0.64, -0.18, -0.58]} rotation={[0.15, 0.12, 0]}>
-          <boxGeometry args={[0.045, 0.045, 1.15]} />
-          <meshStandardMaterial color="#1f2937" roughness={0.5} metalness={0.5} />
-        </mesh>
-        <mesh position={[0.64, -0.18, -0.58]} rotation={[0.15, -0.12, 0]}>
-          <boxGeometry args={[0.045, 0.045, 1.15]} />
-          <meshStandardMaterial color="#1f2937" roughness={0.5} metalness={0.5} />
-        </mesh>
-
-        {/* Dashboard Glare Shield Utama */}
-        <mesh position={[0, -0.38, -0.82]} rotation={[0.18, 0, 0]}>
-          <boxGeometry args={[1.32, 0.34, 0.44]} />
-          <meshStandardMaterial color="#141b26" roughness={0.78} metalness={0.28} />
-        </mesh>
-        {/* Konsol samping kiri & kanan */}
-        <mesh position={[-0.56, -0.46, -0.45]}>
-          <boxGeometry args={[0.24, 0.24, 0.92]} />
-          <meshStandardMaterial color="#17202e" roughness={0.75} metalness={0.25} />
-        </mesh>
-        <mesh position={[0.56, -0.46, -0.45]}>
-          <boxGeometry args={[0.24, 0.24, 0.92]} />
-          <meshStandardMaterial color="#17202e" roughness={0.75} metalness={0.25} />
-        </mesh>
-
-        {/* Kaca Combiner HUD Militer di atas Glare Shield */}
-        <group position={[0, -0.08, -0.74]} rotation={[-0.32, 0, 0]}>
-          <mesh>
-            <planeGeometry args={[0.36, 0.26]} />
-            <meshBasicMaterial color="#10b981" transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} />
-          </mesh>
-          {/* Bingkai tipis kiri-kanan kaca HUD */}
-          <mesh position={[-0.185, 0, 0]}>
-            <boxGeometry args={[0.012, 0.27, 0.012]} />
-            <meshStandardMaterial color="#334155" metalness={0.7} roughness={0.3} />
-          </mesh>
-          <mesh position={[0.185, 0, 0]}>
-            <boxGeometry args={[0.012, 0.27, 0.012]} />
-            <meshStandardMaterial color="#334155" metalness={0.7} roughness={0.3} />
-          </mesh>
-        </group>
-
-        {/* 3 Layar MFD Menyala (Kiri: Radar, Tengah: HSI Nav, Kanan: Engine Telemetry) */}
-        {[
-          { x: -0.34, y: -0.33, rotY: 0.16, tex: mfdLeftTex },
-          { x: 0.0, y: -0.35, rotY: 0.0, tex: mfdCenterTex },
-          { x: 0.34, y: -0.33, rotY: -0.16, tex: mfdRightTex },
-        ].map((mfd, i) => (
-          <group key={`mfd-${i}`} position={[mfd.x, mfd.y, -0.59]} rotation={[-0.22, mfd.rotY, 0]}>
-            {/* Bezel MFD */}
-            <mesh>
-              <boxGeometry args={[0.24, 0.21, 0.024]} />
-              <meshStandardMaterial color="#0f172a" roughness={0.6} metalness={0.4} />
+            {/* Bingkai Kaca Depan (Windshield): Pilar Tengah Tebal, Pilar Kiri-Kanan Miring, & Lis Atas */}
+            <mesh position={[0, 0.24, -0.82]}>
+              <boxGeometry args={[0.056, 0.56, 0.065]} />
+              <meshStandardMaterial color="#1b232e" roughness={0.5} metalness={0.45} />
             </mesh>
-            {/* Layar MFD Bercahaya */}
-            <mesh position={[0, 0, 0.014]}>
-              <planeGeometry args={[0.21, 0.18]} />
-              <meshBasicMaterial map={mfd.tex} />
+            {/* Pilar Kiri & Kanan Miring */}
+            <mesh position={[-0.73, 0.2, -0.78]} rotation={[0, 0, -0.18]}>
+              <boxGeometry args={[0.075, 0.66, 0.085]} />
+              <meshStandardMaterial color="#222c38" roughness={0.5} metalness={0.45} />
             </mesh>
-          </group>
-        ))}
+            <mesh position={[0.73, 0.2, -0.78]} rotation={[0, 0, 0.18]}>
+              <boxGeometry args={[0.075, 0.66, 0.085]} />
+              <meshStandardMaterial color="#222c38" roughness={0.5} metalness={0.45} />
+            </mesh>
+            {/* Lis Atas & Samping Kaca Depan */}
+            <mesh position={[0, 0.49, -0.79]}>
+              <boxGeometry args={[1.68, 0.09, 0.16]} />
+              <meshStandardMaterial color="#1a222d" roughness={0.6} metalness={0.35} />
+            </mesh>
+            <mesh position={[-0.86, 0.06, -0.5]} rotation={[0, 0.35, 0]}>
+              <boxGeometry args={[0.06, 0.72, 0.75]} />
+              <meshStandardMaterial color="#1f2937" roughness={0.65} metalness={0.3} />
+            </mesh>
+            <mesh position={[0.86, 0.06, -0.5]} rotation={[0, -0.35, 0]}>
+              <boxGeometry args={[0.06, 0.72, 0.75]} />
+              <meshStandardMaterial color="#1f2937" roughness={0.65} metalness={0.3} />
+            </mesh>
 
-        {/* Tuas Joystick HOTAS 3D (Bergerak nyata mengikuti input Keyboard / Virtual Joystick!) */}
-        <group position={[0.0, -0.54, -0.52]}>
-          {/* Boot karet dasar joystick */}
-          <mesh>
-            <cylinderGeometry args={[0.05, 0.07, 0.05, 12]} />
-            <meshStandardMaterial color="#0f172a" roughness={0.85} />
-          </mesh>
-          <group ref={stickPivotRef} position={[0, 0.02, 0]}>
-            <mesh position={[0, 0.09, 0]}>
-              <cylinderGeometry args={[0.018, 0.022, 0.18, 10]} />
-              <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.5} />
-            </mesh>
-            {/* Grip kepala HOTAS + tombol senjata merah */}
-            <mesh position={[0, 0.19, 0.01]} rotation={[-0.2, 0, 0]}>
-              <boxGeometry args={[0.044, 0.065, 0.048]} />
-              <meshStandardMaterial color="#111827" roughness={0.6} metalness={0.35} />
-            </mesh>
-            <mesh position={[0.012, 0.21, 0.026]}>
-              <sphereGeometry args={[0.009, 8, 8]} />
-              <meshBasicMaterial color="#ef4444" />
-            </mesh>
-          </group>
-        </group>
+            {/* Sepasang Wiper Kaca Depan Hitam (Kiri & Kanan) */}
+            <group position={[-0.44, 0.025, -0.805]} rotation={[0, 0, -0.04]}>
+              <mesh>
+                <boxGeometry args={[0.32, 0.011, 0.012]} />
+                <meshStandardMaterial color="#0b0f14" roughness={0.4} metalness={0.6} />
+              </mesh>
+              <mesh position={[0.16, -0.018, 0.005]} rotation={[0, 0, 0.35]}>
+                <boxGeometry args={[0.08, 0.01, 0.01]} />
+                <meshStandardMaterial color="#0b0f14" roughness={0.4} metalness={0.6} />
+              </mesh>
+            </group>
+            <group position={[0.44, 0.025, -0.805]} rotation={[0, 0, 0.04]}>
+              <mesh>
+                <boxGeometry args={[0.32, 0.011, 0.012]} />
+                <meshStandardMaterial color="#0b0f14" roughness={0.4} metalness={0.6} />
+              </mesh>
+              <mesh position={[-0.16, -0.018, 0.005]} rotation={[0, 0, -0.35]}>
+                <boxGeometry args={[0.08, 0.01, 0.01]} />
+                <meshStandardMaterial color="#0b0f14" roughness={0.4} metalness={0.6} />
+              </mesh>
+            </group>
 
-        {/* Tuas Throttle 3D di Konsol Kiri (Maju/mundur mengikuti input Throttle!) */}
-        <group ref={throttleLeverRef} position={[-0.46, -0.36, -0.58]} rotation={[-0.35, 0, 0]}>
-          <mesh position={[0, 0.06, 0]}>
-            <boxGeometry args={[0.026, 0.12, 0.024]} />
-            <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.35} />
-          </mesh>
-          <mesh position={[0, 0.125, 0]} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.022, 0.022, 0.095, 10]} />
-            <meshStandardMaterial color="#0f172a" roughness={0.65} />
-          </mesh>
-        </group>
+            {/* Overhead Switch Panel di Langit-Langit Kokpit */}
+            <group position={[0, 0.51, -0.52]} rotation={[0.45, 0, 0]}>
+              <mesh>
+                <boxGeometry args={[0.96, 0.06, 0.38]} />
+                <meshStandardMaterial color="#1e293b" roughness={0.65} metalness={0.3} />
+              </mesh>
+              <mesh position={[0, -0.032, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.9, 0.34]} />
+                <meshBasicMaterial map={transportOverheadTex} />
+              </mesh>
+            </group>
 
-        {/* Sandaran Kepala Kursi Ejeksi, Sayap Kiri-Kanan, & Sirip Ekor Belakang (Terlihat nyata saat pilot menengok kanan, kiri, atas, & belakang!) */}
-        <group position={[0, 0.05, 0.42]}>
-          <mesh>
-            <boxGeometry args={[0.42, 0.56, 0.12]} />
-            <meshStandardMaterial color="#1e293b" roughness={0.8} />
-          </mesh>
-          <mesh position={[0, 0.34, 0]}>
-            <boxGeometry args={[0.32, 0.16, 0.12]} />
-            <meshStandardMaterial color="#eab308" roughness={0.6} />
-          </mesh>
-        </group>
-        {/* Sayap Kiri & Kanan terlihat saat menengok samping */}
-        <mesh position={[-2.4, -0.45, 0.85]} rotation={[0, 0.25, 0]}>
-          <boxGeometry args={[3.4, 0.08, 1.35]} />
-          <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
-        </mesh>
-        <mesh position={[2.4, -0.45, 0.85]} rotation={[0, -0.25, 0]}>
-          <boxGeometry args={[3.4, 0.08, 1.35]} />
-          <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
-        </mesh>
-        {/* Punggung badan & sirip ekor vertikal terlihat saat menengok ke belakang */}
-        <mesh position={[0, -0.38, 2.3]}>
-          <boxGeometry args={[0.72, 0.46, 3.2]} />
-          <meshStandardMaterial color="#334155" roughness={0.55} metalness={0.35} />
-        </mesh>
-        <mesh position={[0, 0.72, 3.5]} rotation={[-0.22, 0, 0]}>
-          <boxGeometry args={[0.1, 1.65, 1.15]} />
-          <meshStandardMaterial color="#1e3a8a" roughness={0.45} metalness={0.4} />
-        </mesh>
+            {/* Glareshield Lebar + Strip Autopilot MCP/FCU */}
+            <mesh position={[0, -0.02, -0.78]}>
+              <boxGeometry args={[1.48, 0.055, 0.24]} />
+              <meshStandardMaterial color="#141a22" roughness={0.82} metalness={0.2} />
+            </mesh>
+            <mesh position={[0, -0.075, -0.745]} rotation={[-0.08, 0, 0]}>
+              <boxGeometry args={[0.96, 0.095, 0.05]} />
+              <meshStandardMaterial color="#273444" roughness={0.6} metalness={0.3} />
+            </mesh>
+            <mesh position={[0, -0.075, -0.718]} rotation={[-0.08, 0, 0]}>
+              <planeGeometry args={[0.93, 0.085]} />
+              <meshBasicMaterial map={transportMcpTex} />
+            </mesh>
+
+            {/* Panel Instrumen Utama Abu-Abu Biru Khas Airbus / Pesawat Angkut Modern */}
+            <mesh position={[0, -0.275, -0.76]}>
+              <boxGeometry args={[1.42, 0.34, 0.12]} />
+              <meshStandardMaterial color="#3c4c5c" roughness={0.65} metalness={0.28} />
+            </mesh>
+
+            {/* 6 Layar Glass Cockpit MFD Menyala (PFD Kiri, ND Kiri, Upper/Lower ECAM + Standby, ND Kanan, PFD Kanan) */}
+            {[
+              { x: -0.37, y: -0.225, w: 0.145, h: 0.145, tex: transportPfdTex },
+              { x: -0.2, y: -0.225, w: 0.145, h: 0.145, tex: transportNdTex },
+              { x: -0.094, y: -0.215, w: 0.048, h: 0.048, tex: transportPfdTex },
+              { x: 0.0, y: -0.205, w: 0.118, h: 0.118, tex: transportEcamUpperTex },
+              { x: 0.0, y: -0.34, w: 0.118, h: 0.118, tex: transportEcamLowerTex },
+              { x: 0.2, y: -0.225, w: 0.145, h: 0.145, tex: transportNdTex },
+              { x: 0.37, y: -0.225, w: 0.145, h: 0.145, tex: transportPfdTex },
+            ].map((scr, idx) => (
+              <group key={`tp-mfd-${idx}`} position={[scr.x, scr.y, -0.695]}>
+                <mesh>
+                  <boxGeometry args={[scr.w + 0.016, scr.h + 0.016, 0.018]} />
+                  <meshStandardMaterial color="#0f172a" roughness={0.55} metalness={0.4} />
+                </mesh>
+                <mesh position={[0, 0, 0.011]}>
+                  <planeGeometry args={[scr.w, scr.h]} />
+                  <meshBasicMaterial map={scr.tex} />
+                </mesh>
+              </group>
+            ))}
+
+            {/* Panel Instrumen Samping Kiri & Kanan Berlampu Amber Hangat */}
+            <mesh position={[-0.53, -0.225, -0.694]} rotation={[0, 0.14, 0]}>
+              <planeGeometry args={[0.125, 0.125]} />
+              <meshBasicMaterial map={transportSideGaugeTex} />
+            </mesh>
+            <mesh position={[0.53, -0.225, -0.694]} rotation={[0, -0.14, 0]}>
+              <planeGeometry args={[0.125, 0.125]} />
+              <meshBasicMaterial map={transportSideGaugeTex} />
+            </mesh>
+
+            {/* Center Pedestal Miring (Dual MCDU + Radio Stack + Kuadran Throttle Tengah) */}
+            <group position={[0, -0.49, -0.53]} rotation={[-1.02, 0, 0]}>
+              <mesh>
+                <boxGeometry args={[0.42, 0.46, 0.12]} />
+                <meshStandardMaterial color="#273444" roughness={0.68} metalness={0.3} />
+              </mesh>
+              <mesh position={[0, 0, 0.062]}>
+                <planeGeometry args={[0.39, 0.43]} />
+                <meshBasicMaterial map={transportPedestalTex} />
+              </mesh>
+            </group>
+
+            {/* Dual Throttle Levers 3D di Pedestal Tengah (Bergerak nyata mengikuti input Throttle!) */}
+            <group ref={throttleLeverRef} position={[0, -0.41, -0.53]} rotation={[-0.25, 0, 0]}>
+              {[-0.032, 0.032].map((tx, ti) => (
+                <group key={`tp-thr-${ti}`} position={[tx, 0, 0]}>
+                  <mesh position={[0, 0.055, 0]}>
+                    <boxGeometry args={[0.016, 0.11, 0.018]} />
+                    <meshStandardMaterial color="#64748b" metalness={0.7} roughness={0.3} />
+                  </mesh>
+                  <mesh position={[0, 0.11, 0]} rotation={[0, 0, Math.PI / 2]}>
+                    <cylinderGeometry args={[0.017, 0.017, 0.048, 10]} />
+                    <meshStandardMaterial color="#0f172a" roughness={0.55} />
+                  </mesh>
+                </group>
+              ))}
+            </group>
+
+            {/* Side-Stick Kiri Pilot (Bergerak mengikuti pitch/roll!) */}
+            <group position={[-0.56, -0.45, -0.48]}>
+              <mesh>
+                <cylinderGeometry args={[0.035, 0.048, 0.04, 10]} />
+                <meshStandardMaterial color="#0f172a" roughness={0.85} />
+              </mesh>
+              <group ref={stickPivotRef} position={[0, 0.02, 0]}>
+                <mesh position={[0, 0.075, 0]}>
+                  <cylinderGeometry args={[0.014, 0.017, 0.14, 10]} />
+                  <meshStandardMaterial color="#1e293b" roughness={0.55} metalness={0.4} />
+                </mesh>
+                <mesh position={[0, 0.145, 0]}>
+                  <boxGeometry args={[0.032, 0.045, 0.034]} />
+                  <meshStandardMaterial color="#111827" roughness={0.6} />
+                </mesh>
+              </group>
+            </group>
+
+            {/* Sandaran Kursi Pilot & Co-Pilot di Tepi Kiri & Kanan Foreground (Seperti Referensi!) */}
+            <group position={[-0.7, -0.24, -0.28]} rotation={[0, 0.22, 0]}>
+              <mesh position={[0, 0.18, 0]}>
+                <boxGeometry args={[0.16, 0.24, 0.14]} />
+                <meshStandardMaterial color="#202934" roughness={0.78} />
+              </mesh>
+              <mesh position={[0.03, -0.14, 0.02]}>
+                <boxGeometry args={[0.24, 0.42, 0.16]} />
+                <meshStandardMaterial color="#171f29" roughness={0.82} />
+              </mesh>
+            </group>
+            <group position={[0.7, -0.24, -0.28]} rotation={[0, -0.22, 0]}>
+              <mesh position={[0, 0.18, 0]}>
+                <boxGeometry args={[0.16, 0.24, 0.14]} />
+                <meshStandardMaterial color="#202934" roughness={0.78} />
+              </mesh>
+              <mesh position={[-0.03, -0.14, 0.02]}>
+                <boxGeometry args={[0.24, 0.42, 0.16]} />
+                <meshStandardMaterial color="#171f29" roughness={0.82} />
+              </mesh>
+            </group>
+
+            {/* Sekat Belakang Kabin Kokpit (Saat menengok ke belakang) */}
+            <mesh position={[0, 0.02, 0.65]}>
+              <boxGeometry args={[1.6, 1.1, 0.12]} />
+              <meshStandardMaterial color="#263240" roughness={0.75} />
+            </mesh>
+          </>
+        ) : (
+          /* ===================== KOKPIT PESAWAT TEMPUR (SUKHOI / FLANKER-STYLE) ===================== */
+          <>
+            {/* Pencahayaan lembut instrumen kokpit tempur */}
+            <pointLight position={[0, -0.08, -0.5]} color="#bae6fd" intensity={0.72} distance={2.5} />
+            <pointLight position={[0.28, -0.14, -0.58]} color="#38bdf8" intensity={0.45} distance={1.1} />
+
+            {/* Lengkungan Kanopi Tebal Olive-Charcoal (Canopy Arch Bow) melingkar penuh di atas & samping */}
+            <mesh position={[0, -0.09, -0.76]} rotation={[0, 0, 0]}>
+              <torusGeometry args={[0.63, 0.048, 14, 42, Math.PI]} />
+              <meshStandardMaterial color="#2d3930" roughness={0.42} metalness={0.42} />
+            </mesh>
+            {/* Ring segel karet gelap bagian dalam kanopi */}
+            <mesh position={[0, -0.09, -0.745]} rotation={[0, 0, 0]}>
+              <torusGeometry args={[0.585, 0.015, 10, 40, Math.PI]} />
+              <meshStandardMaterial color="#11161c" roughness={0.75} metalness={0.25} />
+            </mesh>
+            {/* Rel Samping Kanopi Kiri & Kanan */}
+            <mesh position={[-0.63, -0.19, -0.45]} rotation={[0.14, 0.08, 0]}>
+              <boxGeometry args={[0.06, 0.065, 1.15]} />
+              <meshStandardMaterial color="#2b362e" roughness={0.48} metalness={0.45} />
+            </mesh>
+            <mesh position={[0.63, -0.19, -0.45]} rotation={[0.14, -0.08, 0]}>
+              <boxGeometry args={[0.06, 0.065, 1.15]} />
+              <meshStandardMaterial color="#2b362e" roughness={0.48} metalness={0.45} />
+            </mesh>
+
+            {/* 3 Cermin Spion Oval Perak pada Lengkungan Kanopi (Tengah Atas, Kiri Atas, Kanan Atas) */}
+            {[
+              { pos: [0, 0.515, -0.715] as [number, number, number], rotZ: 0, sx: 0.145, sy: 0.046 },
+              { pos: [-0.46, 0.295, -0.715] as [number, number, number], rotZ: 0.78, sx: 0.135, sy: 0.042 },
+              { pos: [0.46, 0.295, -0.715] as [number, number, number], rotZ: -0.78, sx: 0.135, sy: 0.042 },
+            ].map((mir, mi) => (
+              <group key={`canopy-mir-${mi}`} position={mir.pos} rotation={[0, 0, mir.rotZ]}>
+                <mesh scale={[mir.sx, mir.sy, 0.012]}>
+                  <sphereGeometry args={[1, 16, 12]} />
+                  <meshStandardMaterial color="#0f172a" roughness={0.5} metalness={0.5} />
+                </mesh>
+                <mesh position={[0, 0, 0.011]} scale={[mir.sx * 0.9, mir.sy * 0.85, 0.005]}>
+                  <sphereGeometry args={[1, 16, 12]} />
+                  <meshStandardMaterial color="#dbeafe" roughness={0.08} metalness={0.92} />
+                </mesh>
+              </group>
+            ))}
+
+            {/* Kompas Magnetik Standby Gantung di Lengkungan Kanan Atas (Persis Referensi!) */}
+            <group position={[0.285, 0.325, -0.73]}>
+              <mesh position={[0, 0.065, 0]}>
+                <boxGeometry args={[0.022, 0.085, 0.022]} />
+                <meshStandardMaterial color="#111827" roughness={0.6} metalness={0.4} />
+              </mesh>
+              <mesh rotation={[Math.PI / 2, 0, 0]}>
+                <cylinderGeometry args={[0.042, 0.046, 0.055, 14]} />
+                <meshStandardMaterial color="#0b0f14" roughness={0.5} metalness={0.35} />
+              </mesh>
+              <mesh position={[0, -0.004, 0.028]}>
+                <planeGeometry args={[0.056, 0.022]} />
+                <meshBasicMaterial color="#e2e8f0" />
+              </mesh>
+            </group>
+
+            {/* Unit Kaca Combiner HUD Ganda & Bracket Pelindung Atas */}
+            <group position={[0, 0.095, -0.72]}>
+              {/* Kaca Combiner HUD Hijau Transparan */}
+              <mesh rotation={[-0.22, 0, 0]}>
+                <planeGeometry args={[0.24, 0.27]} />
+                <meshBasicMaterial color="#22c55e" transparent opacity={0.08} side={THREE.DoubleSide} depthWrite={false} />
+              </mesh>
+              {/* Dua Tiang Bracket Kiri & Kanan Combiner */}
+              <mesh position={[-0.125, -0.02, -0.01]} rotation={[0.08, 0, 0.09]}>
+                <boxGeometry args={[0.016, 0.34, 0.024]} />
+                <meshStandardMaterial color="#181f28" roughness={0.45} metalness={0.65} />
+              </mesh>
+              <mesh position={[0.125, -0.02, -0.01]} rotation={[0.08, 0, -0.09]}>
+                <boxGeometry args={[0.016, 0.34, 0.024]} />
+                <meshStandardMaterial color="#181f28" roughness={0.45} metalness={0.65} />
+              </mesh>
+              {/* Pelindung Lengkung Atas HUD */}
+              <mesh position={[0, 0.14, 0.01]} rotation={[0.12, 0, 0]}>
+                <torusGeometry args={[0.165, 0.016, 8, 24, Math.PI * 0.72]} />
+                <meshStandardMaterial color="#1f2937" roughness={0.5} metalness={0.55} />
+              </mesh>
+            </group>
+
+            {/* Kotak Kontrol HUD Tengah (BRIGHT / TEST / RETICLE) */}
+            <group position={[0, -0.105, -0.71]}>
+              <mesh>
+                <boxGeometry args={[0.28, 0.105, 0.16]} />
+                <meshStandardMaterial color="#161d26" roughness={0.65} metalness={0.35} />
+              </mesh>
+              <mesh position={[0, 0, 0.082]}>
+                <planeGeometry args={[0.265, 0.092]} />
+                <meshBasicMaterial map={fighterHudCtrlTex} />
+              </mesh>
+            </group>
+
+            {/* Panel Instrumen Utama Biru-Abu Sukhoi Penuh Dial Analog & SPO-15 RWR */}
+            <group position={[0, -0.335, -0.705]} rotation={[-0.14, 0, 0]}>
+              <mesh>
+                <boxGeometry args={[0.98, 0.44, 0.14]} />
+                <meshStandardMaterial color="#3c5563" roughness={0.68} metalness={0.28} />
+              </mesh>
+              <mesh position={[0, 0, 0.072]}>
+                <planeGeometry args={[0.94, 0.415]} />
+                <meshBasicMaterial map={fighterDashTex} />
+              </mesh>
+            </group>
+
+            {/* Layar MFD Radar Taktis Digital Biru di Kanan Atas (Menonjol keluar seperti Referensi!) */}
+            <group position={[0.275, -0.155, -0.645]} rotation={[-0.1, -0.14, 0]}>
+              <mesh>
+                <boxGeometry args={[0.235, 0.2, 0.07]} />
+                <meshStandardMaterial color="#141b24" roughness={0.55} metalness={0.45} />
+              </mesh>
+              <mesh position={[0, 0, 0.037]}>
+                <planeGeometry args={[0.215, 0.182]} />
+                <meshBasicMaterial map={fighterRadarTex} />
+              </mesh>
+            </group>
+
+            {/* Konsol Samping Kiri & Kanan dengan Saklar & Tuas Garis Merah-Kuning */}
+            <group position={[-0.55, -0.44, -0.45]}>
+              <mesh>
+                <boxGeometry args={[0.24, 0.24, 0.88]} />
+                <meshStandardMaterial color="#24333d" roughness={0.72} metalness={0.25} />
+              </mesh>
+              <mesh position={[0, 0.122, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.22, 0.78]} />
+                <meshBasicMaterial map={fighterSideConsoleTex} />
+              </mesh>
+            </group>
+            <group position={[0.55, -0.44, -0.45]}>
+              <mesh>
+                <boxGeometry args={[0.24, 0.24, 0.88]} />
+                <meshStandardMaterial color="#24333d" roughness={0.72} metalness={0.25} />
+              </mesh>
+              <mesh position={[0, 0.122, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[0.22, 0.78]} />
+                <meshBasicMaterial map={fighterSideConsoleTex} />
+              </mesh>
+            </group>
+
+            {/* Tuas Joystick HOTAS 3D Detail di Tengah (Tombol Merah, Perak, & Hat Switch) */}
+            <group position={[0.0, -0.53, -0.49]}>
+              <mesh>
+                <cylinderGeometry args={[0.052, 0.072, 0.05, 12]} />
+                <meshStandardMaterial color="#0f172a" roughness={0.85} />
+              </mesh>
+              <group ref={stickPivotRef} position={[0, 0.02, 0]}>
+                <mesh position={[0, 0.095, 0]}>
+                  <cylinderGeometry args={[0.019, 0.023, 0.19, 10]} />
+                  <meshStandardMaterial color="#1e293b" roughness={0.5} metalness={0.5} />
+                </mesh>
+                {/* Kepala Grip HOTAS */}
+                <mesh position={[0, 0.195, 0.01]} rotation={[-0.22, 0, 0]}>
+                  <boxGeometry args={[0.052, 0.072, 0.052]} />
+                  <meshStandardMaterial color="#111827" roughness={0.58} metalness={0.35} />
+                </mesh>
+                {/* Tombol Senjata Merah (Kiri), Hat Switch Perak (Tengah), & Tombol Hijau (Kanan) */}
+                <mesh position={[-0.016, 0.21, 0.032]}>
+                  <cylinderGeometry args={[0.011, 0.011, 0.012, 10]} />
+                  <meshBasicMaterial color="#ef4444" />
+                </mesh>
+                <mesh position={[0.005, 0.222, 0.032]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.012, 0.012, 0.012, 12]} />
+                  <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.25} />
+                </mesh>
+                <mesh position={[0.022, 0.212, 0.03]} rotation={[Math.PI / 2, 0, 0]}>
+                  <cylinderGeometry args={[0.009, 0.009, 0.012, 10]} />
+                  <meshBasicMaterial color="#22c55e" />
+                </mesh>
+              </group>
+            </group>
+
+            {/* Tuas Throttle 3D di Konsol Kiri */}
+            <group ref={throttleLeverRef} position={[-0.45, -0.36, -0.54]} rotation={[-0.25, 0, 0]}>
+              <mesh position={[0, 0.06, 0]}>
+                <boxGeometry args={[0.026, 0.12, 0.024]} />
+                <meshStandardMaterial color="#334155" metalness={0.6} roughness={0.35} />
+              </mesh>
+              <mesh position={[0, 0.125, 0]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.022, 0.022, 0.095, 10]} />
+                <meshStandardMaterial color="#0f172a" roughness={0.65} />
+              </mesh>
+            </group>
+
+            {/* Sandaran Kepala Kursi Ejeksi, Sayap Kiri-Kanan, & Sirip Ekor Belakang */}
+            <group position={[0, 0.05, 0.42]}>
+              <mesh>
+                <boxGeometry args={[0.42, 0.56, 0.12]} />
+                <meshStandardMaterial color="#1e293b" roughness={0.8} />
+              </mesh>
+              <mesh position={[0, 0.34, 0]}>
+                <boxGeometry args={[0.32, 0.16, 0.12]} />
+                <meshStandardMaterial color="#eab308" roughness={0.6} />
+              </mesh>
+            </group>
+            <mesh position={[-2.4, -0.45, 0.85]} rotation={[0, 0.25, 0]}>
+              <boxGeometry args={[3.4, 0.08, 1.35]} />
+              <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
+            </mesh>
+            <mesh position={[2.4, -0.45, 0.85]} rotation={[0, -0.25, 0]}>
+              <boxGeometry args={[3.4, 0.08, 1.35]} />
+              <meshStandardMaterial color="#475569" roughness={0.5} metalness={0.35} />
+            </mesh>
+            <mesh position={[0, -0.38, 2.3]}>
+              <boxGeometry args={[0.72, 0.46, 3.2]} />
+              <meshStandardMaterial color="#334155" roughness={0.55} metalness={0.35} />
+            </mesh>
+            <mesh position={[0, 0.72, 3.5]} rotation={[-0.22, 0, 0]}>
+              <boxGeometry args={[0.1, 1.65, 1.15]} />
+              <meshStandardMaterial color="#1e3a8a" roughness={0.45} metalness={0.4} />
+            </mesh>
+          </>
+        )}
       </group>
     </>
   );
