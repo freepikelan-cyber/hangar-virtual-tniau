@@ -312,7 +312,7 @@ export const useHangarStore = create<HangarState>((set, get) => ({
         oxygenMode: next ? false : get().oxygenMode,
         flightMode: nextFlightMode,
         flightLabel: next
-          ? 'SAFETY SYSTEM • DEMONSTRASI KESELAMATAN DARURAT AKTIF'
+          ? null
           : nextFlightMode === 'airborne'
             ? 'TERBANG JELAJAH • SIAP MANUVER ATAU LANDING'
             : null,
