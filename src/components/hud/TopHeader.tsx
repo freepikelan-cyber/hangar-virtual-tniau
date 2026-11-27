@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Info, Mail, Moon, Music, Phone, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
+import { Info, LogOut, Mail, Moon, Music, Phone, Power, Radio, Settings, Sun, Sunset, Tv, Volume2, VolumeX, X } from 'lucide-react';
 import { CATEGORY_LABEL } from '../../data/fleetData';
 import { useHangarStore, useSelectedUnit, type TimeOfDay } from '../../store/useHangarStore';
 import { aircraftAudio } from '../../utils/aircraftAudio';
@@ -22,7 +22,23 @@ export function TopHeader() {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [devInfoOpen, setDevInfoOpen] = useState(false);
+  const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+  const [webExitNotice, setWebExitNotice] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const handleConfirmExit = () => {
+    aircraftAudio.stop();
+    bgmPlayer.unlockAndSync(false);
+    const androidBridge = (window as unknown as { AndroidApp?: { exitApp?: () => void } }).AndroidApp;
+    if (androidBridge?.exitApp) {
+      androidBridge.exitApp();
+      return;
+    }
+    window.close();
+    setExitConfirmOpen(false);
+    setWebExitNotice(true);
+    window.setTimeout(() => setWebExitNotice(false), 3500);
+  };
 
   // Tutup panel pengaturan jika klik di luar area menu
   useEffect(() => {
@@ -49,6 +65,22 @@ export function TopHeader() {
       {/* Header Kiri Atas: Tombol Pengaturan + Logo 3D TNI AU + Judul Ringkas */}
       <div ref={menuRef} className="relative pointer-events-auto w-full md:w-auto md:max-w-[54vw]">
         <div className="hud-panel flex items-center gap-1.5 sm:gap-2 rounded-xl px-2 sm:px-3 py-1.5">
+          {/* Tombol Keluar Aplikasi */}
+          <button
+            type="button"
+            onClick={() => {
+              setSettingsOpen(false);
+              setDevInfoOpen(false);
+              setExitConfirmOpen(true);
+            }}
+            aria-label="Keluar Aplikasi"
+            title="Keluar dari Aplikasi"
+            className="flex h-9 sm:h-10 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-rose-500/50 bg-rose-500/15 px-2.5 font-display text-xs font-bold tracking-wider text-rose-300 uppercase hover:bg-rose-500/30 hover:border-rose-400 hover:text-white transition-all cursor-pointer active:scale-95"
+          >
+            <Power className="h-4 w-4 shrink-0" />
+            <span className="hidden sm:inline">Keluar</span>
+          </button>
+
           {/* Tombol Info Pengembang (Pengganti Beranda) */}
           <button
             type="button"
@@ -388,6 +420,54 @@ export function TopHeader() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Keluar Aplikasi */}
+      {exitConfirmOpen && (
+        <div
+          className="pointer-events-auto fixed inset-0 z-50 flex items-center justify-center bg-[#040d1e]/82 backdrop-blur-md p-4"
+          onClick={() => setExitConfirmOpen(false)}
+        >
+          <div
+            className="hud-panel w-full max-w-xs sm:max-w-sm rounded-2xl border-rose-400/50 bg-[#081933]/98 p-5 text-center shadow-[0_20px_60px_rgba(2,8,20,0.9)] animate-slidein space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-rose-400/60 bg-rose-500/20 text-rose-300">
+              <LogOut className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-display text-base sm:text-lg font-bold tracking-wider text-white uppercase">
+                Keluar dari Aplikasi?
+              </h3>
+              <p className="mt-1 text-xs text-slate-300">
+                Apakah Anda yakin ingin menutup Hangar Virtual Pesawat TNI AU 3D?
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setExitConfirmOpen(false)}
+                className="min-h-[42px] rounded-lg border border-slate-600/80 bg-[#0e2a54] px-3 py-2 font-display text-xs font-bold tracking-wider text-slate-200 uppercase hover:border-[#4da6ff] hover:text-white cursor-pointer active:scale-95"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmExit}
+                className="min-h-[42px] rounded-lg border border-rose-400 bg-rose-600 px-3 py-2 font-display text-xs font-bold tracking-wider text-white uppercase shadow-[0_0_16px_rgba(244,63,94,0.4)] hover:bg-rose-500 cursor-pointer active:scale-95"
+              >
+                Ya, Keluar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pemberitahuan singkat bila diakses lewat browser desktop */}
+      {webExitNotice && (
+        <div className="pointer-events-none fixed top-16 left-1/2 z-50 -translate-x-1/2 rounded-xl border border-[#ffb703]/60 bg-[#081933]/95 px-4 py-2 text-xs font-medium text-[#fde68a] shadow-lg">
+          Suara dimatikan. Anda dapat menutup tab browser ini.
         </div>
       )}
     </header>

@@ -3,6 +3,7 @@ package id.tniau.hangarvirtual;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.WindowManager;
+import android.webkit.JavascriptInterface;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
@@ -16,6 +17,7 @@ public class MainActivity extends BridgeActivity {
         applyImmersiveFullscreen();
         if (this.bridge != null && this.bridge.getWebView() != null) {
             this.bridge.getWebView().getSettings().setMediaPlaybackRequiresUserGesture(false);
+            this.bridge.getWebView().addJavascriptInterface(new AndroidAppBridge(), "AndroidApp");
         }
     }
 
@@ -24,6 +26,19 @@ public class MainActivity extends BridgeActivity {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) {
             applyImmersiveFullscreen();
+        }
+    }
+
+    private class AndroidAppBridge {
+        @JavascriptInterface
+        public void exitApp() {
+            runOnUiThread(() -> {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    finishAndRemoveTask();
+                } else {
+                    finish();
+                }
+            });
         }
     }
 
