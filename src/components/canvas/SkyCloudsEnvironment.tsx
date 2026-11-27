@@ -1329,7 +1329,7 @@ export function SkyCloudsEnvironment() {
           <Suspense fallback={null}>
             <MountSumbingGlbModels mode="valley" />
           </Suspense>
-          {/* Mesh Pegunungan Heightmap 3D dengan tekstur kanopi hutan tropis, strata tebing batu & bump map */}
+          {/* Mesh Pegunungan Heightmap 3D melandai halus di keempat sisi tanpa potongan kotak */}
           <mesh geometry={mountainGeo} receiveShadow>
             <meshStandardMaterial
               vertexColors
@@ -1340,12 +1340,12 @@ export function SkyCloudsEnvironment() {
               metalness={0.04}
             />
           </mesh>
-          {/* Dasar lembah pegunungan hijau alami & subur (tanpa laut/aliran air di tengah lembah Sumbing!) */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-            <planeGeometry args={[68, CHUNK_LEN]} />
+          {/* Dasar dataran lembah pegunungan hijau luas & rata (420m lebar agar menyatu mulus ke cakrawala!) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+            <planeGeometry args={[420, CHUNK_LEN + 4]} />
             <meshStandardMaterial
               map={airbaseGrassTex}
-              color="#7a9e6a"
+              color="#6f9460"
               roughness={0.95}
               metalness={0.0}
             />
@@ -1354,12 +1354,12 @@ export function SkyCloudsEnvironment() {
 
         {/* === ZONA 3: LAUT LEPAS BEROMBAK 3D ANIMASI (ocean-loop.glb), PULAU TROPIS, BATU KARANG & KRI === */}
         <group ref={oceanChunkRef} name="biome-ocean">
-          {/* Permukaan Samudra Berombak 3D Animasi (ocean__water_perfect_loop.glb) + alas laut cadangan */}
+          {/* Permukaan Samudra Berombak 3D Animasi (ocean__water_perfect_loop.glb) + alas laut rata */}
           <Suspense fallback={null}>
             <OceanLoopGlb />
           </Suspense>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, 0]}>
-            <planeGeometry args={[280, CHUNK_LEN]} />
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.16, 0]}>
+            <planeGeometry args={[480, CHUNK_LEN + 6]} />
             <meshStandardMaterial
               map={oceanTextures.map}
               bumpMap={oceanTextures.bumpMap}
@@ -1507,15 +1507,27 @@ export function SkyCloudsEnvironment() {
 
         {/* === ZONA 4: KOTA METROPOLITAN 3D PENUH 1 LAPANGAN PANDANG (beautiful_city & city_pack_3) === */}
         <group ref={cityChunkRef} name="biome-city">
-          {/* Alas daratan perkotaan luas seluas 1 lapangan pandang (tanpa garis jalan palsu memotong gedung) */}
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, 0]}>
-            <planeGeometry args={[300, CHUNK_LEN]} />
+          {/* Alas daratan perkotaan luas & rata menyatu penuh dengan zona tetangga */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
+            <planeGeometry args={[460, CHUNK_LEN + 6]} />
             <meshStandardMaterial color="#3c4652" roughness={0.95} metalness={0.02} />
           </mesh>
           <Suspense fallback={null}>
             <CityGlbModels />
           </Suspense>
         </group>
+
+        {/* Alas Samudra Horizon Menerus di Bawah Seluruh Dunia (Menghilangkan celah/potongan antar zona 100%!) */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.24, 0]}>
+          <planeGeometry args={[1800, 1800]} />
+          <meshStandardMaterial
+            map={oceanTextures.map}
+            bumpMap={oceanTextures.bumpMap}
+            bumpScale={0.4}
+            roughness={0.18}
+            metalness={0.48}
+          />
+        </mesh>
       </group>
     </group>
   );

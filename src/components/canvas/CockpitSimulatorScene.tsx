@@ -14,7 +14,9 @@ import { getProceduralAircraft } from '../../utils/proceduralBuilder';
 import { cockpitSimAudio } from '../../utils/cockpitSimAudio';
 import {
   buildMountainRangeGeometry,
+  buildSeamlessAirbaseIslandGeometry,
   makeAirbaseGrassTexture,
+  makeConcreteApronTexture,
   makeExplosionSmokeTexture,
   makeHangarMetalTexture,
   makeMountainDetailTextures,
@@ -244,6 +246,7 @@ function CockpitWorldAndPhysics() {
   const skyTex = useMemo(() => makeSimSkyTexture(timeOfDay), [timeOfDay]);
   const runwayTex = useMemo(() => makeRunwayAsphaltTexture(), []);
   const grassTex = useMemo(() => makeAirbaseGrassTexture(), []);
+  const apronTex = useMemo(() => makeConcreteApronTexture(), []);
   const hangarTex = useMemo(() => makeHangarMetalTexture(), []);
   const oceanTex = useMemo(() => {
     const t = makeOceanTextures();
@@ -258,6 +261,7 @@ function CockpitWorldAndPhysics() {
   const expSmokeTex = useMemo(() => makeExplosionSmokeTexture(), []);
   const shockwaveTex = useMemo(() => makeShockwaveRingTexture(), []);
   const mtnGeo = useMemo(() => buildMountainRangeGeometry(520, 680), []);
+  const airbaseIslandGeo = useMemo(() => buildSeamlessAirbaseIslandGeometry(1250, 1550), []);
 
   const isTransportCockpit = unit.category === 'Angkut & VIP';
 
@@ -313,6 +317,7 @@ function CockpitWorldAndPhysics() {
       skyTex.dispose();
       runwayTex.dispose();
       grassTex.dispose();
+      apronTex.dispose();
       hangarTex.dispose();
       oceanTex.map.dispose();
       oceanTex.bumpMap.dispose();
@@ -323,6 +328,7 @@ function CockpitWorldAndPhysics() {
       expSmokeTex.dispose();
       shockwaveTex.dispose();
       mtnGeo.dispose();
+      airbaseIslandGeo.dispose();
       mfdLeftTex.dispose();
       mfdCenterTex.dispose();
       mfdRightTex.dispose();
@@ -1017,11 +1023,28 @@ function CockpitWorldAndPhysics() {
         <meshBasicMaterial map={skyTex} side={THREE.BackSide} depthWrite={false} fog={false} />
       </mesh>
 
-      {/* === DUNIA TERBANG 3D LUAS TANPA BATAS: RUNWAY 09, LANUD, 5 PEGUNUNGAN, LAUT & AWAN === */}
-      {/* Daratan Rumput Lanud Luas */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-120, -0.05, 80]}>
-        <planeGeometry args={[760, 1080]} />
-        <meshStandardMaterial map={grassTex} roughness={0.94} />
+      {/* === DUNIA TERBANG 3D LUAS TANPA BATAS: PULAU LANUD RAPI, RUNWAY 09, TAXIWAY, 5 PEGUNUNGAN & LAUT === */}
+      {/* Daratan Pulau Lanud Menyatu Halus ke Garis Pantai & Laut (Bukan Potongan Kotak!) */}
+      <mesh geometry={airbaseIslandGeo} position={[-85, 0, 40]}>
+        <meshStandardMaterial vertexColors map={grassTex} roughness={0.94} />
+      </mesh>
+
+      {/* Apron Beton, Parallel Taxiway, & Penghubung Rapi antara Hanggar, Menara ATC, dan Runway 09 */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-38, 0.006, -32]}>
+        <planeGeometry args={[28, 175]} />
+        <meshStandardMaterial map={apronTex} roughness={0.86} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-18, 0.008, -90]}>
+        <planeGeometry args={[22, 10]} />
+        <meshStandardMaterial color="#333942" roughness={0.88} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-18, 0.008, 18]}>
+        <planeGeometry args={[22, 10]} />
+        <meshStandardMaterial color="#333942" roughness={0.88} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-18, 0.008, 130]}>
+        <planeGeometry args={[22, 10]} />
+        <meshStandardMaterial color="#333942" roughness={0.88} />
       </mesh>
 
       {/* Runway 09 Utama (Panjang 340m, tempat pesawat mulai parkir/takeoff!) */}

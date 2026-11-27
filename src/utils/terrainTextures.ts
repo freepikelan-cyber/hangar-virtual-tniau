@@ -37,12 +37,16 @@ function ridgedFbm(x: number, y: number): number {
 
 /**
  * Menghitung tinggi permukaan pegunungan (localX, localZ) secara eksak sesuai mesh `buildMountainRangeGeometry`
- * agar deteksi tabrakan pesawat dengan gunung 100% akurat tanpa menembus tebing.
+ * dengan transisi tepi halus di KEEMPAT SISI (X & Z) agar tidak pernah berbentuk potongan kotak tajam!
  */
 export function sampleMountainRangeHeight(localX: number, localZ: number, width: number, length: number): number {
   if (Math.abs(localX) > width * 0.5 || Math.abs(localZ) > length * 0.5) return -10;
-  const zEdge = Math.min(1, Math.min(localZ + length / 2, length / 2 - localZ) / 28);
+  const xEdge = Math.min(1, Math.min(localX + width / 2, width / 2 - localX) / Math.min(72, width * 0.22));
+  const xFade = xEdge * xEdge * (3 - 2 * xEdge);
+  const zEdge = Math.min(1, Math.min(localZ + length / 2, length / 2 - localZ) / Math.min(72, length * 0.22));
   const zFade = zEdge * zEdge * (3 - 2 * zEdge);
+  const edgeFade = xFade * zFade;
+
   const riverCenter = Math.sin(localZ * 0.028) * 10;
   const distFromRiver = Math.abs(localX - riverCenter);
   const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 18, 48);
@@ -50,12 +54,12 @@ export function sampleMountainRangeHeight(localX: number, localZ: number, width:
   const erosion = ridgedFbm(localX * 0.055 + 9.1, localZ * 0.055 + 3.4) * 0.25;
   const detail = valueNoise2D(localX * 0.11, localZ * 0.11) * 0.2;
   const rawH = Math.min(22.5, Math.pow(ridge, 1.32) * 20 + erosion * 4.5 + detail * 2.5);
-  return rawH * valleyMask * zFade - 0.15;
+  return rawH * valleyMask * edgeFade - (1 - edgeFade) * 1.4 - 0.15;
 }
 
 /**
- * Membuat geometri pegunungan 3D nyata (heightmap displaced mesh) dengan lembah sungai di tengah,
- * lereng hutan hijau tropis, tebing batu vulkanik (berdasarkan kemiringan), dan puncak berkabut alami.
+ * Membuat geometri pegunungan 3D nyata (heightmap displaced mesh) yang melandai halus di KEEMPAT SISI (X & Z)
+ * menuju garis pantai/dataran rendah sehingga menyatu mulus tanpa potongan kotak atau tebing putus!
  */
 export function buildMountainRangeGeometry(width: number, length: number): THREE.BufferGeometry {
   const segX = 96;
@@ -68,6 +72,7 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
   const colors = new Float32Array(pos.count * 3);
   const c = new THREE.Color();
 
+  const cSand = new THREE.Color('#c9b88c');
   const cValley = new THREE.Color('#285432');
   const cForest = new THREE.Color('#1a3f26');
   const cHighForest = new THREE.Color('#2d4d32');
@@ -82,23 +87,9 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
     // Ulangi UV rapat agar tekstur detail hutan & tebing batu tajam dari dekat
     uv.setXY(i, (x + width / 2) / 24, (z + length / 2) / 24);
 
-    // Seamless blend ke ketinggian 0 di tepi Z agar sambungan antar-zona mulus tanpa patahan!
-    const zEdge = Math.min(1, Math.min(z + length / 2, length / 2 - z) / 28);
-    const zFade = zEdge * zEdge * (3 - 2 * zEdge);
-
-    // Lembah sungai lebar di jalur terbang tengah (x ∈ [-18..18] tetap terbuka aman anti-tabrak!)
-    const riverCenter = Math.sin(z * 0.028) * 10;
-    const distFromRiver = Math.abs(x - riverCenter);
-    const valleyMask = THREE.MathUtils.smoothstep(distFromRiver, 18, 48);
-
-    // Punggungan gunung organik multi-oktaf + mikro-erosi (dibatasi aman agar pesawat tidak pernah menabrak gunung!)
-    const ridge = ridgedFbm(x * 0.021 + 4.3, z * 0.021 + 1.7);
-    const erosion = ridgedFbm(x * 0.055 + 9.1, z * 0.055 + 3.4) * 0.25;
-    const detail = valueNoise2D(x * 0.11, z * 0.11) * 0.2;
-    const rawH = Math.min(22.5, Math.pow(ridge, 1.32) * 20 + erosion * 4.5 + detail * 2.5);
-    const h = rawH * valleyMask * zFade;
-
-    pos.setY(i, h - 0.15);
+    // Gunakan fungsi tinggi eksak yang sama dengan deteksi tabrakan (melandai halus di keempat sisi X & Z!)
+    const h = sampleMountainRangeHeight(x, z, width, length);
+    pos.setY(i, h);
   }
 
   // Hitung normal terlebih dahulu agar tebing curam otomatis jadi batu vulkanik!
@@ -113,10 +104,12 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
     const slopeFactor = THREE.MathUtils.clamp((0.86 - ny) / 0.28, 0, 1);
 
     const nTint = (valueNoise2D(x * 0.11, z * 0.11) - 0.5) * 0.09;
-    if (h < 2.4) {
-      c.copy(cValley).lerp(cForest, h / 2.4);
+    if (h < 0.35) {
+      c.copy(cSand).lerp(cValley, Math.max(0, (h + 0.4) / 0.75));
+    } else if (h < 2.6) {
+      c.copy(cValley).lerp(cForest, (h - 0.35) / 2.25);
     } else if (h < 11.5) {
-      c.copy(cForest).lerp(cHighForest, (h - 2.4) / 9.1);
+      c.copy(cForest).lerp(cHighForest, (h - 2.6) / 8.9);
     } else if (h < 21.0) {
       c.copy(cHighForest).lerp(cRock, (h - 11.5) / 9.5);
     } else {
@@ -131,6 +124,64 @@ export function buildMountainRangeGeometry(width: number, length: number): THREE
     colors[i * 3 + 2] = Math.min(1, Math.max(0, c.b + nTint));
   }
 
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  return geo;
+}
+
+/**
+ * Membuat daratan pulau pangkalan udara (Lanud) 3D yang rata sempurna di seluruh area Runway/Hanggar/ATC,
+ * lalu melandai halus melalui garis pantai pasir keemasan ke bawah permukaan laut (tanpa tepi kotak kaku!).
+ */
+export function buildSeamlessAirbaseIslandGeometry(width: number, length: number): THREE.BufferGeometry {
+  const segX = 64;
+  const segZ = 64;
+  const geo = new THREE.PlaneGeometry(width, length, segX, segZ);
+  geo.rotateX(-Math.PI / 2);
+
+  const pos = geo.attributes.position as THREE.BufferAttribute;
+  const uv = geo.attributes.uv as THREE.BufferAttribute;
+  const colors = new Float32Array(pos.count * 3);
+  const c = new THREE.Color();
+
+  const cGrass = new THREE.Color('#476e42');
+  const cLush = new THREE.Color('#355c37');
+  const cSand = new THREE.Color('#d2c195');
+  const cShallow = new THREE.Color('#2d7c8e');
+
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = pos.getZ(i);
+    uv.setXY(i, (x + width / 2) / 48, (z + length / 2) / 48);
+
+    // Bentuk elips/pulau organik dengan sedikit variasi pantai, datar 100% di area Lanud!
+    const nx = x / (width * 0.46);
+    const nz = z / (length * 0.46);
+    const radial = Math.hypot(nx, nz);
+    const coastNoise = (valueNoise2D(x * 0.008 + 3.1, z * 0.008 + 7.4) - 0.5) * 0.14;
+    const r = radial + coastNoise;
+
+    let y = -0.05;
+    if (r > 0.72) {
+      const t = THREE.MathUtils.clamp((r - 0.72) / 0.34, 0, 1);
+      const smooth = t * t * (3 - 2 * t);
+      y = THREE.MathUtils.lerp(-0.05, -2.4, smooth);
+    }
+    pos.setY(i, y);
+
+    const n = (valueNoise2D(x * 0.03, z * 0.03) - 0.5) * 0.08;
+    if (y >= -0.18) {
+      c.copy(cGrass).lerp(cLush, Math.max(0, Math.min(1, r * 0.9)));
+    } else if (y >= -0.75) {
+      c.copy(cGrass).lerp(cSand, (y + 0.18) / -0.57);
+    } else {
+      c.copy(cSand).lerp(cShallow, Math.min(1, (y + 0.75) / -1.4));
+    }
+    colors[i * 3] = Math.min(1, Math.max(0, c.r + n));
+    colors[i * 3 + 1] = Math.min(1, Math.max(0, c.g + n));
+    colors[i * 3 + 2] = Math.min(1, Math.max(0, c.b + n));
+  }
+
+  geo.computeVertexNormals();
   geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   return geo;
 }
